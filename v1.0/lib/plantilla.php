@@ -6,7 +6,7 @@ function h(?string $texto): string
     return htmlspecialchars((string) $texto, ENT_QUOTES, 'UTF-8');
 }
 
-function cabecera(string $titulo): void
+function cabecera(string $titulo, ?int $recargar = null): void
 {
     ?>
 <!doctype html>
@@ -17,6 +17,7 @@ function cabecera(string $titulo): void
     <title><?= h($titulo) ?> · Proconsi</title>
     <meta name="description" content="Herramienta interna de Proconsi para auditar webs en SEO, GEO y UX.">
     <meta name="robots" content="noindex">
+    <?php if ($recargar !== null): ?><meta http-equiv="refresh" content="<?= $recargar ?>"><?php endif; ?>
     <link rel="stylesheet" href="assets/css/estilos.css">
 </head>
 <body>

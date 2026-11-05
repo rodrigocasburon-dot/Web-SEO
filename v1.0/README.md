@@ -11,23 +11,33 @@ Herramienta interna de Proconsi. Le das una URL y puntúa de 0 a 100 su SEO, su 
 
 `config.php` no se sube a GitHub, porque guarda contraseñas y el repositorio es público.
 
+## Cómo funciona
+
+1. `index.php` recibe la URL, descarga la portada y crea el análisis.
+2. `progreso.php` se recarga solo. Cada recarga visita páginas durante unos segundos, hasta 100, siguiendo los enlaces del mismo dominio y respetando `robots.txt`.
+3. La última fase pide PageSpeed, si hay clave, y ejecuta las comprobaciones que comparan páginas.
+4. `resultado.php` muestra el informe, con las notas, la checklist y el botón "Guardar como PDF".
+
+La nota de cada bloque es puntos conseguidos entre puntos posibles, con peso según la gravedad: crítica 10, alta 6, media 3 y baja 1.
+
+Para activar PageSpeed, consigue una clave gratuita en Google Cloud y ponla en `pagespeed_clave`, dentro de `config.php`. Sin clave, la velocidad, el contraste y los botones táctiles salen como "sin datos".
+
 ## Carpetas
 
-| Carpeta | Quién la toca | Qué contiene |
-|---|---|---|
-| `seo/` | Estefany | Comprobaciones SEO |
-| `geo/` | Camila | Comprobaciones GEO |
-| `ux/` | Rodrigo | Comprobaciones UX y accesibilidad |
-| `web/` | Jose | Comprobaciones que comparan páginas o usan PageSpeed |
-| `lib/`, `index.php`, `resultado.php`, `assets/` | Jose | La base de la herramienta |
-| `checklist/checklist.json` | Jose, con lo que acordéis | La lista: pesos, reglas y textos de cómo arreglar cada punto |
+| Carpeta | Qué contiene |
+|---|---|
+| `seo/`, `geo/`, `ux/` | Las comprobaciones de cada bloque |
+| `web/` | Comprobaciones que comparan páginas o usan PageSpeed |
+| `lib/` | El motor: descarga, lectura, rastreo, notas y funciones comunes |
+| `checklist/checklist.json` | La lista: pesos, reglas y textos de cómo arreglar cada punto |
+| `docs/Lista_unificada.pdf` | La misma lista para leer cómodamente |
 
-La lista para leer cómodamente está en `docs/Lista_unificada.pdf`.
+## Cómo cambiar o añadir una comprobación
 
-## Cómo añadir una comprobación
+Los 78 puntos ya están programados. Para cambiar uno, edita su archivo. Para añadir uno nuevo:
 
-1. Busca tu punto en la lista y apunta su ID, por ejemplo `SEO-07`.
-2. Crea un archivo con ese nombre exacto en tu carpeta: `seo/SEO-07.php`.
+1. Añade el punto a `checklist/checklist.json` con un ID nuevo, por ejemplo `SEO-26`.
+2. Crea un archivo con ese nombre exacto en su carpeta: `seo/SEO-26.php`.
 3. Copia el patrón de abajo y programa la regla.
 4. Analiza una web en <http://localhost/Web-SEO/v1.0/> y comprueba el resultado.
 
@@ -46,7 +56,7 @@ return function (array $pagina): array {
 };
 ```
 
-Hay un ejemplo real en cada carpeta: `seo/SEO-08.php`, `geo/GEO-16.php`, `ux/UX-16.php` y `web/WEB-10.php`.
+Puedes usar de ejemplo cualquier archivo de la carpeta. Los puntos con alcance `comparacion` y los de PageSpeed no reciben `$pagina`, sino `$sitio`, con `paginas`, `pagespeed`, `url`, `es_local` y `config`.
 
 ### Qué debe devolver
 
@@ -76,16 +86,22 @@ La columna "Si falla" de la lista indica si un fallo es `no_cumple` o `aviso`. L
 | `$pagina['dom']` | El HTML como `DOMDocument` |
 | `$pagina['xpath']` | `DOMXPath` para buscar elementos |
 | `$pagina['texto']` | Texto visible, sin scripts ni estilos |
+| `$pagina['texto_principal']` | Texto visible sin menús, cabecera ni pie |
+| `$pagina['css']` | Estilos de la web. Solo se leen en la portada |
 | `$pagina['jsonld']` | Lista de objetos JSON-LD ya leídos |
 | `$pagina['jsonld_errores']` | Bloques JSON-LD con la sintaxis rota |
 | `$pagina['robots']` | Texto de `robots.txt`, o `null` si no existe |
 | `$pagina['es_local']` | `true` si la casilla está marcada |
+| `$pagina['es_portada']` | `true` en la primera página |
+| `$pagina['config']` | La configuración, para llamar a `descargar()` |
 
 También puedes usar estas funciones:
 
 - `robots_permite($pagina['robots'], 'Googlebot', '/')` indica si un bot puede entrar en una ruta.
 - `url_absoluta($pagina['url'], '/sitemap.xml')` completa una dirección relativa.
-- `descargar($url, cargar_config())` descarga otra dirección, como el sitemap. Lanza `RuntimeException` si falla.
+- `descargar($url, $pagina['config'])` descarga otra dirección, como el sitemap. Lanza `RuntimeException` si falla.
+- `cumple($detalle)`, `no_cumple($detalle)`, `aviso($detalle)`, `sin_datos($detalle)` y `no_aplica($detalle)` crean el resultado.
+- En `lib/ayudas.php` hay más: `palabras()`, `encabezados()`, `enlaces_de()`, `campo_jsonld()`, `telefonos_en()`...
 
 ## Qué pedirle a tu IA
 
@@ -103,11 +119,6 @@ No cambies ningún otro archivo.
 
 ## Reglas del equipo
 
-- Cada uno trabaja en su carpeta. Si necesitas tocar algo más, avisa antes.
 - No inventes resultados: si algo no se puede medir, devuelve `sin_datos`.
 - Nunca escribas "cumple WCAG" ni "cumple la ley". Di "sin errores detectables automáticamente".
 - No subas contraseñas ni claves a GitHub.
-
-## Estado actual
-
-Esta es la base mínima: analiza solo la página que escribes y calcula las notas con lo que ya esté programado. Faltan el rastreo de las 100 páginas, PageSpeed y el informe con "Guardar como PDF".

@@ -15,9 +15,10 @@ function archivo_de_punto(string $id): string
     return __DIR__ . "/../$carpeta/$id.php";
 }
 
-function ejecutar_punto(array $punto, array $pagina): array
+// $datos es la página o, en los puntos que comparan páginas, el sitio completo.
+function ejecutar_punto(array $punto, array $datos): array
 {
-    if ($punto['solo_local'] && !$pagina['es_local']) {
+    if ($punto['solo_local'] && !$datos['es_local']) {
         return ['estado' => 'no_aplica', 'detalle' => 'Solo cuenta en negocios locales.'];
     }
     $archivo = archivo_de_punto($punto['id']);
@@ -27,7 +28,7 @@ function ejecutar_punto(array $punto, array $pagina): array
     // Un fallo en una comprobación no debe tumbar el análisis completo.
     try {
         $comprobacion = require $archivo;
-        $resultado = $comprobacion($pagina);
+        $resultado = $comprobacion($datos);
     } catch (Throwable $e) {
         return ['estado' => 'sin_datos', 'detalle' => 'Error en ' . basename($archivo) . ': ' . $e->getMessage()];
     }
@@ -37,15 +38,61 @@ function ejecutar_punto(array $punto, array $pagina): array
     return ['estado' => $resultado['estado'], 'detalle' => (string) ($resultado['detalle'] ?? '')];
 }
 
-// $resultados es un array de punto_id => estado. Devuelve una nota por bloque, o null si no hay datos.
-function calcular_notas(array $resultados, array $checklist): array
+// Indica si un punto se comprueba al visitar una página concreta.
+function toca_en_pagina(array $punto, bool $es_portada, int $codigo): bool
+{
+    if ($punto['alcance'] === 'comparacion' || $punto['metodo'] === 'pagespeed') {
+        return false;
+    }
+    // Una página de error no tiene contenido que evaluar: solo cuenta su código.
+    if ($codigo !== 200) {
+        return $punto['id'] === 'SEO-01';
+    }
+    return $punto['alcance'] === 'pagina' || $punto['metodo'] === 'html' || $es_portada;
+}
+
+// Reúne los resultados de un punto en todas las páginas en un solo resultado con su valor.
+// $filas es una lista de ['estado', 'detalle', 'url'].
+function resumir_punto(array $punto, array $filas, array $valores): array
+{
+    $evaluadas = array_values(array_filter($filas, fn($f) => isset($valores[$f['estado']])));
+    if (!$evaluadas) {
+        $primera = $filas[0] ?? ['estado' => 'pendiente', 'detalle' => ''];
+        return ['estado' => $primera['estado'], 'detalle' => $primera['detalle'], 'valor' => null, 'afectadas' => [], 'evaluadas' => 0];
+    }
+
+    // En los puntos de toda la web basta con que se cumpla en una página.
+    if ($punto['alcance'] === 'dominio') {
+        usort($evaluadas, fn($a, $b) => $valores[$b['estado']] <=> $valores[$a['estado']]);
+        $mejor = $evaluadas[0];
+        return ['estado' => $mejor['estado'], 'detalle' => $mejor['detalle'], 'valor' => $valores[$mejor['estado']], 'afectadas' => [], 'evaluadas' => 1];
+    }
+
+    $total = count($evaluadas);
+    $valor = array_sum(array_map(fn($f) => $valores[$f['estado']], $evaluadas)) / $total;
+    $fallos = array_values(array_filter($evaluadas, fn($f) => $f['estado'] !== 'cumple'));
+    if (!$fallos) {
+        return ['estado' => 'cumple', 'detalle' => $evaluadas[0]['detalle'], 'valor' => 1.0, 'afectadas' => [], 'evaluadas' => $total];
+    }
+
+    usort($fallos, fn($a, $b) => $valores[$a['estado']] <=> $valores[$b['estado']]);
+    $detalle = $fallos[0]['detalle'];
+    if ($total > 1) {
+        $detalle = count($fallos) . " de $total páginas. Ejemplo: $detalle";
+    }
+    return ['estado' => $fallos[0]['estado'], 'detalle' => $detalle, 'valor' => $valor,
+        'afectadas' => array_slice(array_column($fallos, 'url'), 0, 5), 'evaluadas' => $total];
+}
+
+// $resumen es un array de punto_id => resumen. Devuelve una nota por bloque, o null si no hay datos.
+function calcular_notas(array $resumen, array $checklist): array
 {
     $notas = [];
     foreach (['seo', 'geo', 'ux'] as $nota) {
         $conseguidos = 0;
         $posibles = 0;
         foreach ($checklist['puntos'] as $punto) {
-            $valor = $checklist['valor_resultado'][$resultados[$punto['id']] ?? ''] ?? null;
+            $valor = $resumen[$punto['id']]['valor'] ?? null;
             if ($valor !== null && in_array($nota, $punto['notas'], true)) {
                 $peso = $checklist['pesos'][$punto['gravedad']];
                 $conseguidos += $peso * $valor;

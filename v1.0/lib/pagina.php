@@ -1,7 +1,7 @@
 <?php
 // Convierte una descarga en el array $pagina que reciben todas las comprobaciones.
 
-function crear_pagina(array $descarga, string $url_pedida, bool $es_local, array $config): array
+function crear_pagina(array $descarga, string $url_pedida, bool $es_local, array $config, ?string $robots, bool $es_portada): array
 {
     $html = a_utf8($descarga['cuerpo'], $descarga['cabeceras']['content-type'] ?? '');
     $dom = new DOMDocument();
@@ -22,11 +22,37 @@ function crear_pagina(array $descarga, string $url_pedida, bool $es_local, array
         'dom' => $dom,
         'xpath' => $xpath,
         'texto' => leer_texto($dom),
+        'texto_principal' => leer_texto($dom, true),
         'jsonld' => $jsonld,
         'jsonld_errores' => $jsonld_errores,
-        'robots' => leer_robots($descarga['url'], $config),
+        'robots' => $robots,
+        // Los estilos solo se leen en la portada, que es donde se comprueban.
+        'css' => $es_portada ? leer_css($xpath, $descarga['url'], $config) : '',
         'es_local' => $es_local,
+        'es_portada' => $es_portada,
+        'config' => $config,
     ];
+}
+
+// Une los estilos de la página: bloques style y hasta 5 hojas de estilo enlazadas.
+function leer_css(DOMXPath $xpath, string $url, array $config): string
+{
+    $css = '';
+    foreach ($xpath->query('//style') as $bloque) {
+        $css .= $bloque->textContent . "\n";
+    }
+    foreach ($xpath->query('//link[contains(translate(@rel, "STYLEHS", "stylehs"), "stylesheet")]/@href') as $i => $href) {
+        if ($i >= 5) {
+            break;
+        }
+        try {
+            $hoja = descargar(url_absoluta($url, $href->value), $config);
+            $css .= $hoja['codigo'] === 200 ? $hoja['cuerpo'] . "\n" : '';
+        } catch (RuntimeException) {
+            continue;
+        }
+    }
+    return $css;
 }
 
 function a_utf8(string $html, string $tipo): string
@@ -43,15 +69,23 @@ function a_utf8(string $html, string $tipo): string
 }
 
 // Texto visible de la página, sin scripts ni estilos y con los espacios normalizados.
-function leer_texto(DOMDocument $dom): string
+// Con $solo_principal deja fuera menús, cabecera y pie, que distorsionan los recuentos.
+function leer_texto(DOMDocument $dom, bool $solo_principal = false): string
 {
     $copia = clone $dom;
     $xpath = new DOMXPath($copia);
-    foreach (iterator_to_array($xpath->query('//script|//style|//noscript|//template')) as $nodo) {
-        $nodo->parentNode->removeChild($nodo);
+    $quitar = '//script|//style|//noscript|//template';
+    if ($solo_principal) {
+        $quitar .= '|//header|//nav|//footer|//aside';
     }
-    $body = $copia->getElementsByTagName('body')->item(0);
-    return $body ? trim(preg_replace('/\s+/u', ' ', $body->textContent)) : '';
+    foreach (iterator_to_array($xpath->query($quitar)) as $nodo) {
+        if ($nodo->parentNode) {
+            $nodo->parentNode->removeChild($nodo);
+        }
+    }
+    $zona = $solo_principal ? $copia->getElementsByTagName('main')->item(0) : null;
+    $zona ??= $copia->getElementsByTagName('body')->item(0);
+    return $zona ? trim(preg_replace('/\s+/u', ' ', $zona->textContent)) : '';
 }
 
 // Devuelve [lista de objetos JSON-LD, número de bloques con errores de sintaxis].

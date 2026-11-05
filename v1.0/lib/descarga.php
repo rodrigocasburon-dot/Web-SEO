@@ -81,7 +81,10 @@ function peticion(string $url, string $ip, array $config): array
         CURLOPT_HEADERFUNCTION => function ($c, $linea) use (&$cabeceras) {
             if (str_contains($linea, ':')) {
                 [$nombre, $valor] = explode(':', $linea, 2);
-                $cabeceras[strtolower(trim($nombre))] = trim($valor);
+                $nombre = strtolower(trim($nombre));
+                // Una respuesta puede traer varias cookies: se guardan todas.
+                $previo = $nombre === 'set-cookie' ? ($cabeceras[$nombre] ?? '') . "\n" : '';
+                $cabeceras[$nombre] = ltrim($previo . trim($valor));
             }
             return strlen($linea);
         },
@@ -135,4 +138,47 @@ function descargar(string $url, array $config): array
         $url = url_absoluta($url, $destino);
     }
     throw new RuntimeException('La web tiene demasiadas redirecciones seguidas.');
+}
+
+// Comprueba muchos enlaces a la vez y devuelve url => código HTTP.
+function comprobar_enlaces(array $urls, array $config): array
+{
+    $multi = curl_multi_init();
+    $activos = [];
+    foreach ($urls as $url) {
+        try {
+            $ip = comprobar_destino($url, $config);
+        } catch (RuntimeException) {
+            continue;
+        }
+        $partes = parse_url($url);
+        $puerto = $partes['port'] ?? ($partes['scheme'] === 'https' ? 443 : 80);
+        $c = curl_init($url);
+        curl_setopt_array($c, [
+            CURLOPT_USERAGENT => AGENTE,
+            CURLOPT_NOBODY => true,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,
+            CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_TIMEOUT => 8,
+            CURLOPT_CAINFO => __DIR__ . '/cacert.pem',
+            CURLOPT_RESOLVE => [trim($partes['host'], '[]') . ":$puerto:" . (str_contains($ip, ':') ? "[$ip]" : $ip)],
+        ]);
+        curl_multi_add_handle($multi, $c);
+        $activos[$url] = $c;
+    }
+    do {
+        curl_multi_exec($multi, $corriendo);
+        curl_multi_select($multi, 0.2);
+    } while ($corriendo > 0);
+
+    $codigos = [];
+    foreach ($activos as $url => $c) {
+        $codigos[$url] = curl_getinfo($c, CURLINFO_RESPONSE_CODE);
+        curl_multi_remove_handle($multi, $c);
+        curl_close($c);
+    }
+    curl_multi_close($multi);
+    return $codigos;
 }

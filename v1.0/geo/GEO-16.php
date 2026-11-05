@@ -8,7 +8,7 @@ return function (array $pagina): array {
     foreach ($pagina['jsonld'] as $objeto) {
         if (!empty($objeto['sameAs'])) {
             $perfiles = count((array) $objeto['sameAs']);
-            return ['estado' => 'cumple', 'detalle' => "El JSON-LD declara $perfiles perfiles en sameAs."];
+            return ['estado' => 'cumple', 'detalle' => "Perfiles declarados en sameAs: $perfiles."];
         }
     }
 

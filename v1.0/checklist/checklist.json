@@ -491,7 +491,7 @@
       ],
       "gravedad": "baja",
       "alcance": "dominio",
-      "metodo": "html",
+      "metodo": "http",
       "si_falla": "aviso",
       "regla": "La web declara un favicon o existe /favicon.ico.",
       "arreglo": "Añadir un favicon.",
@@ -508,7 +508,7 @@
         "seo"
       ],
       "gravedad": "media",
-      "alcance": "pagina",
+      "alcance": "dominio",
       "metodo": "html",
       "si_falla": "aviso",
       "regla": "Hay un enlace a Google Maps o al Perfil de Empresa.",
@@ -526,7 +526,7 @@
         "seo"
       ],
       "gravedad": "media",
-      "alcance": "pagina",
+      "alcance": "dominio",
       "metodo": "html",
       "si_falla": "aviso",
       "regla": "El texto de las páginas de servicio menciona el servicio y la localidad.",
@@ -1060,7 +1060,7 @@
         "ux"
       ],
       "gravedad": "alta",
-      "alcance": "pagina",
+      "alcance": "dominio",
       "metodo": "css",
       "si_falla": "aviso",
       "regla": "El CSS no elimina el foco con outline: none sin dar una alternativa. El recorrido real es revisión manual.",
@@ -1100,7 +1100,7 @@
         "ux"
       ],
       "gravedad": "alta",
-      "alcance": "pagina",
+      "alcance": "dominio",
       "metodo": "pagespeed",
       "si_falla": "no_cumple",
       "regla": "Sin fallos de 4,5:1 en texto normal ni 3:1 en grande, según PageSpeed. Sin PageSpeed, sin datos.",
@@ -1121,7 +1121,7 @@
         "ux"
       ],
       "gravedad": "baja",
-      "alcance": "pagina",
+      "alcance": "dominio",
       "metodo": "css",
       "si_falla": "aviso",
       "regla": "El tamaño base del CSS es de 16 px o más. Si no se puede saber, sin datos.",
@@ -1140,7 +1140,7 @@
         "seo"
       ],
       "gravedad": "media",
-      "alcance": "pagina",
+      "alcance": "dominio",
       "metodo": "pagespeed",
       "si_falla": "aviso",
       "regla": "Sin fallos de tamaño según PageSpeed. Mínimo WCAG de 24 px; 48 px es la recomendación. Sin PageSpeed, sin datos.",

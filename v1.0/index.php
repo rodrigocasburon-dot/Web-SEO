@@ -1,9 +1,5 @@
 <?php
-require 'lib/db.php';
-require 'lib/descarga.php';
-require 'lib/pagina.php';
-require 'lib/motor.php';
-require 'lib/plantilla.php';
+require 'lib/carga.php';
 
 $url = trim($_POST['url'] ?? '');
 $es_local = isset($_POST['es_local']);
@@ -16,10 +12,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     try {
         $config = cargar_config();
-        $db = conectar($config);
-        $pagina = crear_pagina(descargar($url, $config), $url, $es_local, $config);
-        $id = guardar_analisis($db, $pagina, cargar_checklist());
-        header("Location: resultado.php?id=$id");
+        $id = iniciar_analisis(conectar($config), $url, $es_local, $config);
+        header("Location: progreso.php?id=$id");
         exit;
     } catch (RuntimeException $e) {
         $error = $e->getMessage();
@@ -30,7 +24,7 @@ cabecera('Auditoría web');
 ?>
 <section class="inicio">
     <h1>Analiza una web</h1>
-    <p>Escribe una dirección y obtén su nota de SEO, GEO y UX, con los puntos que faltan por mejorar.</p>
+    <p>Escribe una dirección y obtén su nota de SEO, GEO y UX, con los puntos que faltan por mejorar. La herramienta recorre hasta 100 páginas.</p>
     <?php if ($error): ?>
         <p class="error" role="alert"><?= h($error) ?></p>
     <?php endif; ?>
