@@ -68,6 +68,15 @@ td { padding: .6rem .7rem; border-bottom: 1px solid var(--linea); vertical-align
 
 .acciones { margin: 1rem 0 0; }
 .barra-progreso { width: 100%; height: 1rem; accent-color: var(--rojo); }
+.carga-giro { width: 3.25rem; height: 3.25rem; margin-bottom: 1.25rem; border: 5px solid var(--linea); border-top-color: var(--rojo); border-radius: 50%; animation: giro 1s linear infinite; }
+@keyframes giro { to { transform: rotate(360deg); } }
+.pasos { margin: 1.25rem 0; padding: 0; list-style: none; }
+.pasos li { position: relative; padding: .2rem 0 .2rem 1.75rem; color: var(--gris); }
+.pasos li::before { content: ""; position: absolute; left: .2rem; top: .6rem; width: .7rem; height: .7rem; border: 2px solid var(--linea); border-radius: 50%; box-sizing: border-box; }
+.pasos .actual { color: var(--negro); font-weight: 600; }
+.pasos .actual::before { background: var(--rojo); border-color: var(--rojo); }
+.pasos .hecho::before { content: "✓"; top: .2rem; width: auto; height: auto; border: 0; color: var(--verde); font-weight: 700; }
+@media (prefers-reduced-motion: reduce) { .carga-giro { animation: none; } }
 h3 { margin: 1.5rem 0 .5rem; font-size: 1.05rem; font-weight: 600; }
 .paginas-afectadas { margin: .25rem 0 0; padding-left: 1.1rem; font-size: .85rem; color: var(--gris); overflow-wrap: anywhere; }
 dl { margin: 0; } dt { font-weight: 600; } dd { margin: 0 0 .5rem; color: var(--gris); }

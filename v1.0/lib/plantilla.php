@@ -30,12 +30,35 @@ function cabecera(string $titulo, ?int $recargar = null): void
     <?php
 }
 
-function pie(): void
+// Con $cerrar en false deja el documento abierto para seguir enviando después.
+function pie(bool $cerrar = true): void
 {
     ?>
     </main>
     <footer class="pie">Herramienta interna de Proconsi. Evaluación automática orientativa: no sustituye a una auditoría profesional.</footer>
+    <?php if ($cerrar): ?>
 </body>
 </html>
+    <?php endif;
+}
+
+// $paso es la fase en curso, de 1 a 3. Sin total, la barra no indica cantidad.
+function pantalla_carga(string $url, int $paso, string $texto, int $hechas = 0, int $total = 0, bool $oculta = false): void
+{
+    $pasos = [1 => 'Conectando con la web', 2 => 'Analizando las páginas', 3 => 'Últimas comprobaciones e informe'];
+    ?>
+    <section class="inicio carga" id="carga"<?= $oculta ? ' hidden' : '' ?>>
+        <div class="carga-giro" aria-hidden="true"></div>
+        <p class="etiqueta">Analizando</p>
+        <h1 class="url" id="carga-url"><?= h($url) ?></h1>
+        <ol class="pasos">
+            <?php foreach ($pasos as $numero => $nombre): ?>
+                <li class="<?= $numero < $paso ? 'hecho' : ($numero === $paso ? 'actual' : '') ?>"<?= $numero === $paso ? ' aria-current="step"' : '' ?>><?= h($nombre) ?></li>
+            <?php endforeach; ?>
+        </ol>
+        <p role="status"><?= h($texto) ?></p>
+        <progress class="barra-progreso" aria-label="Progreso del análisis"<?= $total > 0 ? " max=\"$total\" value=\"$hechas\"" : '' ?>></progress>
+        <p class="ayuda">No cierres esta pestaña. La página se actualiza sola.</p>
+    </section>
     <?php
 }

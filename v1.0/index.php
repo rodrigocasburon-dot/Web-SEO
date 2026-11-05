@@ -22,7 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 cabecera('Auditoría web');
 ?>
-<section class="inicio">
+<section class="inicio" id="formulario">
     <h1>Analiza una web</h1>
     <p>Escribe una dirección y obtén su nota de SEO, GEO y UX, con los puntos que faltan por mejorar. La herramienta recorre hasta 100 páginas.</p>
     <?php if ($error): ?>
@@ -41,5 +41,19 @@ cabecera('Auditoría web');
         <p class="ayuda">Márcala si la empresa tiene un local físico. Si no, los puntos de dirección, horarios o mapa no cuentan en la nota.</p>
     </form>
 </section>
+<?php pantalla_carga('', 1, 'Abriendo la primera página. Puede tardar unos segundos.', oculta: true); ?>
+<script>
+    // La primera descarga se hace al enviar el formulario: la pantalla de carga cubre esa espera.
+    function verCarga(activa) {
+        document.getElementById('formulario').hidden = activa;
+        document.getElementById('carga').hidden = !activa;
+    }
+    document.querySelector('form').addEventListener('submit', function () {
+        document.getElementById('carga-url').textContent = document.getElementById('url').value;
+        verCarga(true);
+    });
+    // Al volver atrás, el navegador podría restaurar la pantalla de carga.
+    window.addEventListener('pageshow', function () { verCarga(false); });
+</script>
 <?php
 pie();
