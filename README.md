@@ -19,6 +19,19 @@ storage/             Datos de ejecución (límite de uso); .htaccess deniega el 
 tests/               check_env.php, run.php (fase 3), fixtures/
 ```
 
+## Pruebas
+
+- `php tests/run.php`: todas las pruebas, sin internet (incluye un servidor local de PHP en 127.0.0.1 para probar cURL).
+- `php tests/live_fetch.php [url ...]`: prueba manual del Fetcher contra sitios reales (requiere internet).
+- `php tests/check_env.php`: diagnóstico del entorno.
+
+## Seguridad de la descarga (fase 2)
+
+`UrlGuard` valida cada URL (solo http/https, sin credenciales, puertos 80/443, rechazo de IP privadas o
+reservadas en IPv4 e IPv6, formas numéricas ambiguas y dominios internos) y `Fetcher` descarga con la
+IP validada fijada (`CURLOPT_RESOLVE`), redirecciones manuales revalidadas (máx. 5), presupuesto total
+de 10 s y 2 MB de respuesta. Un 403, captcha, 401 o 429 se informa como bloqueo, no como fallo del sitio.
+
 ## Requisitos
 
 - PHP 8.0 o superior (el código evita funciones de 8.1+ hasta conocer la versión del servidor).
