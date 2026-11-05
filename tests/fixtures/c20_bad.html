@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Página con contenido mixto para pruebas</title>
+<script src="http://cdn.example.com/app.js"></script>
+<link rel="stylesheet" href="http://cdn.example.com/estilos.css">
+<link rel="icon" href="http://cdn.example.com/favicon.ico">
+<link rel="stylesheet" href="https://cdn.example.com/seguro.css">
+<link rel="alternate" href="http://example.com/en">
+</head>
+<body>
+<main>
+<h1>Contenido mixto</h1>
+<img src="http://cdn.example.com/foto.jpg" alt="Foto">
+<img src="https://cdn.example.com/a.jpg" srcset="https://cdn.example.com/a2.jpg 2x, http://cdn.example.com/a3.jpg 3x" alt="Otra">
+<img src="/relativa.jpg" alt="Relativa">
+<script src="//cdn.example.com/protocolo-relativo.js"></script>
+<form action="http://example.com/enviar" method="post"><label>Correo <input name="e"></label><button>Enviar</button></form>
+<a href="http://example.com/otra">Un enlace por http no es contenido mixto</a>
+</main>
+</body>
+</html>

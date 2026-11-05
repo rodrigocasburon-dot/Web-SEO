@@ -10,7 +10,8 @@ class CurlTransport
      * @param array $target    resultado de UrlGuard::validate (url, host, port, ip, is_ip_literal)
      * @param int   $timeoutMs tiempo máximo restante para esta petición
      * @param array $opt       user_agent, max_bytes
-     * @return array errno, error, status, headers (nombres en minúsculas), body, truncated, timings, remote_ip
+     * @return array errno, error, status, headers (nombres en minúsculas), body, truncated, timings, remote_ip,
+     *               cert (certificado del servidor en HTTPS: subject, issuer, valid_to; null si no hay datos)
      */
     public function __invoke(array $target, int $timeoutMs, array $opt): array
     {
@@ -18,6 +19,7 @@ class CurlTransport
         $body = '';
         $truncated = false;
         $max = (int) $opt['max_bytes'];
+        $https = stripos($target['url'], 'https://') === 0;
 
         $ch = curl_init($target['url']);
         $options = [
@@ -29,6 +31,7 @@ class CurlTransport
             CURLOPT_CONNECTTIMEOUT_MS => max(1, min($timeoutMs, 5000)),
             CURLOPT_SSL_VERIFYPEER => true,
             CURLOPT_SSL_VERIFYHOST => 2,
+            CURLOPT_CERTINFO => $https,                // datos del certificado ya verificado (C20)
             CURLOPT_ENCODING => '',                    // acepta gzip/deflate; el límite se aplica ya descomprimido
             CURLOPT_PROXY => '',                       // ignora proxies del entorno
             CURLOPT_FRESH_CONNECT => true,
@@ -82,6 +85,7 @@ class CurlTransport
 
         $ms = fn($key) => isset($info[$key]) ? (int) round($info[$key] * 1000) : 0;
         return [
+            'cert' => $https && $errno === 0 ? self::leafCert(curl_getinfo($ch, CURLINFO_CERTINFO)) : null,
             'errno' => $errno,
             'error' => $error,
             'status' => (int) ($info['http_code'] ?? 0),
@@ -96,6 +100,35 @@ class CurlTransport
                 'ttfb_ms' => $ms('starttransfer_time'),
                 'total_ms' => $ms('total_time'),
             ],
+        ];
+    }
+
+    /**
+     * Certificado del servidor (el primero de la cadena) a partir de CURLINFO_CERTINFO.
+     * El formato de los campos depende de la librería TLS de cURL; se toleran variantes.
+     * @return array|null subject, issuer, valid_to (marca de tiempo o null)
+     */
+    public static function leafCert($certInfo): ?array
+    {
+        if (!is_array($certInfo) || !isset($certInfo[0]) || !is_array($certInfo[0])) {
+            return null;
+        }
+        $c = array_change_key_case($certInfo[0], CASE_LOWER);
+        $validTo = null;
+        if (!empty($c['cert']) && function_exists('openssl_x509_parse')) {
+            $parsed = @openssl_x509_parse((string) $c['cert']);
+            if (is_array($parsed) && isset($parsed['validTo_time_t'])) {
+                $validTo = (int) $parsed['validTo_time_t'];
+            }
+        }
+        if ($validTo === null && !empty($c['expire date'])) {
+            $ts = strtotime((string) $c['expire date']);
+            $validTo = $ts === false ? null : $ts;
+        }
+        return [
+            'subject' => (string) ($c['subject'] ?? ''),
+            'issuer' => (string) ($c['issuer'] ?? ''),
+            'valid_to' => $validTo,
         ];
     }
 }

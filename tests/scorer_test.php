@@ -166,9 +166,13 @@ test('Scorer: reparto inválido o severidad desconocida lanzan excepción', func
     }
 });
 
-test('Matriz config/weights.php: 15 comprobaciones, valores en [0,1] y filas que suman 1', function () {
+test('Matriz config/weights.php: una fila por comprobación, valores en [0,1] y filas que suman 1', function () {
     $m = require __DIR__ . '/../config/weights.php';
-    assertSame(15, count($m));
+    $ids = array_keys(CheckRunner::catalog());
+    sort($ids);
+    $rows = array_keys($m);
+    sort($rows);
+    assertSame($ids, $rows);
     foreach ($m as $id => $row) {
         assertSame(3, count($row), $id);
         foreach ($row as $v) {

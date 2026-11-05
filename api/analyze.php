@@ -26,7 +26,8 @@ try {
     Api::rateLimit($config, 'analyze', 'análisis');
 
     $url = is_string($input['url'] ?? null) ? $input['url'] : '';
-    set_time_limit(45);
+    // Página 10 s + robots.txt 5 s + enlaces 12 s + sitemap 8 s en el peor caso
+    set_time_limit(50);
     $result = (new Analyzer($config))->analyze($url, ['noindex_intentional' => !empty($input['noindex_intentional'])]);
 
     // Datos de la descarga que se devuelven (sin cuerpo ni cabeceras de la web analizada)

@@ -132,7 +132,7 @@
   function setLoading(on) {
     button.disabled = on;
     results.setAttribute('aria-busy', on ? 'true' : 'false');
-    setStatus(on ? 'Analizando la página… puede tardar unos segundos.' : '', on);
+    setStatus(on ? 'Analizando la página, sus enlaces y su sitemap… puede tardar hasta medio minuto.' : '', on);
   }
 
   function clearErrors() {

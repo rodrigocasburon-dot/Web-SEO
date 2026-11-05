@@ -19,6 +19,10 @@ class CheckRunner
             new C12Canonical(),
             new C13StructuredData(),
             new C15MetaDescription(),
+            // Fase 8: comprobaciones adicionales (C16 y C18 descargan recursos con $ctx->fetch)
+            new C16BrokenLinks(),
+            new C18Sitemap(),
+            new C20HttpsSecurity(),
         ];
     }
 

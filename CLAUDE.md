@@ -28,6 +28,7 @@ conocer la versión del servidor.
 - Matriz provisional (SEO / IA / Accesibilidad):
   C01 .7/.3/0; C02 .4/.6/0; C03 .4/.6/0; C04 0/0/1; C05 .3/.3/.4; C06 .2/.2/.6; C07 .4/0/.6;
   C08 0/0/1; C09 .5/0/.5; C10 .8/0/.2; C11 .3/.3/.4; C12 1/0/0; C13 1/0/0; C14 1/0/0; C15 1/0/0.
+  Fase 8 (propuesta pendiente de validar): C16 .7/.3/0; C18 .6/.4/0; C20 .7/.3/0.
 - Nota global = 0,35 × SEO + 0,30 × IA + 0,35 × Accesibilidad.
 - Si un área baja de 50 o hay al menos dos fallos críticos: «Riesgo alto: revisar de inmediato».
 - SIN_DATOS y comprobaciones que no aplican no penalizan y se muestran aparte. Si más de la mitad de las comprobaciones de un área son SIN_DATOS, la nota se marca como incompleta.

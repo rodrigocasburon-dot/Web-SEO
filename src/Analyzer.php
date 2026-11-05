@@ -1,15 +1,21 @@
 <?php
 /**
  * Orquesta un análisis: descarga la página, descarga robots.txt del mismo origen y ejecuta
- * las comprobaciones. No guarda nada.
+ * las comprobaciones. C16 (enlaces) y C18 (sitemap) descargan recursos adicionales mediante
+ * $ctx->fetch, con las mismas defensas que la página. No guarda nada.
  */
 class Analyzer
 {
     private array $config;
     private Fetcher $pageFetcher;
     private Fetcher $robotsFetcher;
+    /** @var callable fn(string $url, array $options = []): array */
+    private $resourceFetch;
 
-    public function __construct(array $config, ?Fetcher $pageFetcher = null, ?Fetcher $robotsFetcher = null)
+    /**
+     * @param callable|null $resourceFetch descarga de enlaces y sitemaps (por defecto, un Fetcher nuevo por petición)
+     */
+    public function __construct(array $config, ?Fetcher $pageFetcher = null, ?Fetcher $robotsFetcher = null, ?callable $resourceFetch = null)
     {
         $this->config = $config;
         $guard = new UrlGuard();
@@ -22,6 +28,9 @@ class Analyzer
         $this->pageFetcher = $pageFetcher ?? new Fetcher($guard, $opt);
         // robots.txt: presupuesto y tamaño menores
         $this->robotsFetcher = $robotsFetcher ?? new Fetcher($guard, array_merge($opt, ['timeout' => 5, 'max_bytes' => 512000]));
+        $this->resourceFetch = $resourceFetch ?? function (string $url, array $options = []) use ($guard, $opt): array {
+            return (new Fetcher($guard, array_merge($opt, $options)))->fetch($url);
+        };
     }
 
     public function analyze(string $url, array $options = []): array
@@ -34,6 +43,7 @@ class Analyzer
         }
         $robots = $this->fetchRobots((string) $page['final_url']);
         $ctx = CheckContext::fromFetch($page, $this->config, $robots, $options);
+        $ctx->fetch = $this->resourceFetch;
         $checks = (new CheckRunner())->run($ctx);
         return [
             'ok' => true,

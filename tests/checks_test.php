@@ -24,7 +24,33 @@ function fx(?string $html, ?string $json = null, array $options = []): CheckCont
     $page['content_type'] = $page['headers']['content-type'] ?? null;
     $robots = $meta['robots'] ?? ['status' => 404, 'body' => '', 'error' => null];
     $config = require __DIR__ . '/../config/config.example.php';
-    return CheckContext::fromFetch($page, $config, $robots, $options);
+    $ctx = CheckContext::fromFetch($page, $config, $robots, $options);
+    $ctx->fetch = fakeSiteFetch($page['final_url']);
+    return $ctx;
+}
+
+/**
+ * Descarga simulada para C16 y C18 (forma de Fetcher::fetch). Por defecto todo responde 200 y
+ * /sitemap.xml incluye la URL de la página. $routes: URL → [status, body, content_type] o código de error.
+ */
+function fakeSiteFetch(string $pageUrl, array $routes = [], array &$log = []): callable
+{
+    $p = parse_url($pageUrl);
+    $sitemap = $p['scheme'] . '://' . $p['host'] . '/sitemap.xml';
+    $routes += [$sitemap => [200, '<?xml version="1.0"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>'
+        . htmlspecialchars($pageUrl, ENT_XML1) . '</loc></url></urlset>', 'application/xml']];
+    return function (string $url, array $opt = []) use ($routes, &$log): array {
+        $log[] = [$url, $opt];
+        $route = $routes[$url] ?? [200, '<html><body>ok</body></html>', 'text/html'];
+        if (is_string($route)) {
+            return ['ok' => false, 'status' => null, 'final_url' => $url, 'body' => '', 'truncated' => false, 'blocked' => null,
+                'content_type' => null, 'error' => ['code' => $route, 'message' => $route]];
+        }
+        $status = $route[0];
+        return ['ok' => true, 'status' => $status, 'final_url' => $url, 'body' => $route[1] ?? '', 'truncated' => !empty($route[3]),
+            'content_type' => $route[2] ?? 'text/html', 'error' => null,
+            'blocked' => in_array($status, [401, 403, 429], true) ? ['code' => 'HTTP_' . $status, 'message' => 'bloqueo'] : null];
+    };
 }
 
 function runCheck(string $class, CheckContext $ctx): array
@@ -170,7 +196,8 @@ test('Página completa defectuosa: fallan las comprobaciones esperadas', functio
 
 test('Sitio bloqueado: las comprobaciones de HTML devuelven SIN_DATOS', function () {
     foreach ((new CheckRunner())->run(fx('full_bad', 'c01_blocked')) as $r) {
-        if (!in_array($r['id'], ['C01', 'C02'], true)) {
+        // C01, C02 y C18 no dependen del HTML de la página
+        if (!in_array($r['id'], ['C01', 'C02', 'C18'], true)) {
             assertSame('SIN_DATOS', $r['estado'], $r['id']);
         }
     }

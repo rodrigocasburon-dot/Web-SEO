@@ -4,7 +4,25 @@ Herramienta web interna en PHP (sin framework ni Composer) que analiza una URL y
 informe de SEO, preparación para IA y accesibilidad. La evaluación es automática y parcial:
 no sustituye una auditoría manual ni certifica el cumplimiento de WCAG ni de ninguna ley.
 
-Estado: **fase 7** (informe completo e imprimible). Las fases están descritas en `CLAUDE.md`.
+Estado: **fase 8** (comprobaciones adicionales C16, C18 y C20). Las fases están descritas en `CLAUDE.md`.
+
+## Comprobaciones adicionales (fase 8)
+
+- `C16 Enlaces rotos` (gravedad media): los 20 primeros enlaces http(s) distintos, con el mismo `Fetcher`
+  (UrlGuard, IP fijada, redirecciones revalidadas), 5 s por enlace, 12 s en total y 64 KB por respuesta.
+  4xx (salvo 401/403/407/429), dominio inexistente o URL mal formada → roto; 5xx, tiempo agotado o error
+  de conexión → aviso; bloqueos y destinos no públicos no cuentan.
+- `C18 Sitemap` (media): sitemaps de robots.txt o, si no hay, `/sitemap.xml`; índices, texto y gzip; máximo
+  5 archivos y 8 s. No figura → fallo; figura con otra variante o lectura parcial → aviso; bloqueo → sin
+  datos; noindex intencionado → no aplica.
+- `C20 Certificado y contenido mixto` (alta): el certificado se da por válido porque cURL lo verifica al
+  descargar (si no, no hay informe); aviso si caduca en menos de 14 días. Contenido mixto activo (script,
+  hoja de estilos, iframe, object, embed, base, formularios) → fallo, salvo `upgrade-insecure-requests`
+  (aviso); pasivo (imágenes, audio, vídeo, iconos) → aviso. Página por http → no aplica (lo penaliza C01).
+- Supuestos pendientes de validar: gravedades, impacto y esfuerzo, y reparto en `config/weights.php`
+  (C16 .7/.3/0, C18 .6/.4/0, C20 .7/.3/0). Límites configurables en `config.example.php`.
+- C16 y C18 descargan recursos mediante `$ctx->fetch` (inyectable: las pruebas no usan red). El análisis
+  puede tardar hasta unos 35 s en el peor caso (`set_time_limit(50)` en `api/analyze.php`).
 
 ## Informe (fase 7)
 
@@ -71,7 +89,8 @@ index.php            Pantalla (fase 5)
 api/                 analyze.php, psi.php y score.php (fases 5-6)
 src/                 UrlGuard, Fetcher, CurlTransport, Analyzer, CheckContext, CheckRunner, BaseCheck,
                      DomHelper, RobotsTxt, Config, Lang, RateLimiter, Scorer, PsiClient, Api, Report
-src/Checks/          Una clase por comprobación (C01HttpsStatus … C15MetaDescription, C08 y C14 vía PageSpeed)
+src/Checks/          Una clase por comprobación (C01HttpsStatus … C15MetaDescription, C08 y C14 vía PageSpeed,
+                     C16BrokenLinks, C18Sitemap y C20HttpsSecurity)
 config/              config.example.php (plantilla), config.php (local, fuera de git), weights.php
 lang/es.php          Nombres, recomendaciones y glosario (borrador para revisar)
 assets/              CSS y JS propios

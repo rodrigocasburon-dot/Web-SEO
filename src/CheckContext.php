@@ -22,6 +22,14 @@ class CheckContext
     public ?array $psi = null;
     /** Motivo por el que no hay datos de PageSpeed: ['code' => ..., 'message' => ...] */
     public ?array $psiError = null;
+    /** Certificado TLS de la respuesta final (subject, issuer, valid_to); null si no es HTTPS o no hay datos */
+    public ?array $cert = null;
+    /**
+     * Descarga de recursos adicionales (C16 enlaces, C18 sitemap) con las mismas defensas que la página:
+     * fn(string $url, array $options = []): array con la forma de Fetcher::fetch(). null = sin red (pruebas).
+     * @var callable|null
+     */
+    public $fetch = null;
 
     private ?DOMDocument $doc = null;
     private ?DOMXPath $xpath = null;
@@ -43,6 +51,7 @@ class CheckContext
         $c->truncated = !empty($page['truncated']);
         $c->blocked = $page['blocked'] ?? null;
         $c->redirects = (array) ($page['redirects'] ?? []);
+        $c->cert = $page['cert'] ?? null;
         $c->robots = $robots;
         $c->config = $config;
         $c->options = $options;

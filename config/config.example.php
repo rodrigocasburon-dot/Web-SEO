@@ -15,6 +15,14 @@ return [
     'timeout'        => 10,        // segundos
     'max_bytes'      => 2097152,   // 2 MB
 
+    // C16 Enlaces rotos: nº máximo de enlaces, espera por enlace y tiempo total (s)
+    'links_max'     => 20,
+    'links_timeout' => 5,
+    'links_budget'  => 12,
+    // C18 Sitemap: nº máximo de archivos leídos (índices incluidos) y tiempo total (s)
+    'sitemap_max_files' => 5,
+    'sitemap_budget'    => 8,
+
     // Límite de uso por IP (se guarda en storage/)
     'rate_limit' => ['max_requests' => 10, 'window_seconds' => 600],
 

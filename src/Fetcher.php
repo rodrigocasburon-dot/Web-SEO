@@ -31,7 +31,7 @@ class Fetcher
 
     /**
      * @return array ok, requested_url, final_url, status, headers, content_type, body, truncated,
-     *               bytes, redirects, hops, timings, blocked, error
+     *               bytes, redirects, hops, timings, blocked, error, cert (certificado de la respuesta final)
      */
     public function fetch(string $url): array
     {
@@ -52,6 +52,7 @@ class Fetcher
             'timings' => ['total_ms' => 0, 'dns_ms' => 0],
             'blocked' => null,
             'error' => null,
+            'cert' => null,
         ];
 
         $current = $url;
@@ -122,6 +123,7 @@ class Fetcher
             $r['body'] = $resp['body'];
             $r['truncated'] = $resp['truncated'];
             $r['bytes'] = strlen($resp['body']);
+            $r['cert'] = $resp['cert'] ?? null;
             $r['blocked'] = $this->detectBlock($r);
             break;
         }
