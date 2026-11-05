@@ -125,9 +125,9 @@ return [
         ],
         'C11' => [
             'nombre' => 'HTML semántico',
-            'descripcion' => 'Comprueba roles ARIA, la presencia de main y el uso de onclick en elementos no interactivos.',
+            'descripcion' => 'Comprueba roles ARIA, que haya un único main y el uso de onclick en elementos no interactivos.',
             'recomendacion' => 'Usa solo roles ARIA definidos en la especificación (o elimina el atributo role si no es necesario).',
-            'recomendacion_aviso' => 'Envuelve el contenido principal en un elemento main y usa button o a para las acciones en lugar de onclick sobre div o span, que no son accesibles con teclado por defecto.',
+            'recomendacion_aviso' => 'Usa un único elemento main para el contenido principal: añádelo si falta y, si hay copias por dispositivo, marca con el atributo hidden las que no se muestran o deja una sola. Para las acciones, usa button o a en lugar de onclick sobre div o span, que no son accesibles con teclado por defecto.',
         ],
         'C12' => [
             'nombre' => 'URL canónica',

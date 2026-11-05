@@ -111,6 +111,9 @@ $cases = [
     ['C11Semantics', 'c11_ok', null, [], 'CUMPLE', null],
     ['C11Semantics', 'c11_bad', null, [], 'NO_CUMPLE', 2],
     ['C11Semantics', 'c11_aviso', null, [], 'AVISO', null],
+    ['C11Semantics', 'c11_aviso_dos_main', null, [], 'AVISO', null],
+    ['C11Semantics', 'c11_aviso_solo_hidden', null, [], 'AVISO', null],
+    ['C11Semantics', 'c11_main_hidden', null, [], 'CUMPLE', null],
 
     ['C12Canonical', 'c12_ok', null, [], 'CUMPLE', null],
     ['C12Canonical', 'c12_bad', null, [], 'NO_CUMPLE', 1],
@@ -215,6 +218,18 @@ test('Codificación: HTML en ISO-8859-1 se convierte a UTF-8', function () {
         'headers' => ['content-type' => 'text/html; charset=ISO-8859-1'], 'content_type' => 'text/html; charset=ISO-8859-1', 'body' => $html], []);
     $r = runCheck('C10Title', $ctx);
     assertSame('Información de pruebas para años y niños', $r['valor_medido']['texto']);
+});
+
+test('C11: cuenta los main sin hidden y separa los ocultos (atributo propio o heredado, template)', function () {
+    $r = runCheck('C11Semantics', fx('c11_main_hidden'));
+    assertSame(1, $r['valor_medido']['main']);
+    assertSame(2, $r['valor_medido']['main_con_hidden']);   // main hidden y role="main" dentro de un div hidden
+
+    $r = runCheck('C11Semantics', fx('c11_aviso_dos_main'));
+    assertSame(2, $r['valor_medido']['main']);
+    assertSame(2, count($r['evidencia']), 'Evidencia de cada main');
+    assertTrue(strpos($r['detalle'], '2 elementos main') !== false, $r['detalle']);
+    assertTrue(strpos($r['detalle'], 'compruébalo a mano') !== false, 'Debe pedir revisión manual');
 });
 
 test('HTML truncado: se añade la advertencia de análisis parcial', function () {

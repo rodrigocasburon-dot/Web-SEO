@@ -3,6 +3,8 @@
  * C11 HTML semántico:
  * - roles ARIA inexistentes (ninguno de los tokens es un rol válido) → NO_CUMPLE
  * - sin main (ni role="main") → AVISO
+ * - más de un main sin el atributo hidden → AVISO. La norma HTML solo admite uno; no es NO_CUMPLE porque las
+ *   copias ocultas con CSS (p. ej. versiones por dispositivo) no se detectan sin renderizar la página.
  * - onclick en elementos que no son controles nativos (a, button, input, select, textarea, summary, area) → AVISO
  */
 class C11Semantics extends BaseCheck
@@ -29,7 +31,7 @@ class C11Semantics extends BaseCheck
 
     protected string $id = 'C11';
     protected string $severity = 'MEDIO';
-    protected string $criterio = 'Referencia: WCAG 2.2 SC 1.3.1 (Información y relaciones) y SC 4.1.2 (Nombre, función, valor); WAI-ARIA 1.2.';
+    protected string $criterio = 'Referencia: WCAG 2.2 SC 1.3.1 (Información y relaciones) y SC 4.1.2 (Nombre, función, valor); WAI-ARIA 1.2; norma HTML (un solo main sin el atributo hidden).';
     protected string $impacto = 'MEDIO';
     protected string $esfuerzo = 'MEDIO';
 
@@ -44,7 +46,16 @@ class C11Semantics extends BaseCheck
                 $invalid[] = $el;
             }
         }
-        $mains = $x->query('//main | //*[@role="main"]')->length;
+        // main o role="main" fuera de <template> (no se renderiza); los que llevan hidden, propio o heredado, no cuentan
+        $mains = [];
+        $hiddenMains = 0;
+        foreach ($x->query('//*[(self::main or @role="main") and not(ancestor::template)]') as $el) {
+            if ($x->query('ancestor-or-self::*[@hidden]', $el)->length > 0) {
+                $hiddenMains++;
+            } else {
+                $mains[] = $el;
+            }
+        }
         $onclick = [];
         foreach ($x->query('//*[@onclick]') as $el) {
             if (!in_array(strtolower($el->tagName), self::NATIVE_INTERACTIVE, true)) {
@@ -52,8 +63,10 @@ class C11Semantics extends BaseCheck
             }
         }
 
-        $valor = ['roles_invalidos' => count($invalid), 'main' => $mains, 'onclick_no_interactivos' => count($onclick)];
-        $umbral = 'Roles ARIA válidos, un main y onclick solo en controles nativos';
+        $mainCount = count($mains);
+        $valor = ['roles_invalidos' => count($invalid), 'main' => $mainCount, 'main_con_hidden' => $hiddenMains,
+            'onclick_no_interactivos' => count($onclick)];
+        $umbral = 'Roles ARIA válidos, un único main sin el atributo hidden y onclick solo en controles nativos';
 
         $ev = [];
         foreach ($invalid as $el) {
@@ -61,16 +74,23 @@ class C11Semantics extends BaseCheck
             $e['extracto'] = 'Rol no válido «' . $el->getAttribute('role') . '»: ' . $e['extracto'];
             $ev[] = $e;
         }
-        if ($mains === 0) {
-            $ev[] = DomHelper::note('(no hay elemento main ni role="main")', 'main');
+        if ($mainCount === 0) {
+            $ev[] = DomHelper::note('(no hay elemento main ni role="main" sin el atributo hidden)', 'main');
+        } elseif ($mainCount > 1) {
+            foreach ($mains as $el) {
+                $ev[] = DomHelper::evidence($el);
+            }
         }
         foreach ($onclick as $el) {
             $ev[] = DomHelper::evidence($el);
         }
 
         $warnings = [];
-        if ($mains === 0) {
+        if ($mainCount === 0) {
             $warnings[] = 'no hay elemento main';
+        } elseif ($mainCount > 1) {
+            $warnings[] = $mainCount . ' elementos main sin el atributo hidden (la norma HTML admite uno; si los demás'
+                . ' se ocultan con CSS, compruébalo a mano)';
         }
         if ($onclick) {
             $warnings[] = count($onclick) . ' elemento(s) no interactivos con onclick';
@@ -83,6 +103,6 @@ class C11Semantics extends BaseCheck
         if ($warnings) {
             return $this->result(self::WARN, $valor, $umbral, $ev, ucfirst(implode('; ', $warnings)) . '.');
         }
-        return $this->result(self::OK, $valor, $umbral, [], 'Sin errores detectables automáticamente: main presente, roles válidos y sin onclick en elementos no interactivos.');
+        return $this->result(self::OK, $valor, $umbral, [], 'Sin errores detectables automáticamente: un único main, roles válidos y sin onclick en elementos no interactivos.');
     }
 }
