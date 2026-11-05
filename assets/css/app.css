@@ -180,6 +180,7 @@ a { color: var(--primary); }
 .group-count { color: var(--muted); font-weight: 400; }
 
 .findings { margin: 0; padding: 0; list-style: none; }
+.pending-list { margin: 0 0 1rem; padding-left: 1.25rem; color: var(--muted); }
 .finding { margin-bottom: 0.5rem; border: 1px solid var(--border); border-radius: var(--radius); }
 .finding > summary {
   display: flex;

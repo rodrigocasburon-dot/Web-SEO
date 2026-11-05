@@ -21,6 +21,11 @@ $i18n = [
     'severidades' => $lang['severidades'],
     'niveles' => $lang['niveles'],
     'nota_incompleta' => $lang['nota_incompleta'],
+    // Comprobaciones que llegan después, desde PageSpeed Insights
+    'psi_checks' => [
+        'C08' => $lang['checks']['C08']['nombre'],
+        'C14' => $lang['checks']['C14']['nombre'],
+    ],
 ];
 $asset = function (string $path): string {
     $file = __DIR__ . '/' . $path;

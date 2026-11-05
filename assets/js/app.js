@@ -1,5 +1,9 @@
 /* Analizador web — lógica de la pantalla. Sin librerías.
- * Todo dato procedente del servidor o de la web analizada se inserta con textContent, nunca con innerHTML. */
+ * Todo dato procedente del servidor o de la web analizada se inserta con textContent, nunca con innerHTML.
+ *
+ * Flujo: api/analyze.php y api/psi.php se piden en paralelo. Se pinta el análisis en cuanto llega,
+ * con puntuación provisional; cuando llega PageSpeed (C08, C14) se recalcula la puntuación en el
+ * servidor (api/score.php, misma fórmula) y se actualizan puntuaciones y hallazgos sin mover el foco. */
 (function () {
   'use strict';
 
@@ -14,8 +18,10 @@
   var results = document.getElementById('results');
 
   var REQUEST_TIMEOUT_MS = 60000;
+  var PSI_TIMEOUT_MS = 100000;
   var SEVERITY_ORDER = { CRITICO: 0, ALTO: 1, MEDIO: 2, BAJO: 3 };
   var LEVEL_ORDER = { ALTO: 0, MEDIO: 1, BAJO: 2 };
+  var PSI_IDS = Object.keys(i18n.psi_checks || {});
   // Errores que se deben a la URL escrita: se señalan en el propio campo
   var FIELD_ERRORS = ['INVALID_URL', 'SCHEME_NOT_ALLOWED', 'CREDENTIALS_IN_URL', 'PORT_NOT_ALLOWED', 'INVALID_HOST', 'PRIVATE_ADDRESS'];
   var ERROR_HINTS = {
@@ -29,6 +35,9 @@
     RATE_LIMITED: '',
     INTERNAL_ERROR: 'Se ha producido un error en el analizador. Si se repite, avisa al equipo responsable.'
   };
+
+  // Análisis en curso (uno solo: uno nuevo cancela el anterior)
+  var current = null;
 
   // ---------- Utilidades DOM ----------
 
@@ -78,11 +87,15 @@
 
   // ---------- Estados de la pantalla ----------
 
+  function setStatus(text, loading) {
+    statusEl.classList.toggle('is-loading', !!loading);
+    statusEl.textContent = text || '';
+  }
+
   function setLoading(on) {
     button.disabled = on;
     results.setAttribute('aria-busy', on ? 'true' : 'false');
-    statusEl.classList.toggle('is-loading', on);
-    statusEl.textContent = on ? 'Analizando la página… puede tardar unos segundos.' : '';
+    setStatus(on ? 'Analizando la página… puede tardar unos segundos.' : '', on);
   }
 
   function clearErrors() {
@@ -118,7 +131,27 @@
     showError(message, ERROR_HINTS[code] || '');
   }
 
-  // ---------- Envío ----------
+  // ---------- Peticiones ----------
+
+  /** POST JSON con tiempo máximo. Resuelve con {status, data}; rechaza con AbortError o error de red/JSON. */
+  function postJson(url, body, controller, timeoutMs) {
+    var timer = setTimeout(function () { controller.abort(); }, timeoutMs);
+    return fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+      credentials: 'same-origin'
+    }).then(function (res) {
+      return res.json().then(function (data) {
+        return { status: res.status, data: data };
+      }, function () {
+        throw new Error('Respuesta no válida del servidor (HTTP ' + res.status + ').');
+      });
+    }).finally(function () {
+      clearTimeout(timer);
+    });
+  }
 
   form.addEventListener('submit', function (ev) {
     ev.preventDefault();
@@ -132,32 +165,55 @@
   });
 
   function analyze(url, noindexIntentional) {
+    if (current) current.cancel();
     results.hidden = true;
     results.textContent = '';
     setLoading(true);
 
-    var controller = new AbortController();
-    var timer = setTimeout(function () { controller.abort(); }, REQUEST_TIMEOUT_MS);
+    var run = {
+      analyzeCtrl: new AbortController(),
+      psiCtrl: new AbortController(),
+      data: null,          // respuesta de analyze.php
+      psi: null,           // respuesta de psi.php (ok: true)
+      psiFailure: null,    // mensaje si psi.php no se pudo usar
+      psiDone: false,
+      view: null,          // nodos que se actualizan al llegar PageSpeed
+      cancel: function () { run.analyzeCtrl.abort(); run.psiCtrl.abort(); }
+    };
+    current = run;
 
-    fetch('api/analyze.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify({ url: url, noindex_intentional: noindexIntentional }),
-      signal: controller.signal,
-      credentials: 'same-origin'
-    }).then(function (res) {
-      return res.json().catch(function () {
-        throw new Error('Respuesta no válida del servidor (HTTP ' + res.status + ').');
-      });
-    }).then(function (data) {
+    // PageSpeed en paralelo
+    postJson('api/psi.php', { url: url }, run.psiCtrl, PSI_TIMEOUT_MS).then(function (r) {
+      if (r.data && r.data.ok) run.psi = r.data;
+      else run.psiFailure = (r.data && r.data.error && r.data.error.message) || 'Error al consultar PageSpeed Insights.';
+    }, function (e) {
+      run.psiFailure = e && e.name === 'AbortError'
+        ? 'PageSpeed Insights no respondió a tiempo.'
+        : 'No se ha podido contactar con el servidor del analizador para consultar PageSpeed Insights.';
+    }).then(function () {
+      if (run !== current) return;
+      run.psiDone = true;
+      if (run.data) finishPsi(run);
+    });
+
+    postJson('api/analyze.php', { url: url, noindex_intentional: noindexIntentional }, run.analyzeCtrl, REQUEST_TIMEOUT_MS).then(function (r) {
+      if (run !== current) return;
       setLoading(false);
-      if (!data || !data.ok) {
-        handleApiError(data && data.error);
+      if (!r.data || !r.data.ok) {
+        run.psiCtrl.abort();
+        current = null;
+        handleApiError(r.data && r.data.error);
         return;
       }
-      renderResults(data);
-    }).catch(function (e) {
+      run.data = r.data;
+      renderResults(run);
+      if (run.psiDone) finishPsi(run);
+      else setStatus('Análisis del HTML completado. Consultando PageSpeed Insights (contraste y Core Web Vitals)… puede tardar hasta un minuto.', true);
+    }, function (e) {
+      if (run !== current) return;
       setLoading(false);
+      run.psiCtrl.abort();
+      current = null;
       if (e && e.name === 'AbortError') {
         showError('El análisis ha tardado demasiado y se ha cancelado.', ERROR_HINTS.TIMEOUT);
       } else if (e && /Respuesta no válida/.test(e.message)) {
@@ -165,18 +221,59 @@
       } else {
         showError('No se ha podido contactar con el servidor del analizador.', 'Comprueba tu conexión e inténtalo de nuevo.');
       }
-    }).finally(function () {
-      clearTimeout(timer);
     });
+  }
+
+  /** Incorpora C08 y C14 y recalcula la puntuación en el servidor. */
+  function finishPsi(run) {
+    if (!run.psi) {
+      refreshWithoutPsi(run);
+      setStatus('Análisis completado. ' + run.psiFailure + ' La puntuación no incluye contraste ni Core Web Vitals.', false);
+      current = null;
+      return;
+    }
+    var merged = run.data.checks.filter(function (c) { return PSI_IDS.indexOf(c.id) === -1; }).concat(run.psi.checks);
+    var payload = merged.map(function (c) {
+      return { id: c.id, estado: c.estado, ocurrencias: c.ocurrencias || 0, aplica: c.aplica !== false };
+    });
+    postJson('api/score.php', { checks: payload }, new AbortController(), REQUEST_TIMEOUT_MS).then(function (r) {
+      if (run !== current) return;
+      if (!r.data || !r.data.ok) throw new Error('score');
+      run.data.checks = merged;
+      run.data.puntuacion = r.data.puntuacion;
+      run.psiMerged = true;
+      updatePsiInfo(run);
+      updateScores(run);
+      updateFindings(run);
+      setStatus(run.psi.psi && run.psi.psi.ok
+        ? 'Análisis completado. Puntuación actualizada con los datos de PageSpeed Insights.'
+        : 'Análisis completado. PageSpeed Insights no devolvió datos: contraste y Core Web Vitals figuran como «Sin datos».', false);
+      current = null;
+    }).catch(function () {
+      if (run !== current) return;
+      run.psiFailure = 'No se pudo recalcular la puntuación con los datos de PageSpeed Insights.';
+      run.psi = null;
+      refreshWithoutPsi(run);
+      setStatus('Análisis completado. ' + run.psiFailure + ' Se mantiene la puntuación sin contraste ni Core Web Vitals.', false);
+      current = null;
+    });
+  }
+
+  /** PageSpeed no disponible: se quita la lista de pendientes y se explica que la nota no los incluye. */
+  function refreshWithoutPsi(run) {
+    updatePsiInfo(run);
+    updateScores(run);
+    updateFindings(run);
   }
 
   // ---------- Resultados ----------
 
-  function renderResults(data) {
-    var p = data.puntuacion;
+  function renderResults(run) {
+    var data = run.data;
     var title = el('h2', { id: 'results-title', tabindex: '-1', text: 'Resultados' });
     results.appendChild(title);
 
+    var psiInfo = el('li', { text: 'PageSpeed Insights: consultando…' });
     var meta = el('ul', { class: 'meta-list' }, [
       el('li', {}, ['URL analizada: ', el('strong', { text: data.url })])
     ]);
@@ -186,6 +283,7 @@
     if (data.fetch && data.fetch.timings) {
       meta.appendChild(el('li', { text: 'Tiempo de descarga: ' + fmtNumber(data.fetch.timings.total_ms / 1000, 1) + ' s.' }));
     }
+    meta.appendChild(psiInfo);
     results.appendChild(meta);
 
     if (data.blocked) {
@@ -194,19 +292,62 @@
         el('p', { text: 'Las comprobaciones que dependen del contenido de la página aparecen como «Sin datos».' })
       ]));
     }
+
+    run.view = { psiInfo: psiInfo, scores: el('div'), findings: el('div') };
+    results.appendChild(run.view.scores);
+    results.appendChild(run.view.findings);
+    updateScores(run);
+    updateFindings(run);
+
+    results.hidden = false;
+    results.setAttribute('aria-busy', 'false');
+    title.focus();
+  }
+
+  function psiPending(run) {
+    return !run.psiMerged && !run.psiFailure;
+  }
+
+  /** Nota bajo las puntuaciones cuando no incluyen C08 y C14. */
+  function psiScoreNote(run) {
+    if (run.psiMerged) return null;
+    return psiPending(run)
+      ? 'Puntuación provisional: falta incorporar contraste (C08) y Core Web Vitals (C14), que se están consultando a PageSpeed Insights.'
+      : 'La puntuación no incluye contraste (C08) ni Core Web Vitals (C14) porque PageSpeed Insights no estaba disponible.';
+  }
+
+  function updatePsiInfo(run) {
+    var li = run.view.psiInfo;
+    if (run.psiMerged) {
+      var p = run.psi.psi || {};
+      if (!p.ok) {
+        li.textContent = 'PageSpeed Insights: sin datos. ' + ((p.error && p.error.message) || '');
+        return;
+      }
+      var parts = ['PageSpeed Insights: estrategia móvil'];
+      if (p.lighthouse) parts.push('Lighthouse ' + p.lighthouse);
+      if (p.fecha) {
+        var d = new Date(p.fecha);
+        if (!isNaN(d.getTime())) parts.push('consultado el ' + d.toLocaleString('es-ES'));
+      }
+      li.textContent = parts.join(', ') + '.';
+    } else if (run.psiFailure) {
+      li.textContent = 'PageSpeed Insights: no disponible. ' + run.psiFailure + ' Contraste (C08) y Core Web Vitals (C14) no están incluidos.';
+    }
+  }
+
+  function updateScores(run) {
+    var p = run.data.puntuacion;
+    var blocked = !!run.data.blocked;
+    var host = run.view.scores;
+    host.textContent = '';
     if (p.riesgo_alto) {
-      results.appendChild(el('div', { class: 'notice notice--risk' }, [
+      host.appendChild(el('div', { class: 'notice notice--risk' }, [
         el('p', { text: p.riesgo_mensaje }),
         el('ul', {}, p.riesgo_motivos.map(function (m) { return el('li', { text: m }); }))
       ]));
     }
-
-    results.appendChild(renderScores(p, !!data.blocked));
-    results.appendChild(renderFindings(data.checks));
-
-    results.hidden = false;
-    statusEl.textContent = 'Análisis completado.';
-    title.focus();
+    host.appendChild(renderScores(p, blocked, psiScoreNote(run)));
   }
 
   function scoreCard(label, score, isGlobal, blocked) {
@@ -230,7 +371,7 @@
     ]);
   }
 
-  function renderScores(p, blocked) {
+  function renderScores(p, blocked, psiNote) {
     var list = el('ul', { class: 'scores' }, [
       scoreCard(i18n.areas.seo, p.areas.seo, false, blocked),
       scoreCard(i18n.areas.ia, p.areas.ia, false, blocked),
@@ -240,9 +381,30 @@
     var incomplete = !blocked && ['seo', 'ia', 'accesibilidad'].some(function (a) { return p.areas[a].incompleta; });
     return el('section', { 'aria-labelledby': 'scores-title' }, [
       el('h3', { id: 'scores-title', text: 'Puntuaciones' }),
+      psiNote && !blocked ? el('p', { class: 'help', text: psiNote }) : null,
       list,
       incomplete ? el('p', { class: 'help', text: i18n.nota_incompleta }) : null
     ]);
+  }
+
+  /** Repinta los hallazgos conservando qué desplegables estaban abiertos y el foco. */
+  function updateFindings(run) {
+    var host = run.view.findings;
+    var open = {};
+    Array.prototype.forEach.call(host.querySelectorAll('details[open]'), function (d) { open[d.getAttribute('data-check')] = true; });
+    var active = document.activeElement;
+    var focusedCheck = active && host.contains(active) && active.closest('details') ? active.closest('details').getAttribute('data-check') : null;
+
+    host.textContent = '';
+    host.appendChild(renderFindings(run.data.checks, psiPending(run)));
+
+    Array.prototype.forEach.call(host.querySelectorAll('details'), function (d) {
+      if (open[d.getAttribute('data-check')]) d.open = true;
+    });
+    if (focusedCheck) {
+      var target = host.querySelector('details[data-check="' + focusedCheck + '"] > summary');
+      if (target) target.focus();
+    }
   }
 
   function bySeverity(a, b) {
@@ -251,7 +413,7 @@
       || String(a.id).localeCompare(String(b.id));
   }
 
-  function renderFindings(checks) {
+  function renderFindings(checks, pending) {
     var groups = [
       { id: 'g-fail', title: 'Problemas', items: [] },
       { id: 'g-warn', title: 'Avisos', items: [] },
@@ -270,6 +432,12 @@
     groups[1].items.sort(bySeverity);
 
     var section = el('section', { 'aria-labelledby': 'findings-title' }, [el('h3', { id: 'findings-title', text: 'Hallazgos' })]);
+    if (pending) {
+      section.appendChild(el('h4', { id: 'g-pending' }, ['Pendientes de PageSpeed Insights ', el('span', { class: 'group-count', text: '(' + PSI_IDS.length + ')' })]));
+      section.appendChild(el('ul', { class: 'pending-list', 'aria-labelledby': 'g-pending' }, PSI_IDS.map(function (id) {
+        return el('li', { text: i18n.psi_checks[id] + ' (' + id + ')' });
+      })));
+    }
     groups.forEach(function (g) {
       if (!g.items.length) return;
       section.appendChild(el('h4', { id: g.id }, [g.title + ' ', el('span', { class: 'group-count', text: '(' + g.items.length + ')' })]));
@@ -320,6 +488,6 @@
       row('Revisión manual', el('span', { class: 'manual', text: 'Esta comprobación requiere además revisión manual.' }));
     }
 
-    return el('details', { class: 'finding' }, [summary, el('div', { class: 'finding__body' }, [dl])]);
+    return el('details', { class: 'finding', 'data-check': c.id }, [summary, el('div', { class: 'finding__body' }, [dl])]);
   }
 })();

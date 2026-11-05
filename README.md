@@ -4,7 +4,28 @@ Herramienta web interna en PHP (sin framework ni Composer) que analiza una URL y
 informe de SEO, preparación para IA y accesibilidad. La evaluación es automática y parcial:
 no sustituye una auditoría manual ni certifica el cumplimiento de WCAG ni de ninguna ley.
 
-Estado: **fase 5** (pantalla y endpoint de análisis). Las fases están descritas en `CLAUDE.md`.
+Estado: **fase 6** (PageSpeed Insights: C08 y C14). Las fases están descritas en `CLAUDE.md`.
+
+## PageSpeed Insights (fase 6)
+
+- `C08 Contraste de color`: auditoría `color-contrast` de Lighthouse. Fallo con k = nº de elementos; la
+  evidencia muestra selector, extracto y relación de contraste. No evalúa texto sobre imágenes ni degradados
+  (revisión manual). Auditoría «no aplicable» → no aplica; error o ausencia → «Sin datos».
+- `C14 Core Web Vitals`: datos de campo (CrUX, p75) **de la propia URL** en estrategia móvil. Si solo hay
+  datos del dominio (`origin_fallback`) o ninguno → «Sin datos» (no se usan datos de laboratorio).
+  Bueno → sin errores; mejorable → aviso; deficiente → fallo. Umbrales de Google: LCP 2,5 s / 4 s,
+  INP 200 ms / 500 ms, CLS 0,1 / 0,25 (bueno ≤, deficiente >). Si falta una métrica se evalúa con las demás.
+- `POST api/psi.php` (`{"url": "..."}`): consulta PageSpeed y devuelve los registros de C08 y C14; si PageSpeed
+  falla responde 200 con ambos en «Sin datos» y el motivo. Tiene su propio contador de límite de uso.
+- `POST api/score.php` (`{"checks": [{"id","estado","ocurrencias","aplica"}]}`): recalcula la puntuación con el
+  mismo `Scorer`; la gravedad y el reparto se toman del servidor, no de la petición.
+- La pantalla pide `analyze.php` y `psi.php` en paralelo, muestra primero la puntuación provisional y la
+  actualiza al llegar PageSpeed sin mover el foco.
+- **Clave obligatoria**: sin `psi_api_key` en `config/config.php` la API responde 429 (cuota 0) y C08 y C14
+  quedan siempre en «Sin datos». La clave se crea en Google Cloud (API «PageSpeed Insights API»).
+- **Tiempo de espera**: Lighthouse tarda entre 15 y 60 s. `psi_timeout` (75 s) debe caber en los límites del
+  servidor: con PHP-FPM detrás de Apache/Nginx, `ProxyTimeout`/`fastcgi_read_timeout` (60 s por defecto)
+  cortaría la petición antes.
 
 ## Pantalla y API (fase 5)
 
@@ -30,10 +51,10 @@ Supuesto: la nota global se marca incompleta si lo está alguna de sus áreas.
 
 ```
 index.php            Pantalla (fase 5)
-api/                 analyze.php y psi.php (fases 5-6)
+api/                 analyze.php, psi.php y score.php (fases 5-6)
 src/                 UrlGuard, Fetcher, CurlTransport, Analyzer, CheckContext, CheckRunner, BaseCheck,
-                     DomHelper, RobotsTxt, Config, Lang (pendientes: RateLimiter, Scorer, Report)
-src/Checks/          Una clase por comprobación (C01HttpsStatus … C15MetaDescription)
+                     DomHelper, RobotsTxt, Config, Lang, RateLimiter, Scorer, PsiClient, Api (pendiente: Report)
+src/Checks/          Una clase por comprobación (C01HttpsStatus … C15MetaDescription, C08 y C14 vía PageSpeed)
 config/              config.example.php (plantilla), config.php (local, fuera de git), weights.php
 lang/es.php          Nombres y recomendaciones de las comprobaciones (borrador para revisar)
 assets/              CSS y JS propios

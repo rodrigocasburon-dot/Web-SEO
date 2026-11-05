@@ -22,11 +22,29 @@ class CheckRunner
         ];
     }
 
+    /** Comprobaciones que dependen de PageSpeed Insights (se ejecutan en api/psi.php). */
+    public static function psiChecks(): array
+    {
+        return [new C08Contrast(), new C14CoreWebVitals()];
+    }
+
     /** @return array[] registros de las comprobaciones, en orden */
     public function run(CheckContext $ctx): array
     {
+        return $this->runAll(self::checks(), $ctx);
+    }
+
+    /** @return array[] registros de C08 y C14 */
+    public function runPsi(CheckContext $ctx): array
+    {
+        return $this->runAll(self::psiChecks(), $ctx);
+    }
+
+    /** @param BaseCheck[] $checks */
+    private function runAll(array $checks, CheckContext $ctx): array
+    {
         $out = [];
-        foreach (self::checks() as $check) {
+        foreach ($checks as $check) {
             try {
                 $out[] = $check->run($ctx);
             } catch (Throwable $e) {

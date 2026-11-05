@@ -30,6 +30,11 @@ abstract class BaseCheck
         return $this->id;
     }
 
+    public function severity(): string
+    {
+        return $this->severity;
+    }
+
     final public function run(CheckContext $ctx): array
     {
         if ($this->needsHtml) {

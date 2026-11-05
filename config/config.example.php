@@ -2,7 +2,10 @@
 // Copiar a config/config.php y rellenar. config.php NO se sube a git.
 return [
     // Clave de la API de PageSpeed Insights (pendiente de obtener)
+    // Sin clave la API responde 429 (cuota 0) y C08 y C14 quedan «Sin datos».
     'psi_api_key' => '',
+    // Espera máxima a PageSpeed Insights (s); Lighthouse suele tardar entre 15 y 60 s
+    'psi_timeout' => 75,
 
     // C03: nº mínimo de palabras en el HTML inicial antes de avisar de posible dependencia de JavaScript
     'min_words_raw_html' => 50,

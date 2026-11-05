@@ -18,6 +18,10 @@ class CheckContext
     public ?array $robots;
     public array $config;
     public array $options;
+    /** Respuesta de PageSpeed Insights (C08, C14); null si no se obtuvo */
+    public ?array $psi = null;
+    /** Motivo por el que no hay datos de PageSpeed: ['code' => ..., 'message' => ...] */
+    public ?array $psiError = null;
 
     private ?DOMDocument $doc = null;
     private ?DOMXPath $xpath = null;
@@ -42,6 +46,15 @@ class CheckContext
         $c->robots = $robots;
         $c->config = $config;
         $c->options = $options;
+        return $c;
+    }
+
+    /** Contexto para las comprobaciones que solo usan PageSpeed Insights. */
+    public static function forPsi(string $url, ?array $psi, ?array $psiError, array $config = []): self
+    {
+        $c = self::fromFetch(['final_url' => $url, 'requested_url' => $url, 'status' => 0], $config);
+        $c->psi = $psi;
+        $c->psiError = $psiError;
         return $c;
     }
 

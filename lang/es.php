@@ -68,6 +68,17 @@ return [
             'descripcion' => 'Comprueba que el elemento html declara el idioma con un código válido.',
             'recomendacion' => 'Declara el idioma principal en la etiqueta html con un código válido, por ejemplo <html lang="es"> o <html lang="es-ES">.',
         ],
+        'C08' => [
+            'nombre' => 'Contraste de color',
+            'descripcion' => 'Comprueba con Lighthouse (PageSpeed Insights) que el texto tiene contraste suficiente con su fondo. No evalúa el texto sobre imágenes ni degradados.',
+            'recomendacion' => 'Aumenta el contraste entre el texto y su fondo hasta al menos 4,5:1 (3:1 en texto grande) y revisa manualmente el texto situado sobre imágenes o degradados, que la herramienta no puede medir.',
+        ],
+        'C14' => [
+            'nombre' => 'Core Web Vitals (usuarios reales)',
+            'descripcion' => 'Evalúa LCP, INP y CLS de usuarios reales de Chrome (percentil 75) para esta URL, según PageSpeed Insights.',
+            'recomendacion' => 'Mejora la métrica deficiente: para LCP, optimiza el elemento principal (imagen o texto) y el tiempo de respuesta del servidor; para INP, reduce el JavaScript que bloquea la interacción; para CLS, reserva espacio a imágenes, anuncios e incrustaciones.',
+            'recomendacion_aviso' => 'Revisa las métricas mejorables con el informe de PageSpeed Insights y prioriza la que más se aleje del umbral «bueno».',
+        ],
         'C09' => [
             'nombre' => 'Zoom y adaptación a móvil',
             'descripcion' => 'Comprueba que existe la meta viewport y que no impide ampliar la página.',
