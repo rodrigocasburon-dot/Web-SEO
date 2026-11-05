@@ -34,13 +34,15 @@ class Analyzer
         }
         $robots = $this->fetchRobots((string) $page['final_url']);
         $ctx = CheckContext::fromFetch($page, $this->config, $robots, $options);
+        $checks = (new CheckRunner())->run($ctx);
         return [
             'ok' => true,
             'url' => $page['final_url'],
             'blocked' => $page['blocked'],
             'fetch' => $summary,
             'robots' => ['status' => $robots['status'], 'error' => $robots['error']],
-            'checks' => (new CheckRunner())->run($ctx),
+            'checks' => $checks,
+            'puntuacion' => (new Scorer())->score($checks),
         ];
     }
 

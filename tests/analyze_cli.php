@@ -31,4 +31,12 @@ if ($result['blocked']) {
 foreach ($result['checks'] as $c) {
     printf("%-4s %-10s %-32s %s\n", $c['id'], $c['estado'] . (($c['aplica'] ?? true) ? '' : '*'), mb_strimwidth($c['nombre'], 0, 32), $c['detalle']);
 }
-echo "\n* no aplica\n";
+echo "\n* no aplica\n\n";
+$p = $result['puntuacion'];
+foreach (Scorer::AREAS as $a) {
+    printf("%-22s %5.1f%s\n", Lang::all()['areas'][$a], $p['areas'][$a]['redondeada'], $p['areas'][$a]['incompleta'] ? '  (incompleta)' : '');
+}
+printf("%-22s %5.1f%s\n", 'Nota global', $p['global']['redondeada'], $p['global']['incompleta'] ? '  (incompleta)' : '');
+if ($p['riesgo_alto']) {
+    echo "\n", $p['riesgo_mensaje'], ' — ', implode('; ', $p['riesgo_motivos']), "\n";
+}

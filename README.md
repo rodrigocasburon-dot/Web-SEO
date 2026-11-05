@@ -4,7 +4,15 @@ Herramienta web interna en PHP (sin framework ni Composer) que analiza una URL y
 informe de SEO, preparación para IA y accesibilidad. La evaluación es automática y parcial:
 no sustituye una auditoría manual ni certifica el cumplimiento de WCAG ni de ninguna ley.
 
-Estado: **fase 3** (comprobaciones C01-C07, C09-C13 y C15). Las fases están descritas en `CLAUDE.md`.
+Estado: **fase 4** (comprobaciones y puntuación). Las fases están descritas en `CLAUDE.md`.
+
+## Puntuación (fase 4)
+
+`Scorer` aplica la fórmula de `CLAUDE.md`: cada fallo (`NO_CUMPLE`) resta `w × P` una sola vez,
+repartido entre áreas según `config/weights.php`, con `w = 1 + ln(k)`. Devuelve por área la nota, el
+desglose de descuentos y si está incompleta; la nota global; la bandera «Riesgo alto: revisar de
+inmediato» con sus motivos; y las listas de comprobaciones sin datos y que no aplican.
+Supuesto: la nota global se marca incompleta si lo está alguna de sus áreas.
 
 ## Estructura
 

@@ -13,6 +13,8 @@ return [
         'AVISO' => 'Aviso',
         'SIN_DATOS' => 'Sin datos',
     ],
+    'riesgo_alto' => 'Riesgo alto: revisar de inmediato',
+    'nota_incompleta' => 'Nota incompleta: más de la mitad de las comprobaciones de esta área no tienen datos.',
     'severidades' => [
         'CRITICO' => 'Crítico',
         'ALTO' => 'Alto',
