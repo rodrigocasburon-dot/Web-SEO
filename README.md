@@ -4,26 +4,40 @@ Herramienta web interna en PHP (sin framework ni Composer) que analiza una URL y
 informe de SEO, preparación para IA y accesibilidad. La evaluación es automática y parcial:
 no sustituye una auditoría manual ni certifica el cumplimiento de WCAG ni de ninguna ley.
 
-Estado: **fase 1** (estructura y entorno). Las demás fases están descritas en `CLAUDE.md` y en el plan del proyecto.
+Estado: **fase 3** (comprobaciones C01-C07, C09-C13 y C15). Las fases están descritas en `CLAUDE.md`.
 
 ## Estructura
 
 ```
 index.php            Pantalla (fase 5)
-api/                 analyze.php y psi.php (fases 3-6)
-src/                 UrlGuard, Fetcher, RateLimiter, Scorer, Report; src/Checks/ (una clase por comprobación)
+api/                 analyze.php y psi.php (fases 5-6)
+src/                 UrlGuard, Fetcher, CurlTransport, Analyzer, CheckContext, CheckRunner, BaseCheck,
+                     DomHelper, RobotsTxt, Config, Lang (pendientes: RateLimiter, Scorer, Report)
+src/Checks/          Una clase por comprobación (C01HttpsStatus … C15MetaDescription)
 config/              config.example.php (plantilla), config.php (local, fuera de git), weights.php
-lang/es.php          Textos de recomendación
+lang/es.php          Nombres y recomendaciones de las comprobaciones (borrador para revisar)
 assets/              CSS y JS propios
 storage/             Datos de ejecución (límite de uso); .htaccess deniega el acceso web
-tests/               check_env.php, run.php (fase 3), fixtures/
+tests/               run.php y *_test.php, fixtures/ (HTML y JSON de ejemplo), server/, utilidades manuales
 ```
 
 ## Pruebas
 
 - `php tests/run.php`: todas las pruebas, sin internet (incluye un servidor local de PHP en 127.0.0.1 para probar cURL).
+- `php tests/analyze_cli.php <url> [--json] [--noindex-intencionado]`: análisis completo de una URL real (requiere internet).
 - `php tests/live_fetch.php [url ...]`: prueba manual del Fetcher contra sitios reales (requiere internet).
 - `php tests/check_env.php`: diagnóstico del entorno.
+
+## Comprobaciones (fase 3)
+
+Cada clase de `src/Checks/` devuelve un registro con `id`, `pilares`, `estado`, `severidad`, `valor_medido`,
+`umbral`, `criterio`, `evidencia` (selector CSS, extracto HTML y línea), `recomendacion`, `impacto`,
+`esfuerzo` y `requiere_revision_manual`, más `ocurrencias` (k para la puntuación), `aplica` y `detalle`.
+Los extractos se guardan sin escapar: **hay que escaparlos con `htmlspecialchars` al imprimirlos**.
+
+Limitaciones conocidas: el HTML se analiza con el parser HTML de libxml (no es HTML5 estricto); no se
+evalúa CSS externo (un elemento oculto por clase cuenta como visible); el nombre accesible es una
+aproximación del algoritmo AccName; los valores de impacto y esfuerzo son un borrador.
 
 ## Seguridad de la descarga (fase 2)
 
