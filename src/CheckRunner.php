@@ -28,6 +28,16 @@ class CheckRunner
         return [new C08Contrast(), new C14CoreWebVitals()];
     }
 
+    /** @return array<string, BaseCheck> todas las comprobaciones (HTML y PageSpeed) indexadas por id */
+    public static function catalog(): array
+    {
+        $out = [];
+        foreach (array_merge(self::checks(), self::psiChecks()) as $check) {
+            $out[$check->id()] = $check;
+        }
+        return $out;
+    }
+
     /** @return array[] registros de las comprobaciones, en orden */
     public function run(CheckContext $ctx): array
     {

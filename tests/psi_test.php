@@ -232,6 +232,14 @@ test('PsiClient: errores clasificados y sin la clave en los mensajes', function 
         assertTrue(abs($p['areas']['accesibilidad']['puntuacion'] - (100 - 8 * (1 + log(3)))) < 1e-6);
         assertTrue(abs($p['areas']['seo']['puntuacion'] - 100) < 1e-9);
         assertSame(['C14'], $p['sin_datos']);
+        // Informe reconstruido con los textos del servidor
+        $inf = json_decode($r['body'], true)['informe'];
+        assertSame(['C08'], array_column($inf['prioridades'], 'id'));
+        assertSame(Lang::check('C08', 'recomendacion'), $inf['prioridades'][0]['recomendacion']);
+        assertSame('planificar', $inf['prioridades'][0]['cuadrante']);
+        assertTrue(strpos($inf['resumen'][0], 'Nota global') === 0);
+        $blocked = json_decode($post('score.php', ['checks' => [['id' => 'C10', 'estado' => 'SIN_DATOS']], 'bloqueado' => true])['body'], true);
+        assertTrue(strpos($blocked['informe']['resumen'][0], 'bloqueado el acceso') !== false);
     });
 
     test('API score: id desconocido, estado no válido, duplicado o JSON roto → 400', function () use ($skip, $post) {

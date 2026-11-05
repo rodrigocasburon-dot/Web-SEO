@@ -21,6 +21,7 @@ $i18n = [
     'severidades' => $lang['severidades'],
     'niveles' => $lang['niveles'],
     'nota_incompleta' => $lang['nota_incompleta'],
+    'glosario' => $lang['glosario'],
     // Comprobaciones que llegan después, desde PageSpeed Insights
     'psi_checks' => [
         'C08' => $lang['checks']['C08']['nombre'],
@@ -77,11 +78,15 @@ $e = fn(string $s): string => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
 
   <section id="results" class="results" aria-labelledby="results-title" hidden></section>
 
-  <section class="limitations" aria-labelledby="limitations-title">
+  <!-- Texto fijo y siempre visible; con un informe en pantalla es su apartado 8 -->
+  <section id="limitaciones" class="limitations" aria-labelledby="limitations-title">
     <h2 id="limitations-title">Limitaciones</h2>
     <p><?= $e($lang['limitaciones']) ?></p>
     <p><?= $e($lang['revision_manual']) ?></p>
   </section>
+
+  <!-- Apartado 9 del informe: datos de la descarga y de las consultas -->
+  <section id="evidencias" class="report-evidence" aria-labelledby="evidence-title" hidden></section>
 </main>
 
 <footer class="site-footer">

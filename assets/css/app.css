@@ -240,15 +240,71 @@ a { color: var(--primary); }
 .limitations { margin-top: 2.5rem; padding: 1rem; background: var(--surface); border-radius: var(--radius); }
 .limitations h2 { margin-top: 0; }
 
+/* Informe */
+.button--secondary { color: var(--primary); background: var(--bg); margin-top: 0.75rem; }
+.button--secondary:hover { color: var(--on-primary); background: var(--primary); }
+
+.report-toc { margin: 1.25rem 0; padding: 0.75rem 1rem; border: 1px solid var(--border); border-radius: var(--radius); }
+.report-toc__title { margin: 0 0 0.25rem; font-size: 1rem; }
+.report-toc ol { margin: 0; padding-left: 1.5rem; }
+.report-toc li { margin: 0.2rem 0; }
+
+.report-section > h3 { padding-bottom: 0.25rem; border-bottom: 2px solid var(--surface); }
+
+.critical-list, .recs { margin: 0; padding-left: 1.5rem; }
+.critical-list > li, .recs > li { margin-bottom: 1rem; }
+.critical-list p, .recs p { margin: 0.2rem 0; }
+.critical__name, .rec__head { font-weight: 700; }
+.rec:focus { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+.plan { display: grid; grid-template-columns: 1fr; gap: 0.75rem; }
+.quadrant { padding: 0.75rem 1rem; border: 1px solid var(--border); border-radius: var(--radius); }
+.quadrant h4 { margin: 0; }
+.quadrant__desc, .quadrant__empty { margin: 0.25rem 0; color: var(--muted); font-size: 0.95rem; }
+.quadrant ul { margin: 0.5rem 0 0; padding-left: 1.25rem; }
+
+.glossary, .facts { margin: 0; }
+.glossary dt, .facts dt { margin-top: 0.75rem; font-weight: 700; }
+.glossary dd, .facts dd { margin: 0.2rem 0 0; overflow-wrap: anywhere; }
+.facts ol { margin: 0; padding-left: 1.25rem; }
+
+.report-evidence { margin-top: 2.5rem; }
+
 /* Tableta */
 @media (min-width: 40em) {
   h1 { font-size: 2rem; }
   .analyze-form { padding: 1.5rem; }
   .button { width: auto; }
   .scores { grid-template-columns: repeat(2, 1fr); }
+  .plan { grid-template-columns: repeat(2, 1fr); }
 }
 
 /* Escritorio */
 @media (min-width: 64em) {
   .scores { grid-template-columns: repeat(4, 1fr); }
+}
+
+/* Impresión: el informe completo, sin formulario ni controles; Guardar como PDF desde el navegador */
+@media print {
+  @page { margin: 15mm; }
+  html { font-size: 10pt; }
+  body { color: #000; background: #fff; }
+  .skip-link, .intro, .analyze-form, .status, #error, .no-print, .report-toc, noscript, .site-footer { display: none !important; }
+  .site-header { background: none; border-bottom: 1px solid #000; }
+  .container { max-width: none; padding: 0; }
+  h1 { font-size: 1.5rem; margin-top: 0.5rem; }
+  h2, h3, h4, .finding > summary, .rec__head, dt { break-after: avoid; page-break-after: avoid; }
+  .score, .quadrant, .evidence li, .critical-list > li, .recs > li, .glossary dd { break-inside: avoid; page-break-inside: avoid; }
+  a { color: #000; text-decoration: none; }
+  .scores { grid-template-columns: repeat(4, 1fr); }
+  .plan { grid-template-columns: repeat(2, 1fr); }
+  .finding > summary::before { content: none; }
+  .finding > summary, .finding__body { padding: 0.4rem 0.6rem; }
+  .finding > summary { border-bottom: 1px solid var(--border); }
+  .evidence pre { border: 1px solid var(--border); }
+  .badge, .notice, .meter, .meter > span, .tag, .score--global, .limitations, .evidence pre {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .limitations, .report-evidence { break-before: auto; margin-top: 1.5rem; }
 }

@@ -1,9 +1,9 @@
 <?php
 /**
- * POST api/score.php  (JSON: {"checks": [{"id", "estado", "ocurrencias", "aplica"}, ...]})
- * Recalcula la puntuación cuando llegan C08 y C14 desde api/psi.php, con el mismo Scorer del servidor
- * (una sola implementación de la fórmula). No descarga nada.
- * Gravedad y reparto entre áreas se toman siempre del servidor, no de la petición.
+ * POST api/score.php  (JSON: {"checks": [{"id", "estado", "ocurrencias", "aplica"}, ...], "bloqueado": false})
+ * Recalcula la puntuación y el informe cuando llegan C08 y C14 desde api/psi.php, con el mismo Scorer
+ * y el mismo Report del servidor (una sola implementación). No descarga nada.
+ * Gravedad, reparto entre áreas, recomendación, impacto y esfuerzo se toman siempre del servidor.
  */
 declare(strict_types=1);
 
@@ -19,10 +19,7 @@ try {
         Api::fail(400, 'INVALID_REQUEST', 'La petición no es válida.');
     }
 
-    $severities = [];
-    foreach (array_merge(CheckRunner::checks(), CheckRunner::psiChecks()) as $check) {
-        $severities[$check->id()] = $check->severity();
-    }
+    $catalog = CheckRunner::catalog();
     $states = [BaseCheck::OK, BaseCheck::FAIL, BaseCheck::WARN, BaseCheck::NO_DATA];
 
     $records = [];
@@ -30,20 +27,24 @@ try {
     foreach ($list as $c) {
         $id = is_array($c) && is_string($c['id'] ?? null) ? $c['id'] : '';
         $estado = is_array($c) && is_string($c['estado'] ?? null) ? $c['estado'] : '';
-        if (!isset($severities[$id]) || !in_array($estado, $states, true) || isset($seen[$id])) {
+        if (!isset($catalog[$id]) || !in_array($estado, $states, true) || isset($seen[$id])) {
             Api::fail(400, 'INVALID_REQUEST', 'La petición no es válida.');
         }
         $seen[$id] = true;   // cada comprobación se evalúa una sola vez
-        $records[] = [
-            'id' => $id,
-            'estado' => $estado,
-            'severidad' => $severities[$id],
-            'ocurrencias' => max(0, min(100000, (int) ($c['ocurrencias'] ?? 0))),
-            'aplica' => ($c['aplica'] ?? true) !== false,
-        ];
+        // Gravedad, reparto, recomendación, impacto y esfuerzo salen de la clase, no de la petición
+        $records[] = $catalog[$id]->describe(
+            $estado,
+            max(0, min(100000, (int) ($c['ocurrencias'] ?? 0))),
+            ($c['aplica'] ?? true) !== false
+        );
     }
 
-    Api::respond(200, ['ok' => true, 'puntuacion' => (new Scorer())->score($records)]);
+    $score = (new Scorer())->score($records);
+    Api::respond(200, [
+        'ok' => true,
+        'puntuacion' => $score,
+        'informe' => Report::build($records, $score, ($input['bloqueado'] ?? false) === true),
+    ]);
 } catch (Throwable $e) {
     error_log('[score] ' . $e->getMessage() . ' en ' . $e->getFile() . ':' . $e->getLine());
     Api::fail(500, 'INTERNAL_ERROR', 'Error interno del analizador.');

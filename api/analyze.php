@@ -42,11 +42,14 @@ try {
     Api::respond(200, [
         'ok' => true,
         'url' => $result['url'],
+        'fecha' => gmdate('c'),
+        'user_agent' => (string) ($config['user_agent'] ?? 'ProconsiAnalyzer/0.1'),
         'blocked' => $result['blocked'],
         'robots' => $result['robots'],
         'fetch' => $fetch,
         'checks' => $result['checks'],
         'puntuacion' => $result['puntuacion'],
+        'informe' => Report::build($result['checks'], $result['puntuacion'], !empty($result['blocked'])),
     ]);
 } catch (Throwable $e) {
     error_log('[analyze] ' . $e->getMessage() . ' en ' . $e->getFile() . ':' . $e->getLine());

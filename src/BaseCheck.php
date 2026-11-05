@@ -35,6 +35,16 @@ abstract class BaseCheck
         return $this->severity;
     }
 
+    /**
+     * Registro con los datos fijos de la comprobación (nombre, reparto, gravedad, recomendación según
+     * el estado, impacto, esfuerzo) y sin nada medido. Lo usa api/score.php para reconstruir puntuación
+     * e informe a partir de id, estado y ocurrencias sin fiarse del resto de lo que envía el cliente.
+     */
+    public function describe(string $estado, int $ocurrencias = 0, bool $aplica = true): array
+    {
+        return $this->result($estado, null, null, [], '', $ocurrencias, $aplica);
+    }
+
     final public function run(CheckContext $ctx): array
     {
         if ($this->needsHtml) {

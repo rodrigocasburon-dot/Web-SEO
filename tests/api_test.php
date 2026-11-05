@@ -75,6 +75,12 @@
         assertTrue(stripos($r['headers'], 'Content-Security-Policy') !== false);
         assertTrue(strpos($r['body'], '<label for="url">') !== false);
         assertTrue(strpos($r['body'], 'No sustituye una auditoría manual') !== false);
+        // Apartados 8 (limitaciones, siempre visible) y 9 (evidencias), y glosario para el apartado 7
+        assertTrue(strpos($r['body'], '<section id="limitaciones"') !== false);
+        assertTrue(strpos($r['body'], '<section id="evidencias"') !== false);
+        preg_match('#<script type="application/json" id="i18n">(.*?)</script>#s', $r['body'], $m);
+        $i18n = json_decode($m[1] ?? 'null', true);
+        assertSame(Lang::all()['glosario'], $i18n['glosario'] ?? null);
     });
 
     test('Pantalla: storage/ y config/ no se sirven por web (comprobado con .htaccess solo en Apache)', function () {

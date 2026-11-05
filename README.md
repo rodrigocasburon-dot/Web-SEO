@@ -4,7 +4,24 @@ Herramienta web interna en PHP (sin framework ni Composer) que analiza una URL y
 informe de SEO, preparación para IA y accesibilidad. La evaluación es automática y parcial:
 no sustituye una auditoría manual ni certifica el cumplimiento de WCAG ni de ninguna ley.
 
-Estado: **fase 6** (PageSpeed Insights: C08 y C14). Las fases están descritas en `CLAUDE.md`.
+Estado: **fase 7** (informe completo e imprimible). Las fases están descritas en `CLAUDE.md`.
+
+## Informe (fase 7)
+
+Nueve apartados, con índice enlazado: 1 resumen ejecutivo, 2 puntuaciones por área y global, 3 problemas
+críticos, 4 hallazgos detallados con evidencia (solo lo medido), 5 recomendaciones priorizadas, 6 plan de
+acción (matriz impacto × esfuerzo), 7 glosario, 8 limitaciones (texto fijo de `index.php`, siempre visible)
+y 9 evidencias del análisis (fecha, URL solicitada y final, redirecciones, respuesta, IP, tiempos,
+robots.txt, agente de usuario y datos de PageSpeed).
+
+- `src/Report.php` deriva resumen, críticos, prioridades y matriz de los registros y la puntuación. Lo
+  devuelven `api/analyze.php` y `api/score.php` (este lo reconstruye con `BaseCheck::describe()`: textos,
+  gravedad, impacto y esfuerzo salen siempre del servidor).
+- Supuestos: «problemas críticos» = fallos de gravedad crítica; prioridad = fallos por penalización
+  w × P (un fallo alto repetido puede adelantar a uno crítico) y después avisos por gravedad; en la matriz,
+  impacto alto = ALTO y esfuerzo bajo = BAJO (MEDIO cuenta como impacto bajo y esfuerzo alto).
+- Impresión: botón «Imprimir o guardar como PDF» y hoja `@media print` (oculta formulario e índice, abre
+  todos los desplegables antes de imprimir y los restaura después).
 
 ## PageSpeed Insights (fase 6)
 
@@ -53,10 +70,10 @@ Supuesto: la nota global se marca incompleta si lo está alguna de sus áreas.
 index.php            Pantalla (fase 5)
 api/                 analyze.php, psi.php y score.php (fases 5-6)
 src/                 UrlGuard, Fetcher, CurlTransport, Analyzer, CheckContext, CheckRunner, BaseCheck,
-                     DomHelper, RobotsTxt, Config, Lang, RateLimiter, Scorer, PsiClient, Api (pendiente: Report)
+                     DomHelper, RobotsTxt, Config, Lang, RateLimiter, Scorer, PsiClient, Api, Report
 src/Checks/          Una clase por comprobación (C01HttpsStatus … C15MetaDescription, C08 y C14 vía PageSpeed)
 config/              config.example.php (plantilla), config.php (local, fuera de git), weights.php
-lang/es.php          Nombres y recomendaciones de las comprobaciones (borrador para revisar)
+lang/es.php          Nombres, recomendaciones y glosario (borrador para revisar)
 assets/              CSS y JS propios
 storage/             Datos de ejecución (límite de uso); .htaccess deniega el acceso web
 tests/               run.php y *_test.php, fixtures/ (HTML y JSON de ejemplo), server/, utilidades manuales
