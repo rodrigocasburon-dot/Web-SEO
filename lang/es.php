@@ -13,6 +13,9 @@ return [
         'AVISO' => 'Aviso',
         'SIN_DATOS' => 'Sin datos',
     ],
+    // Texto fijo y siempre visible
+    'limitaciones' => 'La evaluación es automática y parcial. No sustituye una auditoría manual y no certifica el cumplimiento de WCAG ni de ninguna ley. Cuando no se detectan fallos, el resultado significa «sin errores detectables automáticamente».',
+    'revision_manual' => 'Requieren revisión manual, entre otros aspectos: la calidad de los textos alternativos, el orden real de navegación con teclado, el contraste del texto sobre imágenes y la calidad de los subtítulos.',
     'riesgo_alto' => 'Riesgo alto: revisar de inmediato',
     'nota_incompleta' => 'Nota incompleta: más de la mitad de las comprobaciones de esta área no tienen datos.',
     'severidades' => [

@@ -200,7 +200,7 @@ test('Ningún texto afirma cumplimiento de WCAG ni de la ley', function () {
     $all = json_encode([Lang::all(), (new CheckRunner())->run(fx('full_ok', 'full_ok')), (new CheckRunner())->run(fx('full_bad'))], JSON_UNESCAPED_UNICODE);
     $lower = mb_strtolower($all);
     $patterns = ['/cumple (con )?(las? )?wcag/u', '/cumple (con )?la ley/u', '/conforme (con|a) (las? )?wcag/u',
-        '/\bcertifica(mos)?\b/u', '/accesibilidad garantizada/u'];
+        '/(?<!no )\bcertifica(mos)?\b/u', '/accesibilidad garantizada/u'];
     foreach ($patterns as $re) {
         assertTrue(!preg_match($re, $lower), "Texto prohibido: {$re}");
     }

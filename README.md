@@ -4,7 +4,19 @@ Herramienta web interna en PHP (sin framework ni Composer) que analiza una URL y
 informe de SEO, preparación para IA y accesibilidad. La evaluación es automática y parcial:
 no sustituye una auditoría manual ni certifica el cumplimiento de WCAG ni de ninguna ley.
 
-Estado: **fase 4** (comprobaciones y puntuación). Las fases están descritas en `CLAUDE.md`.
+Estado: **fase 5** (pantalla y endpoint de análisis). Las fases están descritas en `CLAUDE.md`.
+
+## Pantalla y API (fase 5)
+
+- `index.php`: formulario, indicador de carga, resultados y errores. Mobile first, sin librerías ni CDN,
+  con CSP estricta. Los resultados se pintan con `textContent` (nunca `innerHTML`).
+- `POST api/analyze.php` con JSON `{"url": "...", "noindex_intentional": false}`. Respuestas:
+  `200` con comprobaciones y puntuación; `400` URL no válida o no pública; `405`/`415` método o formato;
+  `403` origen distinto; `429` límite de uso (con `Retry-After`); `502`/`504` errores al descargar la web.
+- Límite de uso por IP en `storage/ratelimit/` (hash de la IP y marcas de tiempo; ningún dato del análisis).
+  Se usa `REMOTE_ADDR`: si el servidor está detrás de un proxy inverso, todas las peticiones contarían
+  como una sola IP (pendiente de saber cómo es el servidor de la empresa).
+- Prueba rápida sin Apache: `php -S 127.0.0.1:8799 -t .` y abrir `http://127.0.0.1:8799/`.
 
 ## Puntuación (fase 4)
 

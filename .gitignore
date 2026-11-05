@@ -4,3 +4,6 @@ config/config.php
 # Datos de ejecución (límite de uso, etc.); se conserva solo el .htaccess
 storage/*
 !storage/.htaccess
+
+# Configuración local de Claude Code
+.claude/

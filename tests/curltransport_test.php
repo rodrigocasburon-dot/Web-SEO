@@ -3,31 +3,8 @@
 // El Fetcher nunca llega a 127.0.0.1 (UrlGuard lo impide); aquí se llama al transporte directamente.
 
 (function () {
-    $sock = @stream_socket_server('tcp://127.0.0.1:0', $errno, $errstr);
-    $available = $sock !== false && function_exists('proc_open');
-    $proc = null;
-    $port = 0;
-    if ($available) {
-        $port = (int) substr(strrchr(stream_socket_get_name($sock, false), ':'), 1);
-        fclose($sock);
-        $null = DIRECTORY_SEPARATOR === '\\' ? 'NUL' : '/dev/null';
-        $proc = @proc_open(
-            [PHP_BINARY, '-S', "127.0.0.1:$port", __DIR__ . '/server/router.php'],
-            [1 => ['file', $null, 'w'], 2 => ['file', $null, 'w']],
-            $pipes
-        );
-        $ready = false;
-        for ($i = 0; $proc && $i < 50; $i++) {
-            $c = @fsockopen('127.0.0.1', $port, $e1, $e2, 0.2);
-            if ($c) {
-                fclose($c);
-                $ready = true;
-                break;
-            }
-            usleep(100000);
-        }
-        $available = $ready;
-    }
+    [$proc, $port] = startPhpServer(__DIR__ . '/server', __DIR__ . '/server/router.php');
+    $available = $proc !== null;
 
     $opt = ['user_agent' => 'ProconsiAnalyzer/test', 'max_bytes' => 2097152];
     // host ficticio fijado a 127.0.0.1: demuestra que CURLOPT_RESOLVE se respeta
@@ -36,7 +13,7 @@
         'ip' => '127.0.0.1', 'is_ip_literal' => false,
     ];
 
-    test('CurlTransport: IP fijada, User-Agent propio y cabeceras en minúsculas', function () use (&$available, $target, $opt) {
+    test('CurlTransport: IP fijada, User-Agent propio y cabeceras en minúsculas', function () use ($available, $target, $opt) {
         if (!$available) {
             echo "        (omitida: no se pudo arrancar el servidor local)\n";
             return;
@@ -50,7 +27,7 @@
         assertTrue(strpos($r['headers']['content-type'], 'text/html') === 0);
     });
 
-    test('CurlTransport: no sigue redirecciones', function () use (&$available, $target, $opt) {
+    test('CurlTransport: no sigue redirecciones', function () use ($available, $target, $opt) {
         if (!$available) {
             return;
         }
@@ -59,7 +36,7 @@
         assertSame('/ok', $r['headers']['location']);
     });
 
-    test('CurlTransport: límite de 2 MB, respuesta truncada sin error', function () use (&$available, $target, $opt) {
+    test('CurlTransport: límite de 2 MB, respuesta truncada sin error', function () use ($available, $target, $opt) {
         if (!$available) {
             return;
         }
@@ -69,7 +46,7 @@
         assertSame(2097152, strlen($r['body']));
     });
 
-    test('CurlTransport: un 404 no es un error de red', function () use (&$available, $target, $opt) {
+    test('CurlTransport: un 404 no es un error de red', function () use ($available, $target, $opt) {
         if (!$available) {
             return;
         }
@@ -78,7 +55,7 @@
         assertSame(404, $r['status']);
     });
 
-    test('CurlTransport: tiempo agotado (errno 28)', function () use (&$available, $target, $opt) {
+    test('CurlTransport: tiempo agotado (errno 28)', function () use ($available, $target, $opt) {
         if (!$available) {
             return;
         }
@@ -88,10 +65,7 @@
         assertTrue(microtime(true) - $t0 < 2.5, 'Debe cortar antes de que responda el servidor');
     });
 
-    test('CurlTransport: cierre del servidor de pruebas', function () use (&$proc) {
-        if ($proc) {
-            proc_terminate($proc);
-            proc_close($proc);
-        }
+    test('CurlTransport: cierre del servidor de pruebas', function () use ($proc) {
+        stopPhpServer($proc);
     });
 })();
