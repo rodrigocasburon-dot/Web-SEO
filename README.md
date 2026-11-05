@@ -4,7 +4,25 @@ Herramienta web interna en PHP (sin framework ni Composer) que analiza una URL y
 informe de SEO, preparación para IA y accesibilidad. La evaluación es automática y parcial:
 no sustituye una auditoría manual ni certifica el cumplimiento de WCAG ni de ninguna ley.
 
-Estado: **fase 8** (comprobaciones adicionales C16, C18 y C20). Las fases están descritas en `CLAUDE.md`.
+Estado: **fase 9** (identidad visual de Proconsi). Las fases están descritas en `CLAUDE.md`.
+
+## Identidad visual (fase 9)
+
+- Estilo suizo: fondo blanco, retícula limpia, filetes finos y mucho espacio en blanco. Paleta corporativa
+  negro `#000000` (texto), rojo `#e30613` (títulos de apartado, botón principal, fallos y avisos de riesgo)
+  y gris `#6c6c6c` (texto secundario, líneas). Tokens en `:root` de `assets/css/app.css`.
+- Poppins Regular, Medium, SemiBold y Bold servidas en local desde `assets/fonts/` (SIL Open Font License 1.1,
+  texto en `assets/fonts/OFL.txt`; archivos de github.com/google/fonts). Sin CDN.
+- Logotipo: `assets/img/logo-proconsi.webp`, copia sin modificar del archivo facilitado (WebP con
+  transparencia, 1791 × 611). En pantalla, abajo a la izquierda del pie, con un filete gris encima.
+- Impresión A4 («Imprimir o guardar como PDF»): cabecera discreta en gris, logotipo de unos 90 pt abajo a la
+  izquierda de cada página con filete gris y «Página n de N». Usa las cajas de margen de `@page`
+  (verificado con Edge 156 en modo sin interfaz); un navegador sin soporte imprime el informe sin esos elementos.
+- Estados sin depender solo del color: Fallo en bloque rojo, Aviso con contorno rojo, «Sin errores
+  detectables automáticamente» con contorno gris y Sin datos sobre fondo gris.
+- Contraste comprobado en `tests/ui_test.php`: rojo sobre blanco 4,88:1, blanco sobre rojo 4,88:1, rojo
+  sobre el gris de superficie `#f7f7f7` 4,56:1 y gris `#6c6c6c` sobre blanco 5,25:1. El rojo sobre fondos
+  rojizos claros no llega a 4,5:1, por eso no se usan.
 
 ## Comprobaciones adicionales (fase 8)
 
@@ -93,7 +111,7 @@ src/Checks/          Una clase por comprobación (C01HttpsStatus … C15MetaDesc
                      C16BrokenLinks, C18Sitemap y C20HttpsSecurity)
 config/              config.example.php (plantilla), config.php (local, fuera de git), weights.php
 lang/es.php          Nombres, recomendaciones y glosario (borrador para revisar)
-assets/              CSS y JS propios
+assets/              CSS y JS propios, fonts/ (Poppins, OFL) e img/ (logotipo)
 storage/             Datos de ejecución (límite de uso); .htaccess deniega el acceso web
 tests/               run.php y *_test.php, fixtures/ (HTML y JSON de ejemplo), server/, utilidades manuales
 ```

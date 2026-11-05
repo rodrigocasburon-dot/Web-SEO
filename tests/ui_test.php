@@ -52,8 +52,8 @@ test('Contraste: los pares de color de app.css alcanzan 4,5:1 (texto) y 3:1 (bor
         $v[$x[1]] = $x[2];
     }
     $text = [['text', 'bg'], ['text', 'surface'], ['muted', 'bg'], ['muted', 'surface'], ['on-primary', 'primary'],
-        ['primary', 'bg'], ['fail', 'fail-bg'], ['fail', 'bg'], ['warn', 'warn-bg'], ['ok', 'ok-bg'],
-        ['nodata', 'nodata-bg'], ['on-primary', 'fail']];
+        ['primary', 'bg'], ['primary', 'surface'], ['fail', 'fail-bg'], ['fail', 'bg'], ['warn', 'warn-bg'],
+        ['ok', 'ok-bg'], ['nodata', 'nodata-bg'], ['on-primary', 'fail']];
     foreach ($text as [$fg, $bg]) {
         $ratio = contrastRatio($v[$fg], $v[$bg]);
         assertTrue($ratio >= 4.5, sprintf('%s sobre %s: %.2f:1', $fg, $bg, $ratio));

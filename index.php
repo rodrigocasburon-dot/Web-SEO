@@ -48,7 +48,7 @@ $e = fn(string $s): string => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
 <a class="skip-link" href="#contenido">Saltar al contenido</a>
 <header class="site-header">
   <div class="container">
-    <p class="brand">Proconsi <span aria-hidden="true">·</span> Analizador web</p>
+    <p class="brand">Analizador web <span class="brand__tag">Herramienta interna de Proconsi</span></p>
   </div>
 </header>
 
@@ -90,7 +90,8 @@ $e = fn(string $s): string => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
 </main>
 
 <footer class="site-footer">
-  <div class="container">
+  <div class="container site-footer__inner">
+    <img class="site-footer__logo" src="<?= $asset('assets/img/logo-proconsi.webp') ?>" alt="Proconsi" width="96" height="33">
     <p>Herramienta interna. No se guarda ningún dato de los análisis.</p>
   </div>
 </footer>
