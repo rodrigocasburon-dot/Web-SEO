@@ -1,0 +1,71 @@
+@font-face { font-family: Poppins; font-weight: 400; font-display: swap; src: url(../fonts/poppins-latin-400-normal.woff2) format("woff2"); }
+@font-face { font-family: Poppins; font-weight: 600; font-display: swap; src: url(../fonts/poppins-latin-600-normal.woff2) format("woff2"); }
+@font-face { font-family: Poppins; font-weight: 700; font-display: swap; src: url(../fonts/poppins-latin-700-normal.woff2) format("woff2"); }
+
+:root {
+    --rojo: #c00d13;
+    --rojo-oscuro: #960a0f;
+    --negro: #231815;
+    --gris: #5c5c5c;
+    --linea: #e3e0de;
+    --suave: #f7f5f4;
+    --verde: #1a6b3c;
+    --ambar: #8a5a00;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: #fff; color: var(--negro); font: 400 1rem/1.55 Poppins, "Segoe UI", sans-serif; }
+a { color: var(--rojo); }
+:focus-visible { outline: 3px solid var(--rojo); outline-offset: 2px; }
+
+.saltar { position: absolute; left: -999px; padding: .5rem 1rem; background: var(--negro); color: #fff; }
+.saltar:focus { left: 1rem; top: 1rem; z-index: 1; }
+
+.barra { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 1rem clamp(1rem, 4vw, 3rem); border-bottom: 3px solid var(--rojo); }
+.barra img { display: block; height: 44px; width: auto; }
+.barra span { color: var(--gris); font-size: .9rem; }
+
+main { max-width: 68rem; margin: 0 auto; padding: 2rem clamp(1rem, 4vw, 3rem); }
+section { margin-bottom: 2.5rem; }
+h1 { margin: 0 0 .5rem; font-size: clamp(1.8rem, 4vw, 2.5rem); line-height: 1.15; font-weight: 700; }
+h2 { margin: 0 0 .75rem; font-size: 1.3rem; font-weight: 600; }
+
+.inicio { max-width: 42rem; margin: 3rem auto; }
+form { margin-top: 1.5rem; }
+form > label { display: block; margin-bottom: .35rem; font-weight: 600; }
+.fila { display: flex; gap: .5rem; }
+input[type="text"] { flex: 1; min-width: 0; padding: .7rem .9rem; border: 1.5px solid var(--gris); border-radius: 6px; font: inherit; }
+button { padding: .7rem 1.5rem; border: 0; border-radius: 6px; background: var(--rojo); color: #fff; font: 600 1rem Poppins, sans-serif; cursor: pointer; }
+button:hover { background: var(--rojo-oscuro); }
+.casilla { display: flex; align-items: center; gap: .5rem; margin-top: 1rem; font-weight: 400 !important; }
+.casilla input { width: 1.2rem; height: 1.2rem; accent-color: var(--rojo); }
+.ayuda { margin: .25rem 0 0; color: var(--gris); font-size: .9rem; }
+.error { padding: .7rem 1rem; border-left: 4px solid var(--rojo); background: var(--suave); }
+
+.etiqueta { margin: 0; color: var(--rojo); font-size: .8rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+.url { font-size: clamp(1.3rem, 3vw, 1.8rem); overflow-wrap: anywhere; }
+.datos { margin: 0 0 1.5rem; color: var(--gris); font-size: .9rem; }
+
+.notas { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 1rem; }
+.nota { display: flex; flex-direction: column; padding: 1.2rem; background: var(--suave); border-top: 4px solid var(--rojo); }
+.nota .nombre { font-weight: 600; }
+.nota .valor { font-size: 3rem; font-weight: 700; line-height: 1.1; }
+.nota .escala { color: var(--gris); font-size: .85rem; }
+.aviso-parcial { margin: 1rem 0 0; color: var(--gris); font-size: .9rem; }
+
+.tabla { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+th { padding: .55rem .7rem; background: var(--negro); color: #fff; text-align: left; font-weight: 600; }
+td { padding: .6rem .7rem; border-bottom: 1px solid var(--linea); vertical-align: top; }
+.suave { color: var(--gris); font-size: .85rem; }
+.estado { display: inline-block; padding: .1rem .5rem; border: 1.5px solid currentColor; border-radius: 4px; font-size: .8rem; font-weight: 600; white-space: nowrap; }
+.estado.cumple { color: var(--verde); }
+.estado.no_cumple { color: var(--rojo); }
+.estado.aviso { color: var(--ambar); }
+.estado.sin_datos, .estado.no_aplica { color: var(--gris); }
+
+.pie { padding: 1.5rem clamp(1rem, 4vw, 3rem); border-top: 1px solid var(--linea); color: var(--gris); font-size: .85rem; }
+
+@media (max-width: 480px) {
+    .fila { flex-direction: column; }
+}

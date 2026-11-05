@@ -1,0 +1,1603 @@
+{
+  "version": 1,
+  "pesos": {
+    "critica": 10,
+    "alta": 6,
+    "media": 3,
+    "baja": 1
+  },
+  "valor_resultado": {
+    "cumple": 1,
+    "aviso": 0.5,
+    "no_cumple": 0
+  },
+  "excluidos_de_la_nota": [
+    "sin_datos",
+    "no_aplica"
+  ],
+  "puntos": [
+    {
+      "id": "SEO-01",
+      "responsable": "Estefany",
+      "titulo": "Código 200",
+      "notas": [
+        "seo",
+        "geo"
+      ],
+      "gravedad": "critica",
+      "alcance": "pagina",
+      "metodo": "http",
+      "si_falla": "no_cumple",
+      "regla": "La página responde con código HTTP 200.",
+      "arreglo": "Corregir el error del servidor o la URL.",
+      "origen": [
+        "J:SEO15",
+        "I:C01",
+        "E"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "SEO-02",
+      "responsable": "Estefany",
+      "titulo": "HTTPS y certificado",
+      "notas": [
+        "seo",
+        "ux"
+      ],
+      "gravedad": "alta",
+      "alcance": "dominio",
+      "metodo": "http",
+      "si_falla": "no_cumple",
+      "regla": "La web usa https:// con certificado válido y la versión http:// redirige a ella.",
+      "arreglo": "Instalar o renovar el certificado y redirigir todo el tráfico a HTTPS.",
+      "origen": [
+        "J:SEO3",
+        "I:C01",
+        "A:2.8",
+        "E"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "SEO-03",
+      "responsable": "Estefany",
+      "titulo": "Sin contenido mixto",
+      "notas": [
+        "seo",
+        "ux"
+      ],
+      "gravedad": "media",
+      "alcance": "pagina",
+      "metodo": "html",
+      "si_falla": "no_cumple",
+      "regla": "Ninguna imagen, script o CSS se carga por http:// en una página https://.",
+      "arreglo": "Cambiar esos recursos a https://.",
+      "origen": [
+        "A:2.8"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "SEO-04",
+      "responsable": "Estefany",
+      "titulo": "Sin noindex",
+      "notas": [
+        "seo",
+        "geo"
+      ],
+      "gravedad": "critica",
+      "alcance": "pagina",
+      "metodo": "http",
+      "si_falla": "aviso",
+      "regla": "No hay noindex en meta robots, meta googlebot ni en la cabecera X-Robots-Tag. Puede ser intencionado (login, carrito).",
+      "arreglo": "Quitar noindex de las páginas que deban aparecer en buscadores.",
+      "origen": [
+        "J:SEO1",
+        "I:C02",
+        "E"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "SEO-05",
+      "responsable": "Estefany",
+      "titulo": "robots.txt permite a Google",
+      "notas": [
+        "seo"
+      ],
+      "gravedad": "critica",
+      "alcance": "dominio",
+      "metodo": "http",
+      "si_falla": "no_cumple",
+      "regla": "robots.txt deja rastrear a Googlebot las páginas y sus recursos CSS y JS. Si no existe robots.txt, se permite todo.",
+      "arreglo": "Eliminar los Disallow que bloquean contenido o recursos necesarios.",
+      "origen": [
+        "J:SEO2",
+        "I:C02",
+        "A:1.5",
+        "E"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "SEO-06",
+      "responsable": "Estefany",
+      "titulo": "Sitemap",
+      "notas": [
+        "seo"
+      ],
+      "gravedad": "media",
+      "alcance": "dominio",
+      "metodo": "http",
+      "si_falla": "no_cumple",
+      "regla": "Existe un sitemap XML válido con URLs. Se busca en robots.txt y en /sitemap.xml.",
+      "arreglo": "Generar el sitemap e indicarlo en robots.txt.",
+      "origen": [
+        "J:SEO6",
+        "E"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "SEO-07",
+      "responsable": "Estefany",
+      "titulo": "Canonical",
+      "notas": [
+        "seo"
+      ],
+      "gravedad": "media",
+      "alcance": "pagina",
+      "metodo": "html",
+      "si_falla": "aviso",
+      "regla": "Existe link rel=canonical y coincide con la URL analizada.",
+      "arreglo": "Añadir la canonical con la URL principal de la página.",
+      "origen": [
+        "J:SEO5",
+        "I:C12",
+        "E"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "SEO-08",
+      "responsable": "Estefany",
+      "titulo": "Title",
+      "notas": [
+        "seo",
+        "geo",
+        "ux"
+      ],
+      "gravedad": "alta",
+      "alcance": "pagina",
+      "metodo": "html",
+      "si_falla": "no_cumple",
+      "regla": "Hay exactamente un title no vacío. Fuera de 35-60 caracteres se anota como recomendación, sin penalizar.",
+      "arreglo": "Escribir un title único que describa la página.",
+      "origen": [
+        "J:SEO7",
+        "I:C10",
+        "A:2.4",
+        "E"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "SEO-09",
+      "responsable": "Estefany",
+      "titulo": "Meta descripción",
+      "notas": [
+        "seo"
+      ],
+      "gravedad": "media",
+      "alcance": "pagina",
+      "metodo": "html",
+      "si_falla": "no_cumple",
+      "regla": "Existe meta description con texto. Fuera de 120-160 caracteres se anota como recomendación, sin penalizar.",
+      "arreglo": "Escribir un resumen claro del contenido de la página.",
+      "origen": [
+        "J:SEO8",
+        "I:C15",
+        "A:2.4",
+        "E"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "SEO-10",
+      "responsable": "Estefany",
+      "titulo": "Title y H1 coherentes",
+      "notas": [
+        "seo",
+        "geo"
+      ],
+      "gravedad": "baja",
+      "alcance": "pagina",
+      "metodo": "html",
+      "si_falla": "aviso",
+      "regla": "El title y el H1 comparten palabras importantes. Es una aproximación, no un análisis de significado.",
+      "arreglo": "Alinear el title y el H1 con el mismo tema.",
+      "origen": [
+        "A:2.1",
+        "E"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "SEO-11",
+      "responsable": "Estefany",
+      "titulo": "H1 único",
+      "notas": [
+        "seo",
+        "geo",
+        "ux"
+      ],
+      "gravedad": "media",
+      "alcance": "pagina",
+      "metodo": "html",
+      "si_falla": "aviso",
+      "regla": "La página tiene un solo H1 con texto.",
+      "arreglo": "Dejar un único H1 que diga de qué trata la página.",
+      "origen": [
+        "J:SEO22",
+        "J:GEO5",
+        "I:C05",
+        "E"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "SEO-12",
+      "responsable": "Estefany",
+      "titulo": "Encabezados sin saltos",
+      "notas": [
+        "seo",
+        "geo",
+        "ux"
+      ],
+      "gravedad": "media",
+      "alcance": "pagina",
+      "metodo": "html",
+      "si_falla": "aviso",
+      "regla": "Los encabezados no se saltan niveles, por ejemplo de H2 a H4.",
+      "arreglo": "Reordenar los encabezados de H1 a H6 sin saltos.",
+      "origen": [
+        "J:SEO22",
+        "J:GEO25",
+        "I:C05",
+        "A:1.4",
+        "A:3.4",
+        "E"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "SEO-13",
+      "responsable": "Estefany",
+      "titulo": "Viewport",
+      "notas": [
+        "seo",
+        "ux"
+      ],
+      "gravedad": "alta",
+      "alcance": "pagina",
+      "metodo": "html",
+      "si_falla": "no_cumple",
+      "regla": "Existe meta viewport con width=device-width.",
+      "arreglo": "Añadir la etiqueta viewport y un diseño adaptable.",
+      "origen": [
+        "J:SEO4",
+        "I:C09",
+        "A:2.2",
+        "E"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "SEO-14",
+      "responsable": "Estefany",
+      "titulo": "Idioma declarado",
+      "notas": [
+        "seo",
+        "geo",
+        "ux"
+      ],
+      "gravedad": "alta",
+      "alcance": "pagina",
+      "metodo": "html",
+      "si_falla": "no_cumple",
+      "regla": "html tiene un atributo lang válido, como es.",
+      "arreglo": "Añadir el atributo lang con el idioma de la página.",
+      "origen": [
+        "J:SEO11",
+        "I:C07",
+        "E"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "SEO-15",
+      "responsable": "Estefany",
+      "titulo": "Atributo alt",
+      "notas": [
+        "seo",
+        "geo",
+        "ux"
+      ],
+      "gravedad": "alta",
+      "alcance": "pagina",
+      "metodo": "html",
+      "si_falla": "no_cumple",
+      "regla": "Todas las img tienen atributo alt. Vacío vale para las decorativas. La calidad del texto no se evalúa aquí.",
+      "arreglo": "Añadir alt a las imágenes informativas y alt vacío a las decorativas.",
+      "origen": [
+        "J:SEO10",
+        "J:UX1",
+        "I:C06",
+        "A:3.2",
+        "E"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "SEO-16",
+      "responsable": "Estefany",
+      "titulo": "URL amigable",
+      "notas": [
+        "seo"
+      ],
+      "gravedad": "baja",
+      "alcance": "pagina",
+      "metodo": "html",
+      "si_falla": "aviso",
+      "regla": "La URL es legible, separa palabras con guiones y no tiene cadenas largas de parámetros.",
+      "arreglo": "Usar direcciones cortas y descriptivas.",
+      "origen": [
+        "J:SEO9",
+        "E"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "SEO-17",
+      "responsable": "Estefany",
+      "titulo": "Enlaces rastreables y descriptivos",
+      "notas": [
+        "seo",
+        "geo",
+        "ux"
+      ],
+      "gravedad": "media",
+      "alcance": "pagina",
+      "metodo": "html",
+      "si_falla": "aviso",
+      "regla": "Los enlaces son a href reales y su texto no es genérico (clic aquí, leer más).",
+      "arreglo": "Escribir enlaces que digan a dónde llevan.",
+      "origen": [
+        "J:SEO12",
+        "J:GEO22",
+        "E"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "SEO-18",
+      "responsable": "Estefany",
+      "titulo": "JSON-LD válido",
+      "notas": [
+        "seo",
+        "geo"
+      ],
+      "gravedad": "media",
+      "alcance": "pagina",
+      "metodo": "html",
+      "si_falla": "no_cumple",
+      "regla": "Hay JSON-LD con sintaxis válida y @type definido. No se evalúa si es útil.",
+      "arreglo": "Añadir datos estructurados del tipo adecuado: Organization, LocalBusiness, Service...",
+      "origen": [
+        "J:SEO18",
+        "J:GEO3",
+        "I:C13",
+        "E"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "SEO-19",
+      "responsable": "Estefany",
+      "titulo": "Migas de pan",
+      "notas": [
+        "seo",
+        "ux"
+      ],
+      "gravedad": "baja",
+      "alcance": "pagina",
+      "metodo": "html",
+      "si_falla": "aviso",
+      "regla": "Las páginas internas tienen migas de pan visibles o BreadcrumbList. En la portada no aplica.",
+      "arreglo": "Añadir migas de pan en webs con categorías.",
+      "origen": [
+        "J:SEO19"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "SEO-20",
+      "responsable": "Estefany",
+      "titulo": "Hreflang",
+      "notas": [
+        "seo"
+      ],
+      "gravedad": "baja",
+      "alcance": "pagina",
+      "metodo": "html",
+      "si_falla": "aviso",
+      "regla": "Si hay versiones en otros idiomas, se enlazan con hreflang. Con un solo idioma no aplica.",
+      "arreglo": "Declarar hreflang entre las versiones equivalentes.",
+      "origen": [
+        "J:SEO17",
+        "E"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "SEO-21",
+      "responsable": "Estefany",
+      "titulo": "Contenido suficiente",
+      "notas": [
+        "seo",
+        "geo"
+      ],
+      "gravedad": "media",
+      "alcance": "pagina",
+      "metodo": "html",
+      "si_falla": "aviso",
+      "regla": "El contenido principal tiene al menos 300 palabras. Es orientativo: no todas las páginas lo necesitan.",
+      "arreglo": "Ampliar la página con información útil.",
+      "origen": [
+        "A:2.1",
+        "E"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "SEO-22",
+      "responsable": "Estefany",
+      "titulo": "Sin relleno de palabras",
+      "notas": [
+        "seo",
+        "geo"
+      ],
+      "gravedad": "baja",
+      "alcance": "pagina",
+      "metodo": "html",
+      "si_falla": "aviso",
+      "regla": "Ninguna palabra importante supera el 3 % del texto.",
+      "arreglo": "Reescribir el texto de forma natural.",
+      "origen": [
+        "A:1.2",
+        "I",
+        "E"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "SEO-23",
+      "responsable": "Estefany",
+      "titulo": "Favicon",
+      "notas": [
+        "seo",
+        "ux"
+      ],
+      "gravedad": "baja",
+      "alcance": "dominio",
+      "metodo": "html",
+      "si_falla": "aviso",
+      "regla": "La web declara un favicon o existe /favicon.ico.",
+      "arreglo": "Añadir un favicon.",
+      "origen": [
+        "E"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "SEO-24",
+      "responsable": "Estefany",
+      "titulo": "Ubicación del negocio",
+      "notas": [
+        "seo"
+      ],
+      "gravedad": "media",
+      "alcance": "pagina",
+      "metodo": "html",
+      "si_falla": "aviso",
+      "regla": "Hay un enlace a Google Maps o al Perfil de Empresa.",
+      "arreglo": "Enlazar la ubicación del negocio.",
+      "origen": [
+        "J:SEO13"
+      ],
+      "solo_local": true
+    },
+    {
+      "id": "SEO-25",
+      "responsable": "Estefany",
+      "titulo": "Servicio y localidad",
+      "notas": [
+        "seo"
+      ],
+      "gravedad": "media",
+      "alcance": "pagina",
+      "metodo": "html",
+      "si_falla": "aviso",
+      "regla": "El texto de las páginas de servicio menciona el servicio y la localidad.",
+      "arreglo": "Escribir el servicio junto a la ciudad o zona.",
+      "origen": [
+        "J:SEO20"
+      ],
+      "solo_local": true
+    },
+    {
+      "id": "GEO-01",
+      "responsable": "Camila",
+      "titulo": "Bots de IA permitidos",
+      "notas": [
+        "geo"
+      ],
+      "gravedad": "critica",
+      "alcance": "dominio",
+      "metodo": "http",
+      "si_falla": "no_cumple",
+      "regla": "robots.txt no bloquea a bots de búsqueda de IA (OAI-SearchBot, PerplexityBot...). Bloquear solo los de entrenamiento (GPTBot, ClaudeBot, Google-Extended) da aviso. La lista es configurable.",
+      "arreglo": "Permitir como mínimo los bots de búsqueda de IA.",
+      "origen": [
+        "J:GEO1",
+        "I:C02",
+        "A:1.5"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "GEO-02",
+      "responsable": "Camila",
+      "titulo": "Contenido en el HTML inicial",
+      "notas": [
+        "geo",
+        "seo"
+      ],
+      "gravedad": "critica",
+      "alcance": "pagina",
+      "metodo": "html",
+      "si_falla": "aviso",
+      "regla": "El contenido principal llega en el HTML, sin depender de JavaScript. Es un indicador: se avisa si el body está casi vacío.",
+      "arreglo": "Servir el contenido desde el servidor.",
+      "origen": [
+        "J:GEO12",
+        "I:C03",
+        "E"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "GEO-03",
+      "responsable": "Camila",
+      "titulo": "Nombre del negocio en texto",
+      "notas": [
+        "geo"
+      ],
+      "gravedad": "media",
+      "alcance": "dominio",
+      "metodo": "html",
+      "si_falla": "aviso",
+      "regla": "El nombre de la empresa aparece como texto, no solo en el logo. Se compara con el JSON-LD o el title.",
+      "arreglo": "Escribir el nombre en texto normal.",
+      "origen": [
+        "J:GEO8"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "GEO-04",
+      "responsable": "Camila",
+      "titulo": "Enlace de identidad",
+      "notas": [
+        "geo"
+      ],
+      "gravedad": "baja",
+      "alcance": "dominio",
+      "metodo": "html",
+      "si_falla": "no_cumple",
+      "regla": "El JSON-LD de la organización incluye @id o url.",
+      "arreglo": "Añadir @id con una dirección fija del negocio.",
+      "origen": [
+        "J:GEO6"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "GEO-05",
+      "responsable": "Camila",
+      "titulo": "Coordenadas",
+      "notas": [
+        "geo"
+      ],
+      "gravedad": "media",
+      "alcance": "dominio",
+      "metodo": "html",
+      "si_falla": "no_cumple",
+      "regla": "El JSON-LD incluye geo con latitude y longitude.",
+      "arreglo": "Añadir las coordenadas del local.",
+      "origen": [
+        "J:GEO7"
+      ],
+      "solo_local": true
+    },
+    {
+      "id": "GEO-06",
+      "responsable": "Camila",
+      "titulo": "Dirección en texto",
+      "notas": [
+        "geo"
+      ],
+      "gravedad": "alta",
+      "alcance": "dominio",
+      "metodo": "html",
+      "si_falla": "no_cumple",
+      "regla": "La dirección está escrita en la web, mejor dentro de address.",
+      "arreglo": "Escribir calle y número en texto normal.",
+      "origen": [
+        "J:GEO9"
+      ],
+      "solo_local": true
+    },
+    {
+      "id": "GEO-07",
+      "responsable": "Camila",
+      "titulo": "Horarios",
+      "notas": [
+        "geo"
+      ],
+      "gravedad": "media",
+      "alcance": "dominio",
+      "metodo": "html",
+      "si_falla": "no_cumple",
+      "regla": "Hay horarios en el texto y openingHours en el JSON-LD.",
+      "arreglo": "Publicar los horarios en ambos sitios.",
+      "origen": [
+        "J:GEO10"
+      ],
+      "solo_local": true
+    },
+    {
+      "id": "GEO-08",
+      "responsable": "Camila",
+      "titulo": "Reseñas",
+      "notas": [
+        "geo"
+      ],
+      "gravedad": "baja",
+      "alcance": "dominio",
+      "metodo": "html",
+      "si_falla": "aviso",
+      "regla": "Hay Review o aggregateRating en el JSON-LD. Que sean reales es revisión manual.",
+      "arreglo": "Mostrar opiniones reales y marcarlas correctamente.",
+      "origen": [
+        "J:GEO11"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "GEO-09",
+      "responsable": "Camila",
+      "titulo": "Contacto directo",
+      "notas": [
+        "geo"
+      ],
+      "gravedad": "media",
+      "alcance": "dominio",
+      "metodo": "html",
+      "si_falla": "no_cumple",
+      "regla": "Teléfono y dirección están en la página, no solo dentro de un iframe.",
+      "arreglo": "Escribir los datos fuera del mapa o del recuadro externo.",
+      "origen": [
+        "J:GEO13"
+      ],
+      "solo_local": true
+    },
+    {
+      "id": "GEO-10",
+      "responsable": "Camila",
+      "titulo": "Precios",
+      "notas": [
+        "geo"
+      ],
+      "gravedad": "baja",
+      "alcance": "dominio",
+      "metodo": "html",
+      "si_falla": "aviso",
+      "regla": "Hay precios en el texto o price en el JSON-LD. Se buscan patrones como 25 €.",
+      "arreglo": "Publicar precios o rangos de precio.",
+      "origen": [
+        "J:GEO14"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "GEO-11",
+      "responsable": "Camila",
+      "titulo": "Subtítulos H2 y H3",
+      "notas": [
+        "geo",
+        "seo"
+      ],
+      "gravedad": "media",
+      "alcance": "pagina",
+      "metodo": "html",
+      "si_falla": "aviso",
+      "regla": "Las páginas con contenido largo se dividen con H2 y, si hace falta, H3.",
+      "arreglo": "Separar el texto por temas con subtítulos.",
+      "origen": [
+        "J:GEO15",
+        "J:GEO24",
+        "E"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "GEO-12",
+      "responsable": "Camila",
+      "titulo": "Tablas reales",
+      "notas": [
+        "geo"
+      ],
+      "gravedad": "baja",
+      "alcance": "pagina",
+      "metodo": "html",
+      "si_falla": "aviso",
+      "regla": "Si hay listas de precios, usan table. Si no se detectan, no aplica.",
+      "arreglo": "Usar tablas HTML en lugar de bloques de diseño.",
+      "origen": [
+        "J:GEO16"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "GEO-13",
+      "responsable": "Camila",
+      "titulo": "Preguntas y respuestas",
+      "notas": [
+        "geo"
+      ],
+      "gravedad": "media",
+      "alcance": "dominio",
+      "metodo": "html",
+      "si_falla": "no_cumple",
+      "regla": "Hay encabezados con forma de pregunta y un párrafo de respuesta detrás, en alguna página.",
+      "arreglo": "Añadir preguntas frecuentes con respuestas directas.",
+      "origen": [
+        "J:GEO17",
+        "A:1.1",
+        "E"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "GEO-14",
+      "responsable": "Camila",
+      "titulo": "Marcado FAQPage",
+      "notas": [
+        "geo"
+      ],
+      "gravedad": "baja",
+      "alcance": "pagina",
+      "metodo": "html",
+      "si_falla": "no_cumple",
+      "regla": "Si hay preguntas frecuentes, existe FAQPage en el JSON-LD. Sin preguntas, no aplica.",
+      "arreglo": "Marcar las preguntas con FAQPage.",
+      "origen": [
+        "J:GEO18",
+        "A:1.1",
+        "E"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "GEO-15",
+      "responsable": "Camila",
+      "titulo": "Categoría precisa",
+      "notas": [
+        "geo"
+      ],
+      "gravedad": "media",
+      "alcance": "dominio",
+      "metodo": "html",
+      "si_falla": "no_cumple",
+      "regla": "El @type es concreto (Dentist, Restaurant), no solo LocalBusiness.",
+      "arreglo": "Usar el tipo de Schema.org más preciso.",
+      "origen": [
+        "J:GEO19"
+      ],
+      "solo_local": true
+    },
+    {
+      "id": "GEO-16",
+      "responsable": "Camila",
+      "titulo": "Perfiles oficiales",
+      "notas": [
+        "geo"
+      ],
+      "gravedad": "baja",
+      "alcance": "dominio",
+      "metodo": "html",
+      "si_falla": "no_cumple",
+      "regla": "El JSON-LD incluye sameAs con redes o directorios.",
+      "arreglo": "Añadir los perfiles oficiales en sameAs.",
+      "origen": [
+        "J:GEO20"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "GEO-17",
+      "responsable": "Camila",
+      "titulo": "Teléfono con un toque",
+      "notas": [
+        "geo",
+        "ux"
+      ],
+      "gravedad": "baja",
+      "alcance": "pagina",
+      "metodo": "html",
+      "si_falla": "no_cumple",
+      "regla": "Si la página muestra teléfono, tiene enlace tel:. Sin teléfono, no aplica.",
+      "arreglo": "Enlazar el número con tel:.",
+      "origen": [
+        "J:GEO21"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "GEO-18",
+      "responsable": "Camila",
+      "titulo": "Descripción natural de fotos",
+      "notas": [
+        "geo"
+      ],
+      "gravedad": "baja",
+      "alcance": "pagina",
+      "metodo": "html",
+      "si_falla": "aviso",
+      "regla": "Los alt son frases, no nombres de archivo, números ni listas de palabras.",
+      "arreglo": "Describir la imagen con una frase.",
+      "origen": [
+        "J:GEO23",
+        "A:1.7"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "GEO-19",
+      "responsable": "Camila",
+      "titulo": "Autoría y fecha",
+      "notas": [
+        "geo",
+        "seo"
+      ],
+      "gravedad": "media",
+      "alcance": "pagina",
+      "metodo": "html",
+      "si_falla": "aviso",
+      "regla": "Hay author o publisher y dateModified en metadatos o JSON-LD. Son indicios de confianza, no una medida de E-E-A-T.",
+      "arreglo": "Indicar autor, empresa y fecha de revisión.",
+      "origen": [
+        "A:1.3",
+        "I"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "GEO-20",
+      "responsable": "Camila",
+      "titulo": "Contenido actualizado",
+      "notas": [
+        "geo"
+      ],
+      "gravedad": "baja",
+      "alcance": "pagina",
+      "metodo": "html",
+      "si_falla": "aviso",
+      "regla": "La fecha de dateModified o lastmod tiene menos de 12 meses. Sin fecha, sale sin datos.",
+      "arreglo": "Revisar el contenido y actualizar la fecha.",
+      "origen": [
+        "A:1.8",
+        "E"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "GEO-21",
+      "responsable": "Camila",
+      "titulo": "Fuentes citadas",
+      "notas": [
+        "geo"
+      ],
+      "gravedad": "baja",
+      "alcance": "pagina",
+      "metodo": "html",
+      "si_falla": "aviso",
+      "regla": "Los textos largos enlazan a fuentes externas. La calidad de la fuente es revisión manual.",
+      "arreglo": "Citar datos con enlace a su origen.",
+      "origen": [
+        "A:1.3",
+        "I",
+        "E"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "GEO-22",
+      "responsable": "Camila",
+      "titulo": "Listas en textos largos",
+      "notas": [
+        "geo"
+      ],
+      "gravedad": "baja",
+      "alcance": "pagina",
+      "metodo": "html",
+      "si_falla": "aviso",
+      "regla": "Los textos largos usan ul, ol o table.",
+      "arreglo": "Resumir pasos y datos en listas.",
+      "origen": [
+        "A:1.4",
+        "E"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "GEO-23",
+      "responsable": "Camila",
+      "titulo": "Respuesta tras el encabezado",
+      "notas": [
+        "geo"
+      ],
+      "gravedad": "baja",
+      "alcance": "pagina",
+      "metodo": "html",
+      "si_falla": "aviso",
+      "regla": "El primer párrafo después de un encabezado tiene entre 30 y 150 palabras. Es orientativo.",
+      "arreglo": "Empezar cada sección respondiendo directamente.",
+      "origen": [
+        "A:1.1",
+        "E"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "GEO-24",
+      "responsable": "Camila",
+      "titulo": "Texto útil frente a código",
+      "notas": [
+        "geo"
+      ],
+      "gravedad": "baja",
+      "alcance": "pagina",
+      "metodo": "html",
+      "si_falla": "aviso",
+      "regla": "La proporción de texto frente a código HTML no es muy baja. Es orientativo.",
+      "arreglo": "Reducir código innecesario.",
+      "origen": [
+        "E"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "UX-01",
+      "responsable": "Rodrigo",
+      "titulo": "Estructura semántica",
+      "notas": [
+        "ux",
+        "geo"
+      ],
+      "gravedad": "media",
+      "alcance": "pagina",
+      "metodo": "html",
+      "si_falla": "aviso",
+      "regla": "Existen header, nav y main, y el contenido principal está dentro de main.",
+      "arreglo": "Usar las etiquetas semánticas de HTML.",
+      "origen": [
+        "J:UX1",
+        "J:GEO4",
+        "I:C11",
+        "E"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "UX-02",
+      "responsable": "Rodrigo",
+      "titulo": "Nombres accesibles",
+      "notas": [
+        "ux"
+      ],
+      "gravedad": "critica",
+      "alcance": "pagina",
+      "metodo": "html",
+      "si_falla": "no_cumple",
+      "regla": "Botones y enlaces tienen texto, aria-label o una imagen con alt.",
+      "arreglo": "Dar un nombre a cada control.",
+      "origen": [
+        "J:UX1",
+        "I:C04",
+        "E"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "UX-03",
+      "responsable": "Rodrigo",
+      "titulo": "Formularios con etiqueta",
+      "notas": [
+        "ux"
+      ],
+      "gravedad": "critica",
+      "alcance": "pagina",
+      "metodo": "html",
+      "si_falla": "no_cumple",
+      "regla": "Cada campo tiene label asociado, aria-label o aria-labelledby.",
+      "arreglo": "Añadir una etiqueta a cada campo.",
+      "origen": [
+        "J:UX5",
+        "I:C04",
+        "A:3.5",
+        "E"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "UX-04",
+      "responsable": "Rodrigo",
+      "titulo": "Foco visible",
+      "notas": [
+        "ux"
+      ],
+      "gravedad": "alta",
+      "alcance": "pagina",
+      "metodo": "css",
+      "si_falla": "aviso",
+      "regla": "El CSS no elimina el foco con outline: none sin dar una alternativa. El recorrido real es revisión manual.",
+      "arreglo": "Dar un estilo visible a :focus-visible.",
+      "origen": [
+        "J:UX2",
+        "A:3.3",
+        "E"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "UX-05",
+      "responsable": "Rodrigo",
+      "titulo": "Controles usables con teclado",
+      "notas": [
+        "ux"
+      ],
+      "gravedad": "alta",
+      "alcance": "pagina",
+      "metodo": "html",
+      "si_falla": "aviso",
+      "regla": "No hay tabindex positivos ni div onclick sin role y tabindex.",
+      "arreglo": "Usar button y a en lugar de elementos con clic.",
+      "origen": [
+        "J:UX2",
+        "I:C11",
+        "E"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "UX-06",
+      "responsable": "Rodrigo",
+      "titulo": "Contraste de texto",
+      "notas": [
+        "ux"
+      ],
+      "gravedad": "alta",
+      "alcance": "pagina",
+      "metodo": "pagespeed",
+      "si_falla": "no_cumple",
+      "regla": "Sin fallos de 4,5:1 en texto normal ni 3:1 en grande, según PageSpeed. Sin PageSpeed, sin datos.",
+      "arreglo": "Ajustar colores hasta llegar al mínimo.",
+      "origen": [
+        "J:UX3",
+        "I:C08",
+        "A:3.1",
+        "E"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "UX-07",
+      "responsable": "Rodrigo",
+      "titulo": "Tamaño de letra",
+      "notas": [
+        "ux"
+      ],
+      "gravedad": "baja",
+      "alcance": "pagina",
+      "metodo": "css",
+      "si_falla": "aviso",
+      "regla": "El tamaño base del CSS es de 16 px o más. Si no se puede saber, sin datos.",
+      "arreglo": "Usar un tamaño base de 16 px.",
+      "origen": [
+        "J:UX3"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "UX-08",
+      "responsable": "Rodrigo",
+      "titulo": "Objetivos táctiles",
+      "notas": [
+        "ux",
+        "seo"
+      ],
+      "gravedad": "media",
+      "alcance": "pagina",
+      "metodo": "pagespeed",
+      "si_falla": "aviso",
+      "regla": "Sin fallos de tamaño según PageSpeed. Mínimo WCAG de 24 px; 48 px es la recomendación. Sin PageSpeed, sin datos.",
+      "arreglo": "Agrandar botones y separar enlaces.",
+      "origen": [
+        "J:UX4",
+        "A:2.2",
+        "E"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "UX-09",
+      "responsable": "Rodrigo",
+      "titulo": "Lenguaje sencillo",
+      "notas": [
+        "ux",
+        "geo"
+      ],
+      "gravedad": "media",
+      "alcance": "pagina",
+      "metodo": "html",
+      "si_falla": "aviso",
+      "regla": "Flesch-Szigriszt de 55 o más y frases de longitud media razonable. Solo en español.",
+      "arreglo": "Acortar frases y evitar tecnicismos.",
+      "origen": [
+        "J:UX6",
+        "A:1.2",
+        "E"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "UX-10",
+      "responsable": "Rodrigo",
+      "titulo": "Sin reproducción automática",
+      "notas": [
+        "ux"
+      ],
+      "gravedad": "media",
+      "alcance": "pagina",
+      "metodo": "html",
+      "si_falla": "aviso",
+      "regla": "No hay autoplay con sonido, marquee ni blink.",
+      "arreglo": "Dejar que la persona inicie el vídeo o el audio.",
+      "origen": [
+        "J:UX8"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "UX-11",
+      "responsable": "Rodrigo",
+      "titulo": "Movimiento reducido",
+      "notas": [
+        "ux"
+      ],
+      "gravedad": "baja",
+      "alcance": "dominio",
+      "metodo": "css",
+      "si_falla": "aviso",
+      "regla": "Si el CSS tiene animaciones, incluye prefers-reduced-motion.",
+      "arreglo": "Desactivar animaciones para quien lo pida.",
+      "origen": [
+        "A:3.8"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "UX-12",
+      "responsable": "Rodrigo",
+      "titulo": "Acción principal",
+      "notas": [
+        "ux"
+      ],
+      "gravedad": "baja",
+      "alcance": "pagina",
+      "metodo": "html",
+      "si_falla": "aviso",
+      "regla": "Hay un enlace claro de contacto, compra, cita o cómo llegar.",
+      "arreglo": "Dejar visible la acción principal.",
+      "origen": [
+        "J:UX9"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "UX-13",
+      "responsable": "Rodrigo",
+      "titulo": "Skip link",
+      "notas": [
+        "ux"
+      ],
+      "gravedad": "media",
+      "alcance": "pagina",
+      "metodo": "html",
+      "si_falla": "aviso",
+      "regla": "Uno de los primeros enlaces salta al contenido principal.",
+      "arreglo": "Añadir un enlace de salto al inicio.",
+      "origen": [
+        "J:UX10",
+        "I"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "UX-14",
+      "responsable": "Rodrigo",
+      "titulo": "Aviso de cookies",
+      "notas": [
+        "ux"
+      ],
+      "gravedad": "media",
+      "alcance": "dominio",
+      "metodo": "http",
+      "si_falla": "aviso",
+      "regla": "Se detecta un aviso de cookies y no llegan cookies de seguimiento antes de aceptar. Que rechazar sea igual de fácil es revisión manual.",
+      "arreglo": "Ofrecer aceptar y rechazar con un clic.",
+      "origen": [
+        "J:UX11"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "UX-15",
+      "responsable": "Rodrigo",
+      "titulo": "Subtítulos en vídeo",
+      "notas": [
+        "ux"
+      ],
+      "gravedad": "alta",
+      "alcance": "pagina",
+      "metodo": "html",
+      "si_falla": "no_cumple",
+      "regla": "Cada video tiene track. Los vídeos incrustados son revisión manual.",
+      "arreglo": "Añadir subtítulos.",
+      "origen": [
+        "A:3.7",
+        "E",
+        "I"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "UX-16",
+      "responsable": "Rodrigo",
+      "titulo": "Título en iframes",
+      "notas": [
+        "ux"
+      ],
+      "gravedad": "media",
+      "alcance": "pagina",
+      "metodo": "html",
+      "si_falla": "no_cumple",
+      "regla": "Cada iframe tiene title.",
+      "arreglo": "Añadir un title que describa el contenido.",
+      "origen": [
+        "E"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "UX-17",
+      "responsable": "Rodrigo",
+      "titulo": "Roles ARIA válidos",
+      "notas": [
+        "ux"
+      ],
+      "gravedad": "media",
+      "alcance": "pagina",
+      "metodo": "html",
+      "si_falla": "no_cumple",
+      "regla": "Los valores de role existen en la especificación.",
+      "arreglo": "Corregir el rol o usar HTML nativo.",
+      "origen": [
+        "I:C11"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "UX-18",
+      "responsable": "Rodrigo",
+      "titulo": "Zoom permitido",
+      "notas": [
+        "ux"
+      ],
+      "gravedad": "alta",
+      "alcance": "pagina",
+      "metodo": "html",
+      "si_falla": "no_cumple",
+      "regla": "El viewport no usa user-scalable=no ni maximum-scale=1.",
+      "arreglo": "Quitar el bloqueo del zoom.",
+      "origen": [
+        "I:C09"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "UX-19",
+      "responsable": "Rodrigo",
+      "titulo": "ID sin duplicar",
+      "notas": [
+        "ux"
+      ],
+      "gravedad": "baja",
+      "alcance": "pagina",
+      "metodo": "html",
+      "si_falla": "no_cumple",
+      "regla": "Ningún id se repite en la página.",
+      "arreglo": "Usar un id distinto en cada elemento.",
+      "origen": [
+        "I"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "WEB-01",
+      "responsable": "Jose",
+      "titulo": "Página de error 404",
+      "notas": [
+        "seo"
+      ],
+      "gravedad": "media",
+      "alcance": "comparacion",
+      "metodo": "http",
+      "si_falla": "no_cumple",
+      "regla": "Una URL inventada responde 404 o 410.",
+      "arreglo": "Configurar el servidor para devolver 404.",
+      "origen": [
+        "J:SEO14"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "WEB-02",
+      "responsable": "Jose",
+      "titulo": "Redirecciones",
+      "notas": [
+        "seo"
+      ],
+      "gravedad": "media",
+      "alcance": "comparacion",
+      "metodo": "http",
+      "si_falla": "aviso",
+      "regla": "Las redirecciones permanentes usan 301 o 308, sin cadenas innecesarias.",
+      "arreglo": "Apuntar directamente al destino final.",
+      "origen": [
+        "J:SEO16",
+        "E"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "WEB-03",
+      "responsable": "Jose",
+      "titulo": "Enlaces rotos",
+      "notas": [
+        "seo",
+        "ux"
+      ],
+      "gravedad": "alta",
+      "alcance": "comparacion",
+      "metodo": "http",
+      "si_falla": "no_cumple",
+      "regla": "Los enlaces de las páginas analizadas no devuelven 404 ni 410.",
+      "arreglo": "Corregir o eliminar los enlaces rotos.",
+      "origen": [
+        "A:2.3",
+        "E"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "WEB-04",
+      "responsable": "Jose",
+      "titulo": "NAP coherente",
+      "notas": [
+        "seo",
+        "geo"
+      ],
+      "gravedad": "media",
+      "alcance": "comparacion",
+      "metodo": "html",
+      "si_falla": "aviso",
+      "regla": "Nombre, dirección y teléfono coinciden entre páginas.",
+      "arreglo": "Unificar los datos en toda la web.",
+      "origen": [
+        "J:SEO21"
+      ],
+      "solo_local": true
+    },
+    {
+      "id": "WEB-05",
+      "responsable": "Jose",
+      "titulo": "Datos visibles y código iguales",
+      "notas": [
+        "geo"
+      ],
+      "gravedad": "media",
+      "alcance": "comparacion",
+      "metodo": "html",
+      "si_falla": "aviso",
+      "regla": "Los datos del JSON-LD coinciden con el texto visible.",
+      "arreglo": "Usar los mismos datos en ambos sitios.",
+      "origen": [
+        "J:GEO2"
+      ],
+      "solo_local": true
+    },
+    {
+      "id": "WEB-06",
+      "responsable": "Jose",
+      "titulo": "Páginas bien enlazadas",
+      "notas": [
+        "seo",
+        "geo"
+      ],
+      "gravedad": "media",
+      "alcance": "comparacion",
+      "metodo": "html",
+      "si_falla": "aviso",
+      "regla": "Las páginas se alcanzan en 3 clics o menos desde la portada.",
+      "arreglo": "Enlazar las páginas importantes desde el menú o el contenido.",
+      "origen": [
+        "J:SEO23",
+        "A:2.6"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "WEB-07",
+      "responsable": "Jose",
+      "titulo": "Menú consistente",
+      "notas": [
+        "ux"
+      ],
+      "gravedad": "media",
+      "alcance": "comparacion",
+      "metodo": "html",
+      "si_falla": "aviso",
+      "regla": "nav tiene los mismos enlaces principales en todas las páginas.",
+      "arreglo": "Mantener el mismo menú en toda la web.",
+      "origen": [
+        "J:UX7"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "WEB-08",
+      "responsable": "Jose",
+      "titulo": "Títulos únicos",
+      "notas": [
+        "seo"
+      ],
+      "gravedad": "baja",
+      "alcance": "comparacion",
+      "metodo": "html",
+      "si_falla": "aviso",
+      "regla": "Ninguna página repite el title de otra.",
+      "arreglo": "Escribir un title distinto por página.",
+      "origen": [
+        "J:SEO7",
+        "E"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "WEB-09",
+      "responsable": "Jose",
+      "titulo": "Core Web Vitals",
+      "notas": [
+        "seo",
+        "ux"
+      ],
+      "gravedad": "alta",
+      "alcance": "dominio",
+      "metodo": "pagespeed",
+      "si_falla": "no_cumple",
+      "regla": "LCP de 2,5 s o menos, INP de 200 ms o menos, CLS de 0,1 o menos. Sin datos de campo, se usan los de laboratorio y se indica. Sin PageSpeed, sin datos.",
+      "arreglo": "Optimizar imágenes, scripts y carga.",
+      "origen": [
+        "I:C14",
+        "A:2.5",
+        "E"
+      ],
+      "solo_local": false
+    },
+    {
+      "id": "WEB-10",
+      "responsable": "Jose",
+      "titulo": "Respuesta del servidor (TTFB)",
+      "notas": [
+        "seo",
+        "geo"
+      ],
+      "gravedad": "media",
+      "alcance": "dominio",
+      "metodo": "http",
+      "si_falla": "aviso",
+      "regla": "El primer byte llega en menos de 600 ms en la portada. La medición varía según la red.",
+      "arreglo": "Mejorar el servidor o usar caché.",
+      "origen": [
+        "A:1.6"
+      ],
+      "solo_local": false
+    }
+  ],
+  "revision_manual": [
+    {
+      "id": "RM-01",
+      "titulo": "Calidad del texto alt",
+      "detalle": "Que describa bien la imagen."
+    },
+    {
+      "id": "RM-02",
+      "titulo": "Recorrido real con teclado",
+      "detalle": "Orden lógico, sin trampas de foco."
+    },
+    {
+      "id": "RM-03",
+      "titulo": "Foco no tapado",
+      "detalle": "Que menús fijos no oculten el elemento activo (WCAG 2.4.11)."
+    },
+    {
+      "id": "RM-04",
+      "titulo": "Zoom al 200 % y reflow",
+      "detalle": "Que nada se rompa al ampliar ni en pantallas estrechas."
+    },
+    {
+      "id": "RM-05",
+      "titulo": "Mensajes de error en formularios",
+      "detalle": "Que se expliquen con texto, no solo con color."
+    },
+    {
+      "id": "RM-06",
+      "titulo": "Alternativas al arrastre",
+      "detalle": "Carruseles y gestos con botones equivalentes."
+    },
+    {
+      "id": "RM-07",
+      "titulo": "Calidad de subtítulos",
+      "detalle": "Que sean correctos y estén sincronizados."
+    },
+    {
+      "id": "RM-08",
+      "titulo": "Rechazar cookies",
+      "detalle": "Que rechazar sea tan fácil como aceptar."
+    },
+    {
+      "id": "RM-09",
+      "titulo": "Intención de búsqueda y calidad del contenido",
+      "detalle": "Que la página responda a lo que busca la gente."
+    },
+    {
+      "id": "RM-10",
+      "titulo": "Prueba con lector de pantalla",
+      "detalle": "NVDA o VoiceOver, y si se puede, con usuarios reales."
+    }
+  ]
+}
