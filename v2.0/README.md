@@ -26,6 +26,8 @@ Estado: **fase 9** (identidad visual de Proconsi). Las fases están descritas en
   del contenido principal. Lista informativa con «Aparece / No aparece» por elemento.
 - **06 Esquema del documento**: árbol anidado (`ul` dentro de `li`) de los h1-h6 visibles con los saltos de nivel
   marcados (criterio de C05) y recuento de regiones header/nav/main/aside/footer y sus roles ARIA, con ocultas y nombres.
+- **07 Redirecciones y peso**: con los datos que ya da el `Fetcher`, cadena de peticiones (URL, código, tiempo), tiempo
+  total, tamaño del HTML (descomprimido) y `Content-Encoding`; aviso informativo con más de 2 redirecciones.
 
 ## Identidad visual (fase 9)
 

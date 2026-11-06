@@ -8,10 +8,14 @@ class Insights
     /** Máximo de caracteres del texto «lo que ve un bot» que se envían a la pantalla */
     public const BOT_TEXT_MAX = 100000;
 
-    public static function build(CheckContext $ctx): array
+    /**
+     * @param array|null $page resultado de Fetcher::fetch() de la página (para redirecciones y peso)
+     */
+    public static function build(CheckContext $ctx, ?array $page = null): array
     {
         $reason = self::contentUnavailable($ctx);
         return [
+            'transferencia' => $page === null ? null : self::transfer($page),
             'sin_contenido' => $reason,
             'vista_bot' => $reason === null ? self::botView($ctx) : null,
             'vista_previa' => $reason === null ? self::preview($ctx) : null,
@@ -54,6 +58,37 @@ class Insights
             'texto' => $cut ? mb_substr($text, 0, self::BOT_TEXT_MAX, 'UTF-8') : $text,
             'texto_recortado' => $cut,
             'html_recortado' => $ctx->truncated,
+        ];
+    }
+
+    /** Más redirecciones que estas → aviso informativo */
+    public const REDIRECTS_WARN = 2;
+
+    /**
+     * Función 07 «Redirecciones y peso», con los datos que ya obtiene el Fetcher: cada salto (URL, código y
+     * tiempo), tiempo total, tamaño del HTML descargado (ya descomprimido) y Content-Encoding de la respuesta.
+     */
+    public static function transfer(array $page): array
+    {
+        $hops = [];
+        foreach ((array) ($page['hops'] ?? []) as $h) {
+            $ms = $h['timings']['total_ms'] ?? null;
+            $hops[] = [
+                'url' => (string) ($h['url'] ?? ''),
+                'estado' => isset($h['status']) ? (int) $h['status'] : null,
+                'tiempo_ms' => is_numeric($ms) ? (int) $ms : null,
+            ];
+        }
+        $redirects = count((array) ($page['redirects'] ?? []));
+        $encoding = trim((string) ($page['headers']['content-encoding'] ?? ''));
+        return [
+            'saltos' => $hops,
+            'redirecciones' => $redirects,
+            'aviso_redirecciones' => $redirects > self::REDIRECTS_WARN,
+            'tiempo_total_ms' => (int) ($page['timings']['total_ms'] ?? 0),
+            'bytes' => (int) ($page['bytes'] ?? 0),
+            'truncado' => !empty($page['truncated']),
+            'content_encoding' => $encoding === '' ? null : $encoding,
         ];
     }
 

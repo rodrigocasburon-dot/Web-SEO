@@ -697,6 +697,57 @@
     if (c.bots_ia) host.appendChild(renderBotsTable(c.bots_ia));
     if (!c.sin_contenido) host.appendChild(renderKeyword(c.palabra_clave));
     if (c.esquema) host.appendChild(renderOutline(c.esquema));
+    if (c.transferencia) host.appendChild(renderTransfer(c.transferencia));
+  }
+
+  // 07. Redirecciones y peso
+  function fmtSeconds(ms) {
+    return fmtNumber((ms || 0) / 1000, 2) + ' s';
+  }
+
+  function fmtBytes(b) {
+    return b >= 1048576 ? fmtNumber(b / 1048576, 2) + ' MB' : fmtNumber(b / 1024, 1) + ' KB';
+  }
+
+  function renderTransfer(t) {
+    var sec = el('section', { class: 'subsection', 'aria-labelledby': 'transfer-title' }, [
+      el('h4', { id: 'transfer-title', text: 'Redirecciones y peso' })
+    ]);
+    if (t.aviso_redirecciones) {
+      sec.appendChild(el('div', { class: 'notice notice--warn' }, [
+        el('p', { text: 'La URL pasa por ' + t.redirecciones + ' redirecciones antes de llegar a la página final (más de 2). Cada salto añade una petición y tiempo de espera; conviene enlazar directamente a la URL final.' })
+      ]));
+    }
+    sec.appendChild(el('ul', { class: 'inline-stats' }, [
+      el('li', {}, ['Redirecciones: ', el('strong', { text: String(t.redirecciones) })]),
+      el('li', {}, ['Tiempo total: ', el('strong', { text: fmtSeconds(t.tiempo_total_ms) })]),
+      el('li', {}, ['HTML descargado: ', el('strong', { text: fmtBytes(t.bytes) }), t.truncado ? ' (truncado al límite de 2 MB)' : '']),
+      el('li', {}, ['Content-Encoding: ', t.content_encoding ? el('code', { text: t.content_encoding }) : el('span', { class: 'is-missing', text: 'no indicado (sin compresión declarada)' })])
+    ]));
+    if (t.saltos.length) {
+      sec.appendChild(el('div', { class: 'table-wrap' }, [
+        el('table', { class: 'data-table' }, [
+          el('caption', { class: 'visually-hidden', text: 'Cadena de peticiones hasta la página final' }),
+          el('thead', {}, [el('tr', {}, [
+            el('th', { scope: 'col', class: 'num', text: 'Paso' }),
+            el('th', { scope: 'col', text: 'URL' }),
+            el('th', { scope: 'col', class: 'num', text: 'Código' }),
+            el('th', { scope: 'col', class: 'num', text: 'Tiempo' })
+          ])]),
+          el('tbody', {}, t.saltos.map(function (h, i) {
+            var last = i === t.saltos.length - 1;
+            return el('tr', {}, [
+              el('td', { class: 'num', text: String(i + 1) }),
+              el('th', { scope: 'row', text: h.url + (last && t.saltos.length > 1 ? ' (final)' : '') }),
+              el('td', { class: 'num', text: h.estado ? 'HTTP ' + h.estado : '—' }),
+              el('td', { class: 'num', text: h.tiempo_ms === null ? '—' : fmtSeconds(h.tiempo_ms) })
+            ]);
+          }))
+        ])
+      ]));
+    }
+    sec.appendChild(el('p', { class: 'help', text: 'Datos de la descarga del analizador. El tamaño es el del HTML ya descomprimido (no el transferido por la red) y no incluye imágenes, hojas de estilo ni scripts. El tiempo total incluye la resolución DNS y todos los saltos.' }));
+    return sec;
   }
 
   // 06. Esquema del documento: lista anidada real (ul dentro de li) y regiones

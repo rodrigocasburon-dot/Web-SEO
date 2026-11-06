@@ -241,3 +241,57 @@ test('Esquema: regiones con recuento, equivalentes ARIA, nombres y ocultas', fun
     assertSame(2, $r['contentinfo']['total'], 'footer de página + role=contentinfo (primer token)');
     assertSame(['banner', 'navigation', 'main', 'complementary', 'contentinfo'], array_keys($r));
 });
+
+// ---------- 07 Redirecciones y peso ----------
+
+test('Redirecciones y peso: cadena con código y tiempo por salto, aviso con más de 2 redirecciones', function () {
+    $html = '<html><body>' . str_repeat('a', 3000) . '</body></html>';
+    $f = fetcherWith([
+        'http://example.com/' => fakeResp(301, ['location' => 'https://example.com/'], '', ['timings' => ['total_ms' => 40]]),
+        'https://example.com/' => fakeResp(302, ['location' => '/es'], '', ['timings' => ['total_ms' => 30]]),
+        'https://example.com/es' => fakeResp(301, ['location' => '/es/'], '', ['timings' => ['total_ms' => 20]]),
+        'https://example.com/es/' => fakeResp(200, ['content-type' => 'text/html', 'content-encoding' => 'br'], $html, ['timings' => ['total_ms' => 120]]),
+    ]);
+    $t = Insights::transfer($f->fetch('http://example.com/'));
+    assertSame([
+        ['url' => 'http://example.com/', 'estado' => 301, 'tiempo_ms' => 40],
+        ['url' => 'https://example.com/', 'estado' => 302, 'tiempo_ms' => 30],
+        ['url' => 'https://example.com/es', 'estado' => 301, 'tiempo_ms' => 20],
+        ['url' => 'https://example.com/es/', 'estado' => 200, 'tiempo_ms' => 120],
+    ], $t['saltos']);
+    assertSame(3, $t['redirecciones']);
+    assertSame(true, $t['aviso_redirecciones']);
+    assertSame(strlen($html), $t['bytes']);
+    assertSame('br', $t['content_encoding']);
+    assertSame(false, $t['truncado']);
+    assertTrue($t['tiempo_total_ms'] >= 0);
+});
+
+test('Redirecciones y peso: 2 redirecciones no avisan; sin Content-Encoding queda null', function () {
+    $f = fetcherWith([
+        'https://example.com/a' => fakeResp(301, ['location' => '/b']),
+        'https://example.com/b' => fakeResp(308, ['location' => '/c']),
+        'https://example.com/c' => fakeResp(200, ['content-type' => 'text/html'], '<p>x</p>', ['truncated' => true]),
+    ]);
+    $t = Insights::transfer($f->fetch('https://example.com/a'));
+    assertSame(2, $t['redirecciones']);
+    assertSame(false, $t['aviso_redirecciones']);
+    assertSame(null, $t['content_encoding']);
+    assertSame(true, $t['truncado']);
+    assertSame([], Insights::transfer([])['saltos'], 'Sin datos no falla');
+});
+
+test('Redirecciones y peso: el análisis completo lo devuelve en «complementario»', function () {
+    $config = require __DIR__ . '/../config/config.example.php';
+    $page = fetcherWith([
+        'https://example.com/' => fakeResp(301, ['location' => '/inicio']),
+        'https://example.com/inicio' => fakeResp(200, ['content-type' => 'text/html; charset=utf-8', 'content-encoding' => 'gzip'], '<html lang="es"><title>T</title><main><h1>Hola</h1></main></html>'),
+    ]);
+    $none = fetcherWith([]);
+    $r = (new Analyzer($config, $page, $none, fn(string $url, array $o = []) => $none->fetch($url)))->analyze('https://example.com/');
+    $t = $r['complementario']['transferencia'];
+    assertSame(1, $t['redirecciones']);
+    assertSame([301, 200], array_column($t['saltos'], 'estado'));
+    assertSame('gzip', $t['content_encoding']);
+    assertSame('ausente', $r['complementario']['bots_ia']['robots_txt'], 'robots.txt 404 en el transporte simulado');
+});
