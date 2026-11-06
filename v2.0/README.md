@@ -18,6 +18,9 @@ Estado: **fase 9** (identidad visual de Proconsi). Las fases están descritas en
 - **03 Vista previa en Google y redes**: title / URL / meta description recortados a unos 60 / 60 / 155 caracteres
   y tarjeta social (og:title, og:description, og:image, twitter:card) con las etiquetas ausentes; la imagen solo se
   carga si es https, con `referrerpolicy="no-referrer"` (la CSP admite `img-src https:`). Es una aproximación.
+- **04 Tabla de bots de IA** (`src/RobotsAnalyzer.php`): acceso a la URL de los bots de búsqueda (`search_engine_bots`
+  + `ai_search_bots`) y de entrenamiento (`ai_training_bots`) con el grupo y la regla aplicados (grupo del propio
+  token o «*», regla más larga, Allow en empate). C02 usa la misma lectura de robots.txt; ausencia o error se informan.
 
 ## Identidad visual (fase 9)
 
