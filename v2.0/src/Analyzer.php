@@ -54,7 +54,7 @@ class Analyzer
             'checks' => $checks,
             'puntuacion' => (new Scorer())->score($checks),
             // Vistas informativas (no puntúan)
-            'complementario' => Insights::build($ctx),
+            'complementario' => Insights::build($ctx, $summary),
         ];
     }
 
