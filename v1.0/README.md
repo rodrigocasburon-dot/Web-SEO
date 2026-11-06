@@ -1,6 +1,6 @@
 # Web-SEO
 
-Herramienta interna de Proconsi. Le das una URL y puntúa de 0 a 100 su SEO, su GEO y su UX (con accesibilidad dentro), y marca los puntos de la checklist que faltan. Está hecha con PHP y MySQL, sin frameworks.
+Herramienta interna de Proconsi. Le das una URL y puntúa de 0 a 100 su SEO, su GEO y su UX (con accesibilidad dentro), y marca los puntos de la checklist que faltan. Está hecha con PHP y MySQL, sin frameworks. Además usa Chrome para probar las páginas de verdad y, si hay claves, PageSpeed y una IA.
 
 ## Instalación
 
@@ -14,13 +14,29 @@ Herramienta interna de Proconsi. Le das una URL y puntúa de 0 a 100 su SEO, su 
 ## Cómo funciona
 
 1. `index.php` recibe la URL, descarga la portada y crea el análisis.
-2. `progreso.php` se recarga solo. Cada recarga visita páginas durante unos segundos, hasta 100, siguiendo los enlaces del mismo dominio y respetando `robots.txt`.
-3. La última fase pide PageSpeed, si hay clave, y ejecuta las comprobaciones que comparan páginas.
-4. `resultado.php` muestra el informe, con las notas, la checklist y el botón "Guardar como PDF".
+2. `progreso.php` se recarga solo. Cada recarga visita páginas durante unos segundos, siguiendo los enlaces del mismo dominio y respetando `robots.txt`. No hay límite de páginas: al acabarse los enlaces lee el sitemap, y se puede pulsar "Terminar ya" para ver el informe con lo analizado.
+3. Chrome abre hasta 5 páginas de muestra y mide teclado, foco, zoom, formularios, carruseles y cookies.
+4. La IA, si hay clave, valora en esas páginas los textos alt y si el contenido responde a lo que promete.
+5. La última fase pide PageSpeed, si hay clave, y ejecuta las comprobaciones que comparan páginas.
+6. `resultado.php` muestra el informe, con las notas, la checklist y el botón "Guardar como PDF".
 
 La nota de cada bloque es puntos conseguidos entre puntos posibles, con peso según la gravedad: crítica 10, alta 6, media 3 y baja 1.
 
-Para activar PageSpeed, consigue una clave gratuita en Google Cloud y ponla en `pagespeed_clave`, dentro de `config.php`. Sin clave, la velocidad, el contraste y los botones táctiles salen como "sin datos".
+## Chrome, IA y PageSpeed
+
+Todo es opcional. Lo que falte se estima leyendo el código o sale como "sin datos", y el informe indica qué se ha medido.
+
+| Qué | Cómo se activa | Sin ello |
+|---|---|---|
+| Chrome | Instálalo. Se busca solo, o pon su ruta en `chrome_ruta` | Los seis puntos se estiman por código |
+| IA | Crea una clave en <https://platform.claude.com> y ponla en `ia_clave` | El alt y la intención se estiman por código |
+| PageSpeed | Crea una clave gratuita en Google Cloud y ponla en `pagespeed_clave` | La velocidad, el contraste y los botones táctiles salen como "sin datos" |
+
+Las claves van en `config.php`, nunca en GitHub. Cada análisis con IA tiene un coste en la cuenta de Anthropic.
+
+Chrome abre webs de terceros y ejecuta su JavaScript en tu servidor, así que solo debe usarse en una red interna. Se bloquean las direcciones privadas y cualquier envío de datos, también en los formularios, pero una web podría cambiar su DNS para intentar saltarse ese filtro.
+
+Si actualizas desde una versión anterior, vuelve a importar `install.sql`.
 
 ## Carpetas
 
@@ -34,10 +50,10 @@ Para activar PageSpeed, consigue una clave gratuita en Google Cloud y ponla en `
 
 ## Cómo cambiar o añadir una comprobación
 
-Los 78 puntos ya están programados. Para cambiar uno, edita su archivo. Para añadir uno nuevo:
+Los 88 puntos ya están programados. Para cambiar uno, edita su archivo. Para añadir uno nuevo:
 
-1. Añade el punto a `checklist/checklist.json` con un ID nuevo, por ejemplo `SEO-26`.
-2. Crea un archivo con ese nombre exacto en su carpeta: `seo/SEO-26.php`.
+1. Añade el punto a `checklist/checklist.json` con un ID nuevo, por ejemplo `SEO-27`.
+2. Crea un archivo con ese nombre exacto en su carpeta: `seo/SEO-27.php`.
 3. Copia el patrón de abajo y programa la regla.
 4. Analiza una web en <http://localhost/Web-SEO/v1.0/> y comprueba el resultado.
 
@@ -56,7 +72,7 @@ return function (array $pagina): array {
 };
 ```
 
-Puedes usar de ejemplo cualquier archivo de la carpeta. Los puntos con alcance `comparacion` y los de PageSpeed no reciben `$pagina`, sino `$sitio`, con `paginas`, `pagespeed`, `url`, `es_local` y `config`.
+Puedes usar de ejemplo cualquier archivo de la carpeta. Los puntos con alcance `comparacion` y los de PageSpeed no reciben `$pagina`, sino `$sitio`, con `paginas`, `pagespeed`, `url` y `config`.
 
 ### Qué debe devolver
 
@@ -91,7 +107,6 @@ La columna "Si falla" de la lista indica si un fallo es `no_cumple` o `aviso`. L
 | `$pagina['jsonld']` | Lista de objetos JSON-LD ya leídos |
 | `$pagina['jsonld_errores']` | Bloques JSON-LD con la sintaxis rota |
 | `$pagina['robots']` | Texto de `robots.txt`, o `null` si no existe |
-| `$pagina['es_local']` | `true` si la casilla está marcada |
 | `$pagina['es_portada']` | `true` en la primera página |
 | `$pagina['config']` | La configuración, para llamar a `descargar()` |
 

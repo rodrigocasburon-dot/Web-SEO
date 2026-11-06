@@ -3,7 +3,7 @@
 return function (array $p): array {
     $videos = $p['xpath']->query('//video');
     if ($videos->length === 0) {
-        return no_aplica('La página no tiene etiquetas video. Los vídeos incrustados son revisión manual.');
+        return no_aplica('La página no tiene etiquetas video. Los vídeos incrustados no se pueden comprobar.');
     }
     $sin_pista = $p['xpath']->query('//video[not(track)]')->length;
     return $sin_pista

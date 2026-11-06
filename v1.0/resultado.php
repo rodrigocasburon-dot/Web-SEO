@@ -1,6 +1,8 @@
 <?php
 require 'lib/carga.php';
 
+set_time_limit(240);
+
 const ETIQUETAS = [
     'cumple' => 'Cumple',
     'no_cumple' => 'No cumple',
@@ -29,14 +31,6 @@ if ($analisis['estado'] !== 'terminado') {
     exit;
 }
 
-$consulta = $db->prepare('SELECT r.punto_id, r.estado, r.detalle, p.url FROM resultados r
-    JOIN paginas p ON p.id = r.pagina_id WHERE p.analisis_id = ? ORDER BY p.id');
-$consulta->execute([$id]);
-$por_punto = [];
-foreach ($consulta->fetchAll(PDO::FETCH_ASSOC) as $fila) {
-    $por_punto[$fila['punto_id']][] = $fila;
-}
-
 $consulta = $db->prepare("SELECT COUNT(*) FROM paginas WHERE analisis_id = ? AND estado = 'hecha'");
 $consulta->execute([$id]);
 $total_paginas = (int) $consulta->fetchColumn();
@@ -45,8 +39,12 @@ $checklist = cargar_checklist();
 $resumen = [];
 $puntos = [];
 $sin_ejecutar = 0;
+// Un punto cada vez: en una web enorme, todos los resultados juntos no caben en memoria.
+$consulta = $db->prepare('SELECT r.estado, r.detalle, p.url FROM resultados r
+    JOIN paginas p ON p.id = r.pagina_id WHERE p.analisis_id = ? AND r.punto_id = ? ORDER BY p.id');
 foreach ($checklist['puntos'] as $punto) {
-    $resumen[$punto['id']] = resumir_punto($punto, $por_punto[$punto['id']] ?? [], $checklist['valor_resultado']);
+    $consulta->execute([$id, $punto['id']]);
+    $resumen[$punto['id']] = resumir_punto($punto, $consulta->fetchAll(PDO::FETCH_ASSOC), $checklist['valor_resultado']);
     if ($resumen[$punto['id']]['estado'] === 'pendiente') {
         $sin_ejecutar++;
         continue;
@@ -75,7 +73,7 @@ cabecera('Informe de auditoría');
     <p class="etiqueta">Informe de auditoría</p>
     <h1 class="url"><?= h($analisis['url']) ?></h1>
     <p class="datos">
-        <?= $total_paginas ?> páginas analizadas · <?= $analisis['es_local'] ? 'Negocio local' : 'No es negocio local' ?> ·
+        <?= $total_paginas ?> páginas analizadas ·
         <?= h(date('d/m/Y H:i', strtotime($analisis['creado']))) ?>
     </p>
 
@@ -165,22 +163,23 @@ cabecera('Informe de auditoría');
 </section>
 
 <section>
-    <h2>Revisión manual</h2>
-    <p>La herramienta no puede comprobar estos puntos. Debe revisarlos una persona.</p>
-    <ul>
-        <?php foreach ($checklist['revision_manual'] as $r): ?>
-            <li><strong><?= h($r['titulo']) ?>.</strong> <?= h($r['detalle']) ?></li>
-        <?php endforeach; ?>
-    </ul>
-</section>
-
-<section>
     <h2>Limitaciones del análisis</h2>
     <ul>
         <li>Es una evaluación automática basada en WCAG 2.2 AA. «Sin errores» significa sin errores detectables automáticamente; no certifica el cumplimiento de WCAG ni de la ley.</li>
         <li>La nota GEO mide la preparación técnica para la búsqueda con IA, no si una IA cita realmente la web.</li>
         <li>Los pesos son una decisión de diseño de esta herramienta: ningún buscador publica los suyos.</li>
         <li>Se lee el HTML inicial, sin ejecutar JavaScript. El contenido que se genera después no se analiza.</li>
+        <?php if ($analisis['navegador']): ?>
+            <li>El teclado, el foco tapado, el zoom, los errores de formulario, el arrastre y el rechazo de cookies se han medido con Chrome en <?= (int) $analisis['navegador'] ?> páginas de muestra, no en toda la web. Los formularios se prueban vacíos: ningún dato sale del navegador.</li>
+        <?php else: ?>
+            <li>El teclado, el foco tapado, el zoom, los errores de formulario, el arrastre y el rechazo de cookies se han estimado leyendo el código, porque no se ha podido usar Chrome.</li>
+        <?php endif; ?>
+        <?php if ($analisis['ia']): ?>
+            <li>La calidad del alt y la intención de búsqueda las ha valorado una IA en <?= (int) $analisis['ia'] ?> páginas de muestra. Es una opinión automática, no una certeza.</li>
+        <?php else: ?>
+            <li>La calidad del alt y la intención de búsqueda se han estimado leyendo el código, porque no hay clave de IA.</li>
+        <?php endif; ?>
+        <li>De los subtítulos se revisa el archivo, no si coincide con lo que se dice en el vídeo. La preparación para lector de pantalla se estima por código y no equivale a probar la web con un lector real ni con personas.</li>
         <?php if (!$analisis['pagespeed']): ?>
             <li>No se han obtenido datos de PageSpeed, así que la velocidad, el contraste y el tamaño de los botones salen como «sin datos».</li>
         <?php endif; ?>

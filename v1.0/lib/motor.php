@@ -18,9 +18,6 @@ function archivo_de_punto(string $id): string
 // $datos es la página o, en los puntos que comparan páginas, el sitio completo.
 function ejecutar_punto(array $punto, array $datos): array
 {
-    if ($punto['solo_local'] && !$datos['es_local']) {
-        return ['estado' => 'no_aplica', 'detalle' => 'Solo cuenta en negocios locales.'];
-    }
     $archivo = archivo_de_punto($punto['id']);
     if (!is_file($archivo)) {
         return ['estado' => 'pendiente', 'detalle' => 'Esta comprobación aún no está programada.'];

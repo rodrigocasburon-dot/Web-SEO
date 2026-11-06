@@ -178,3 +178,17 @@ function auditoria_pagespeed(array $sitio, string $id): ?array
 {
     return $sitio['pagespeed']['lighthouseResult']['audits'][$id] ?? null;
 }
+
+// CSS sin comentarios ni bloques @media: lo que se aplica en cualquier tamaño de pantalla.
+function css_base(string $css): string
+{
+    $css = preg_replace('#/\*.*?\*/#s', '', $css) ?? $css;
+    return preg_replace('/@media[^{]*+\{(?:[^{}]*+\{[^{}]*+\})*+[^{}]*+\}/i', '', $css) ?? $css;
+}
+
+// Lista de [selector, declaraciones] de un CSS.
+function reglas_css(string $css): array
+{
+    preg_match_all('/([^{}]+)\{([^{}]*)\}/', $css, $m, PREG_SET_ORDER);
+    return array_map(fn($r) => [trim($r[1]), $r[2]], $m);
+}

@@ -12,6 +12,6 @@ return function (array $sitio): array {
     }
     $comunes = array_intersect(...$por_pagina);
     return $comunes
-        ? cumple('El teléfono coincide en las ' . count($por_pagina) . ' páginas donde aparece. El nombre y la dirección son revisión manual.')
+        ? cumple('El teléfono coincide en las ' . count($por_pagina) . ' páginas donde aparece. El nombre y la dirección no se comparan.')
         : aviso('No hay un teléfono común a todas las páginas donde aparece.');
 };

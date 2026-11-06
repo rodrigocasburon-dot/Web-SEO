@@ -7,6 +7,6 @@ return function (array $p): array {
     $redes = '/(facebook|instagram|twitter|x\.com|linkedin|youtube|tiktok|whatsapp|wa\.me)/i';
     $externos = array_filter(enlaces_de($p), fn($e) => !$e['interno'] && !preg_match($redes, $e['url']));
     return $externos
-        ? cumple('La página enlaza a ' . count($externos) . ' fuentes externas. Su calidad es revisión manual.')
+        ? cumple('La página enlaza a ' . count($externos) . ' fuentes externas. No se evalúa su calidad.')
         : aviso('El texto largo no enlaza a fuentes externas.');
 };

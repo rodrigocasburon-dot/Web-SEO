@@ -1,7 +1,7 @@
 <?php
 // Convierte una descarga en el array $pagina que reciben todas las comprobaciones.
 
-function crear_pagina(array $descarga, string $url_pedida, bool $es_local, array $config, ?string $robots, bool $es_portada): array
+function crear_pagina(array $descarga, string $url_pedida, array $config, ?string $robots, bool $es_portada): array
 {
     $html = a_utf8($descarga['cuerpo'], $descarga['cabeceras']['content-type'] ?? '');
     $dom = new DOMDocument();
@@ -28,7 +28,6 @@ function crear_pagina(array $descarga, string $url_pedida, bool $es_local, array
         'robots' => $robots,
         // Los estilos solo se leen en la portada, que es donde se comprueban.
         'css' => $es_portada ? leer_css($xpath, $descarga['url'], $config) : '',
-        'es_local' => $es_local,
         'es_portada' => $es_portada,
         'config' => $config,
     ];

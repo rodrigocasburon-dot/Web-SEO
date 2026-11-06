@@ -9,10 +9,12 @@ DROP TABLE IF EXISTS resultados, paginas, analisis;
 CREATE TABLE analisis (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     url VARCHAR(2048) NOT NULL,
-    es_local TINYINT(1) NOT NULL DEFAULT 0,
-    estado ENUM('rastreando', 'cierre', 'terminado') NOT NULL DEFAULT 'rastreando',
+    estado ENUM('rastreando', 'navegador', 'ia', 'cierre', 'terminado') NOT NULL DEFAULT 'rastreando',
     robots MEDIUMTEXT NULL,
     pagespeed MEDIUMTEXT NULL,
+    navegador SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    ia SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    sitemap TINYINT(1) NOT NULL DEFAULT 0,
     creado DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
@@ -38,5 +40,6 @@ CREATE TABLE resultados (
     punto_id VARCHAR(10) NOT NULL,
     estado ENUM('cumple', 'no_cumple', 'aviso', 'sin_datos', 'no_aplica', 'pendiente') NOT NULL,
     detalle TEXT NOT NULL,
+    KEY punto_pagina (punto_id, pagina_id),
     FOREIGN KEY (pagina_id) REFERENCES paginas (id) ON DELETE CASCADE
 ) ENGINE=InnoDB;

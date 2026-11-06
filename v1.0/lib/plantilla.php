@@ -58,7 +58,7 @@ function pantalla_carga(string $url, int $paso, string $texto, int $hechas = 0, 
         </ol>
         <p role="status"><?= h($texto) ?></p>
         <progress class="barra-progreso" aria-label="Progreso del análisis"<?= $total > 0 ? " max=\"$total\" value=\"$hechas\"" : '' ?>></progress>
-        <p class="ayuda">No cierres esta pestaña. La página se actualiza sola.</p>
+        <p class="ayuda">Una web grande puede tardar horas. Si cierras esta pestaña se pausa: vuelve a esta misma dirección para seguir.</p>
     </section>
     <?php
 }

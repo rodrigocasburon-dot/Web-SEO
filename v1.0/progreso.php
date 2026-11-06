@@ -19,6 +19,14 @@ if ($analisis['estado'] === 'terminado') {
     exit;
 }
 
+// Terminar ya: se deja de rastrear y el informe sale con lo analizado hasta ahora.
+if (isset($_GET['terminar']) && $analisis['estado'] === 'rastreando') {
+    $db->prepare('UPDATE analisis SET sitemap = 1 WHERE id = ?')->execute([$id]);
+    $db->prepare("UPDATE paginas SET estado = 'omitida' WHERE analisis_id = ? AND estado = 'pendiente'")->execute([$id]);
+    header("Location: progreso.php?id=$id");
+    exit;
+}
+
 $consulta = $db->prepare("SELECT COUNT(*) AS total, SUM(estado <> 'pendiente') AS hechas FROM paginas WHERE analisis_id = ?");
 $consulta->execute([$id]);
 $cuenta = $consulta->fetch(PDO::FETCH_ASSOC);
@@ -27,10 +35,16 @@ $total = (int) $cuenta['total'];
 
 // La recarga larga es una red de seguridad: si PHP se corta, la pantalla no se queda colgada.
 cabecera('Analizando', 300);
-if ($analisis['estado'] === 'cierre') {
-    pantalla_carga($analisis['url'], 3, 'Revisando enlaces rotos y velocidad. Puede tardar hasta un minuto.', $total, $total);
+$ultimas = [
+    'navegador' => 'Probando la web en Chrome: teclado, zoom, formularios y cookies. Puede tardar un par de minutos.',
+    'ia' => 'Revisando imágenes y contenido con IA. Puede tardar un minuto.',
+    'cierre' => 'Revisando enlaces rotos y velocidad. Puede tardar hasta un minuto.',
+];
+if (isset($ultimas[$analisis['estado']])) {
+    pantalla_carga($analisis['url'], 3, $ultimas[$analisis['estado']], $total, $total);
 } else {
-    pantalla_carga($analisis['url'], 2, "$hechas de $total páginas encontradas. Máximo: {$config['paginas_maximas']}.", $hechas, $total);
+    pantalla_carga($analisis['url'], 2, "$hechas de $total páginas encontradas hasta ahora.", $hechas, $total);
+    echo '<p class="inicio"><a href="' . h("progreso.php?id=$id&terminar=1") . '">Terminar ya y ver el informe con lo analizado</a></p>';
 }
 pie(false);
 

@@ -34,8 +34,7 @@
         "J:SEO15",
         "I:C01",
         "E"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "SEO-02",
@@ -56,8 +55,7 @@
         "I:C01",
         "A:2.8",
         "E"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "SEO-03",
@@ -75,8 +73,7 @@
       "arreglo": "Cambiar esos recursos a https://.",
       "origen": [
         "A:2.8"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "SEO-04",
@@ -96,8 +93,7 @@
         "J:SEO1",
         "I:C02",
         "E"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "SEO-05",
@@ -117,8 +113,7 @@
         "I:C02",
         "A:1.5",
         "E"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "SEO-06",
@@ -136,8 +131,7 @@
       "origen": [
         "J:SEO6",
         "E"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "SEO-07",
@@ -156,8 +150,7 @@
         "J:SEO5",
         "I:C12",
         "E"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "SEO-08",
@@ -179,8 +172,7 @@
         "I:C10",
         "A:2.4",
         "E"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "SEO-09",
@@ -200,8 +192,7 @@
         "I:C15",
         "A:2.4",
         "E"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "SEO-10",
@@ -220,8 +211,7 @@
       "origen": [
         "A:2.1",
         "E"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "SEO-11",
@@ -243,8 +233,7 @@
         "J:GEO5",
         "I:C05",
         "E"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "SEO-12",
@@ -268,8 +257,7 @@
         "A:1.4",
         "A:3.4",
         "E"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "SEO-13",
@@ -290,8 +278,7 @@
         "I:C09",
         "A:2.2",
         "E"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "SEO-14",
@@ -312,8 +299,7 @@
         "J:SEO11",
         "I:C07",
         "E"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "SEO-15",
@@ -336,8 +322,7 @@
         "I:C06",
         "A:3.2",
         "E"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "SEO-16",
@@ -355,8 +340,7 @@
       "origen": [
         "J:SEO9",
         "E"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "SEO-17",
@@ -377,8 +361,7 @@
         "J:SEO12",
         "J:GEO22",
         "E"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "SEO-18",
@@ -399,8 +382,7 @@
         "J:GEO3",
         "I:C13",
         "E"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "SEO-19",
@@ -418,8 +400,7 @@
       "arreglo": "Añadir migas de pan en webs con categorías.",
       "origen": [
         "J:SEO19"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "SEO-20",
@@ -437,8 +418,7 @@
       "origen": [
         "J:SEO17",
         "E"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "SEO-21",
@@ -457,8 +437,7 @@
       "origen": [
         "A:2.1",
         "E"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "SEO-22",
@@ -478,8 +457,7 @@
         "A:1.2",
         "I",
         "E"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "SEO-23",
@@ -497,8 +475,7 @@
       "arreglo": "Añadir un favicon.",
       "origen": [
         "E"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "SEO-24",
@@ -515,8 +492,7 @@
       "arreglo": "Enlazar la ubicación del negocio.",
       "origen": [
         "J:SEO13"
-      ],
-      "solo_local": true
+      ]
     },
     {
       "id": "SEO-25",
@@ -533,8 +509,25 @@
       "arreglo": "Escribir el servicio junto a la ciudad o zona.",
       "origen": [
         "J:SEO20"
+      ]
+    },
+    {
+      "id": "SEO-26",
+      "responsable": "Estefany",
+      "titulo": "Intención de búsqueda",
+      "notas": [
+        "seo",
+        "geo"
       ],
-      "solo_local": true
+      "gravedad": "media",
+      "alcance": "pagina",
+      "metodo": "html",
+      "si_falla": "aviso",
+      "regla": "Una IA valora en páginas de muestra si responde a lo que promete su título y si el contenido es útil. Sin IA, se comparan palabras.",
+      "arreglo": "Responder al principio a lo que promete el título.",
+      "origen": [
+        "RM-09"
+      ]
     },
     {
       "id": "GEO-01",
@@ -553,8 +546,7 @@
         "J:GEO1",
         "I:C02",
         "A:1.5"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "GEO-02",
@@ -574,8 +566,7 @@
         "J:GEO12",
         "I:C03",
         "E"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "GEO-03",
@@ -592,8 +583,7 @@
       "arreglo": "Escribir el nombre en texto normal.",
       "origen": [
         "J:GEO8"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "GEO-04",
@@ -610,8 +600,7 @@
       "arreglo": "Añadir @id con una dirección fija del negocio.",
       "origen": [
         "J:GEO6"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "GEO-05",
@@ -628,8 +617,7 @@
       "arreglo": "Añadir las coordenadas del local.",
       "origen": [
         "J:GEO7"
-      ],
-      "solo_local": true
+      ]
     },
     {
       "id": "GEO-06",
@@ -646,8 +634,7 @@
       "arreglo": "Escribir calle y número en texto normal.",
       "origen": [
         "J:GEO9"
-      ],
-      "solo_local": true
+      ]
     },
     {
       "id": "GEO-07",
@@ -664,8 +651,7 @@
       "arreglo": "Publicar los horarios en ambos sitios.",
       "origen": [
         "J:GEO10"
-      ],
-      "solo_local": true
+      ]
     },
     {
       "id": "GEO-08",
@@ -678,12 +664,11 @@
       "alcance": "dominio",
       "metodo": "html",
       "si_falla": "aviso",
-      "regla": "Hay Review o aggregateRating en el JSON-LD. Que sean reales es revisión manual.",
+      "regla": "Hay Review o aggregateRating en el JSON-LD. No se puede comprobar que sean reales.",
       "arreglo": "Mostrar opiniones reales y marcarlas correctamente.",
       "origen": [
         "J:GEO11"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "GEO-09",
@@ -700,8 +685,7 @@
       "arreglo": "Escribir los datos fuera del mapa o del recuadro externo.",
       "origen": [
         "J:GEO13"
-      ],
-      "solo_local": true
+      ]
     },
     {
       "id": "GEO-10",
@@ -718,8 +702,7 @@
       "arreglo": "Publicar precios o rangos de precio.",
       "origen": [
         "J:GEO14"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "GEO-11",
@@ -739,8 +722,7 @@
         "J:GEO15",
         "J:GEO24",
         "E"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "GEO-12",
@@ -757,8 +739,7 @@
       "arreglo": "Usar tablas HTML en lugar de bloques de diseño.",
       "origen": [
         "J:GEO16"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "GEO-13",
@@ -777,8 +758,7 @@
         "J:GEO17",
         "A:1.1",
         "E"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "GEO-14",
@@ -797,8 +777,7 @@
         "J:GEO18",
         "A:1.1",
         "E"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "GEO-15",
@@ -815,8 +794,7 @@
       "arreglo": "Usar el tipo de Schema.org más preciso.",
       "origen": [
         "J:GEO19"
-      ],
-      "solo_local": true
+      ]
     },
     {
       "id": "GEO-16",
@@ -833,8 +811,7 @@
       "arreglo": "Añadir los perfiles oficiales en sameAs.",
       "origen": [
         "J:GEO20"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "GEO-17",
@@ -852,8 +829,7 @@
       "arreglo": "Enlazar el número con tel:.",
       "origen": [
         "J:GEO21"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "GEO-18",
@@ -871,8 +847,7 @@
       "origen": [
         "J:GEO23",
         "A:1.7"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "GEO-19",
@@ -891,8 +866,7 @@
       "origen": [
         "A:1.3",
         "I"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "GEO-20",
@@ -910,8 +884,7 @@
       "origen": [
         "A:1.8",
         "E"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "GEO-21",
@@ -924,14 +897,13 @@
       "alcance": "pagina",
       "metodo": "html",
       "si_falla": "aviso",
-      "regla": "Los textos largos enlazan a fuentes externas. La calidad de la fuente es revisión manual.",
+      "regla": "Los textos largos enlazan a fuentes externas. No se evalúa la calidad de la fuente.",
       "arreglo": "Citar datos con enlace a su origen.",
       "origen": [
         "A:1.3",
         "I",
         "E"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "GEO-22",
@@ -949,8 +921,7 @@
       "origen": [
         "A:1.4",
         "E"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "GEO-23",
@@ -968,8 +939,7 @@
       "origen": [
         "A:1.1",
         "E"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "GEO-24",
@@ -986,8 +956,7 @@
       "arreglo": "Reducir código innecesario.",
       "origen": [
         "E"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "UX-01",
@@ -1008,8 +977,7 @@
         "J:GEO4",
         "I:C11",
         "E"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "UX-02",
@@ -1028,8 +996,7 @@
         "J:UX1",
         "I:C04",
         "E"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "UX-03",
@@ -1049,8 +1016,7 @@
         "I:C04",
         "A:3.5",
         "E"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "UX-04",
@@ -1063,14 +1029,13 @@
       "alcance": "dominio",
       "metodo": "css",
       "si_falla": "aviso",
-      "regla": "El CSS no elimina el foco con outline: none sin dar una alternativa. El recorrido real es revisión manual.",
+      "regla": "El CSS no elimina el foco con outline: none sin dar una alternativa.",
       "arreglo": "Dar un estilo visible a :focus-visible.",
       "origen": [
         "J:UX2",
         "A:3.3",
         "E"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "UX-05",
@@ -1089,8 +1054,7 @@
         "J:UX2",
         "I:C11",
         "E"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "UX-06",
@@ -1110,8 +1074,7 @@
         "I:C08",
         "A:3.1",
         "E"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "UX-07",
@@ -1128,8 +1091,7 @@
       "arreglo": "Usar un tamaño base de 16 px.",
       "origen": [
         "J:UX3"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "UX-08",
@@ -1149,8 +1111,7 @@
         "J:UX4",
         "A:2.2",
         "E"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "UX-09",
@@ -1170,8 +1131,7 @@
         "J:UX6",
         "A:1.2",
         "E"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "UX-10",
@@ -1188,8 +1148,7 @@
       "arreglo": "Dejar que la persona inicie el vídeo o el audio.",
       "origen": [
         "J:UX8"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "UX-11",
@@ -1206,8 +1165,7 @@
       "arreglo": "Desactivar animaciones para quien lo pida.",
       "origen": [
         "A:3.8"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "UX-12",
@@ -1224,8 +1182,7 @@
       "arreglo": "Dejar visible la acción principal.",
       "origen": [
         "J:UX9"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "UX-13",
@@ -1243,8 +1200,7 @@
       "origen": [
         "J:UX10",
         "I"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "UX-14",
@@ -1257,12 +1213,11 @@
       "alcance": "dominio",
       "metodo": "http",
       "si_falla": "aviso",
-      "regla": "Se detecta un aviso de cookies y no llegan cookies de seguimiento antes de aceptar. Que rechazar sea igual de fácil es revisión manual.",
+      "regla": "Se detecta un aviso de cookies y no llegan cookies de seguimiento antes de aceptar.",
       "arreglo": "Ofrecer aceptar y rechazar con un clic.",
       "origen": [
         "J:UX11"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "UX-15",
@@ -1275,14 +1230,13 @@
       "alcance": "pagina",
       "metodo": "html",
       "si_falla": "no_cumple",
-      "regla": "Cada video tiene track. Los vídeos incrustados son revisión manual.",
+      "regla": "Cada video tiene track.",
       "arreglo": "Añadir subtítulos.",
       "origen": [
         "A:3.7",
         "E",
         "I"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "UX-16",
@@ -1299,8 +1253,7 @@
       "arreglo": "Añadir un title que describa el contenido.",
       "origen": [
         "E"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "UX-17",
@@ -1317,8 +1270,7 @@
       "arreglo": "Corregir el rol o usar HTML nativo.",
       "origen": [
         "I:C11"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "UX-18",
@@ -1335,8 +1287,7 @@
       "arreglo": "Quitar el bloqueo del zoom.",
       "origen": [
         "I:C09"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "UX-19",
@@ -1353,8 +1304,160 @@
       "arreglo": "Usar un id distinto en cada elemento.",
       "origen": [
         "I"
+      ]
+    },
+    {
+      "id": "UX-20",
+      "responsable": "Rodrigo",
+      "titulo": "Calidad del texto alt",
+      "notas": [
+        "ux"
       ],
-      "solo_local": false
+      "gravedad": "media",
+      "alcance": "pagina",
+      "metodo": "html",
+      "si_falla": "aviso",
+      "regla": "Una IA comprueba en páginas de muestra si cada alt describe su imagen. Sin IA, se buscan textos genéricos, de archivo o repetidos.",
+      "arreglo": "Describir qué aporta cada imagen.",
+      "origen": [
+        "RM-01"
+      ]
+    },
+    {
+      "id": "UX-21",
+      "responsable": "Rodrigo",
+      "titulo": "Recorrido con teclado",
+      "notas": [
+        "ux"
+      ],
+      "gravedad": "media",
+      "alcance": "pagina",
+      "metodo": "html",
+      "si_falla": "aviso",
+      "regla": "Chrome pulsa Tab en páginas de muestra y mide orden, foco invisible y trampas. Sin Chrome, se estima por código.",
+      "arreglo": "Sacar del recorrido lo oculto y dar salida a los diálogos.",
+      "origen": [
+        "RM-02"
+      ]
+    },
+    {
+      "id": "UX-22",
+      "responsable": "Rodrigo",
+      "titulo": "Foco no tapado",
+      "notas": [
+        "ux"
+      ],
+      "gravedad": "media",
+      "alcance": "dominio",
+      "metodo": "css",
+      "si_falla": "aviso",
+      "regla": "Chrome comprueba en páginas de muestra si un menú fijo tapa el elemento activo (WCAG 2.4.11). Sin Chrome, se estima por CSS.",
+      "arreglo": "Añadir scroll-padding-top con la altura del menú.",
+      "origen": [
+        "RM-03"
+      ]
+    },
+    {
+      "id": "UX-23",
+      "responsable": "Rodrigo",
+      "titulo": "Zoom al 200 % y reflow",
+      "notas": [
+        "ux"
+      ],
+      "gravedad": "media",
+      "alcance": "dominio",
+      "metodo": "css",
+      "si_falla": "aviso",
+      "regla": "Chrome mide a 640 y 320 px si hay scroll horizontal o textos cortados. Sin Chrome, se estima por CSS.",
+      "arreglo": "Usar anchos flexibles y max-width.",
+      "origen": [
+        "RM-04"
+      ]
+    },
+    {
+      "id": "UX-24",
+      "responsable": "Rodrigo",
+      "titulo": "Mensajes de error en formularios",
+      "notas": [
+        "ux"
+      ],
+      "gravedad": "media",
+      "alcance": "pagina",
+      "metodo": "html",
+      "si_falla": "aviso",
+      "regla": "Chrome prueba el formulario vacío y lee el mensaje, sin que salga ningún dato. Sin Chrome, se estima por código.",
+      "arreglo": "Mostrar los errores con texto junto al campo.",
+      "origen": [
+        "RM-05"
+      ]
+    },
+    {
+      "id": "UX-25",
+      "responsable": "Rodrigo",
+      "titulo": "Alternativas al arrastre",
+      "notas": [
+        "ux"
+      ],
+      "gravedad": "media",
+      "alcance": "pagina",
+      "metodo": "html",
+      "si_falla": "aviso",
+      "regla": "Chrome pulsa el botón del carrusel y comprueba que se mueve. Sin Chrome, se estima por código.",
+      "arreglo": "Añadir botones de anterior y siguiente.",
+      "origen": [
+        "RM-06"
+      ]
+    },
+    {
+      "id": "UX-26",
+      "responsable": "Rodrigo",
+      "titulo": "Calidad de subtítulos",
+      "notas": [
+        "ux"
+      ],
+      "gravedad": "media",
+      "alcance": "pagina",
+      "metodo": "html",
+      "si_falla": "aviso",
+      "regla": "Los archivos VTT se abren, tienen texto, tiempos en orden y ritmo legible. No se comprueba que el texto sea correcto.",
+      "arreglo": "Revisar los archivos de subtítulos.",
+      "origen": [
+        "RM-07"
+      ]
+    },
+    {
+      "id": "UX-27",
+      "responsable": "Rodrigo",
+      "titulo": "Rechazar cookies",
+      "notas": [
+        "ux"
+      ],
+      "gravedad": "media",
+      "alcance": "dominio",
+      "metodo": "http",
+      "si_falla": "aviso",
+      "regla": "Chrome cuenta los clics para aceptar y para rechazar en el aviso real. Sin Chrome, se estima por código.",
+      "arreglo": "Poner un botón de rechazar junto al de aceptar.",
+      "origen": [
+        "RM-08"
+      ]
+    },
+    {
+      "id": "UX-28",
+      "responsable": "Rodrigo",
+      "titulo": "Preparación para lector de pantalla",
+      "notas": [
+        "ux"
+      ],
+      "gravedad": "media",
+      "alcance": "pagina",
+      "metodo": "html",
+      "si_falla": "aviso",
+      "regla": "Referencias ARIA, encabezados, enlaces, roles y tablas sin errores detectables. No sustituye a una prueba con lector de pantalla.",
+      "arreglo": "Corregir la estructura que se indica.",
+      "origen": [
+        "RM-10"
+      ]
     },
     {
       "id": "WEB-01",
@@ -1371,8 +1474,7 @@
       "arreglo": "Configurar el servidor para devolver 404.",
       "origen": [
         "J:SEO14"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "WEB-02",
@@ -1390,8 +1492,7 @@
       "origen": [
         "J:SEO16",
         "E"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "WEB-03",
@@ -1410,8 +1511,7 @@
       "origen": [
         "A:2.3",
         "E"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "WEB-04",
@@ -1429,8 +1529,7 @@
       "arreglo": "Unificar los datos en toda la web.",
       "origen": [
         "J:SEO21"
-      ],
-      "solo_local": true
+      ]
     },
     {
       "id": "WEB-05",
@@ -1447,8 +1546,7 @@
       "arreglo": "Usar los mismos datos en ambos sitios.",
       "origen": [
         "J:GEO2"
-      ],
-      "solo_local": true
+      ]
     },
     {
       "id": "WEB-06",
@@ -1462,13 +1560,12 @@
       "alcance": "comparacion",
       "metodo": "html",
       "si_falla": "aviso",
-      "regla": "Las páginas se alcanzan en 3 clics o menos desde la portada.",
+      "regla": "Las páginas se alcanzan en 3 clics o menos desde la portada, y ninguna está solo en el sitemap.",
       "arreglo": "Enlazar las páginas importantes desde el menú o el contenido.",
       "origen": [
         "J:SEO23",
         "A:2.6"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "WEB-07",
@@ -1485,8 +1582,7 @@
       "arreglo": "Mantener el mismo menú en toda la web.",
       "origen": [
         "J:UX7"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "WEB-08",
@@ -1504,8 +1600,7 @@
       "origen": [
         "J:SEO7",
         "E"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "WEB-09",
@@ -1525,8 +1620,7 @@
         "I:C14",
         "A:2.5",
         "E"
-      ],
-      "solo_local": false
+      ]
     },
     {
       "id": "WEB-10",
@@ -1544,60 +1638,7 @@
       "arreglo": "Mejorar el servidor o usar caché.",
       "origen": [
         "A:1.6"
-      ],
-      "solo_local": false
-    }
-  ],
-  "revision_manual": [
-    {
-      "id": "RM-01",
-      "titulo": "Calidad del texto alt",
-      "detalle": "Que describa bien la imagen."
-    },
-    {
-      "id": "RM-02",
-      "titulo": "Recorrido real con teclado",
-      "detalle": "Orden lógico, sin trampas de foco."
-    },
-    {
-      "id": "RM-03",
-      "titulo": "Foco no tapado",
-      "detalle": "Que menús fijos no oculten el elemento activo (WCAG 2.4.11)."
-    },
-    {
-      "id": "RM-04",
-      "titulo": "Zoom al 200 % y reflow",
-      "detalle": "Que nada se rompa al ampliar ni en pantallas estrechas."
-    },
-    {
-      "id": "RM-05",
-      "titulo": "Mensajes de error en formularios",
-      "detalle": "Que se expliquen con texto, no solo con color."
-    },
-    {
-      "id": "RM-06",
-      "titulo": "Alternativas al arrastre",
-      "detalle": "Carruseles y gestos con botones equivalentes."
-    },
-    {
-      "id": "RM-07",
-      "titulo": "Calidad de subtítulos",
-      "detalle": "Que sean correctos y estén sincronizados."
-    },
-    {
-      "id": "RM-08",
-      "titulo": "Rechazar cookies",
-      "detalle": "Que rechazar sea tan fácil como aceptar."
-    },
-    {
-      "id": "RM-09",
-      "titulo": "Intención de búsqueda y calidad del contenido",
-      "detalle": "Que la página responda a lo que busca la gente."
-    },
-    {
-      "id": "RM-10",
-      "titulo": "Prueba con lector de pantalla",
-      "detalle": "NVDA o VoiceOver, y si se puede, con usuarios reales."
+      ]
     }
   ]
 }

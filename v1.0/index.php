@@ -2,7 +2,6 @@
 require 'lib/carga.php';
 
 $url = trim($_POST['url'] ?? '');
-$es_local = isset($_POST['es_local']);
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -12,7 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     try {
         $config = cargar_config();
-        $id = iniciar_analisis(conectar($config), $url, $es_local, $config);
+        $id = iniciar_analisis(conectar($config), $url, $config);
         header("Location: progreso.php?id=$id");
         exit;
     } catch (RuntimeException $e) {
@@ -24,7 +23,7 @@ cabecera('Auditoría web');
 ?>
 <section class="inicio" id="formulario">
     <h1>Analiza una web</h1>
-    <p>Escribe una dirección y obtén su nota de SEO, GEO y UX, con los puntos que faltan por mejorar. La herramienta recorre hasta 100 páginas.</p>
+    <p>Escribe una dirección y obtén su nota de SEO, GEO y UX, con los puntos que faltan por mejorar. La herramienta recorre todas las páginas que encuentra.</p>
     <?php if ($error): ?>
         <p class="error" role="alert"><?= h($error) ?></p>
     <?php endif; ?>
@@ -34,11 +33,6 @@ cabecera('Auditoría web');
             <input id="url" name="url" type="text" inputmode="url" required placeholder="https://www.ejemplo.es" value="<?= h($url) ?>">
             <button type="submit">Analizar</button>
         </div>
-        <label class="casilla">
-            <input type="checkbox" name="es_local" <?= $es_local ? 'checked' : '' ?>>
-            Es un negocio local
-        </label>
-        <p class="ayuda">Márcala si la empresa tiene un local físico. Si no, los puntos de dirección, horarios o mapa no cuentan en la nota.</p>
     </form>
 </section>
 <?php pantalla_carga('', 1, 'Abriendo la primera página. Puede tardar unos segundos.', oculta: true); ?>

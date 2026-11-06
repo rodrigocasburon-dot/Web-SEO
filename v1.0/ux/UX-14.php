@@ -10,7 +10,7 @@ return function (array $p): array {
         return aviso('El servidor envía cookies de seguimiento antes de aceptar.');
     }
     if ($aviso) {
-        return cumple('Se detecta un aviso de cookies. Que rechazar sea igual de fácil es revisión manual.');
+        return cumple('Se detecta un aviso de cookies.');
     }
     return $seguimiento
         ? aviso('La web usa herramientas de seguimiento y no se detecta aviso de cookies.')
