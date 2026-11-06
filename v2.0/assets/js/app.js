@@ -5,9 +5,10 @@
  * análisis, con puntuación provisional; cuando llega PageSpeed (C08, C14) se recalculan puntuación e
  * informe en el servidor (api/score.php, mismo Scorer y mismo Report) y se actualiza sin mover el foco.
  *
- * Informe (nueve apartados): 1 resumen ejecutivo, 2 puntuaciones, 3 problemas críticos, 4 hallazgos
- * detallados con evidencia, 5 recomendaciones priorizadas, 6 plan de acción (matriz 2×2), 7 glosario,
- * 8 limitaciones (texto fijo de index.php, siempre visible) y 9 evidencias del análisis. */
+ * Informe (diez apartados): 1 resumen ejecutivo, 2 puntuaciones, 3 problemas críticos, 4 hallazgos
+ * detallados con evidencia, 5 recomendaciones priorizadas, 6 plan de acción (matriz 2×2), 7 análisis
+ * complementario (vistas informativas que no puntúan), 8 glosario, 9 limitaciones (texto fijo de
+ * index.php, siempre visible) y 10 evidencias del análisis. */
 (function () {
   'use strict';
 
@@ -35,6 +36,7 @@
     ['sec-hallazgos', 'Hallazgos detallados con evidencia'],
     ['sec-recomendaciones', 'Recomendaciones priorizadas'],
     ['sec-plan', 'Plan de acción por impacto y esfuerzo'],
+    ['sec-complementario', 'Análisis complementario (no puntúa)'],
     ['sec-glosario', 'Glosario'],
     ['limitaciones', 'Limitaciones'],
     ['evidencias', 'Evidencias del análisis']
@@ -342,7 +344,11 @@
       run.view[k] = s.body;
       results.appendChild(s.node);
     });
-    var glossary = reportSection(SECTIONS[6][0], SECTIONS[6][1]);
+    // El análisis complementario se pinta una sola vez: no cambia al llegar PageSpeed
+    var extra = reportSection(SECTIONS[6][0], SECTIONS[6][1]);
+    renderComplementary(extra.body, data.complementario);
+    results.appendChild(extra.node);
+    var glossary = reportSection(SECTIONS[7][0], SECTIONS[7][1]);
     glossary.body.appendChild(renderGlossary());
     results.appendChild(glossary.node);
 
@@ -673,6 +679,79 @@
   }
 
   // 7. Glosario (fijo)
+  // 7. Análisis complementario (no puntúa)
+  function renderComplementary(host, c) {
+    host.appendChild(el('p', { class: 'help', text: 'Vistas informativas calculadas con la misma descarga. No asignan estados ni restan puntos.' }));
+    if (!c) {
+      host.appendChild(el('p', { text: 'No disponible.' }));
+      return;
+    }
+    if (c.sin_contenido) {
+      host.appendChild(el('div', { class: 'notice notice--warn' }, [
+        el('p', { text: 'Las vistas basadas en el contenido de la página no están disponibles. ' + c.sin_contenido })
+      ]));
+    }
+    if (c.vista_bot) host.appendChild(renderBotView(c.vista_bot));
+  }
+
+  var BOT_PREVIEW_CHARS = 5000;
+
+  /** Recorta un texto a unos max caracteres sin partir palabras. */
+  function cutText(s, max) {
+    if (s.length <= max) return { text: s, cut: false };
+    var i = s.lastIndexOf(' ', max);
+    if (i < max * 0.8) {
+      i = max;
+      var code = s.charCodeAt(i - 1);
+      if (code >= 0xD800 && code <= 0xDBFF) i--;   // no partir un carácter de dos unidades
+    }
+    return { text: s.slice(0, i) + ' …', cut: true };
+  }
+
+  // 02. Lo que ve un bot
+  function renderBotView(v) {
+    var sec = el('section', { class: 'subsection', 'aria-labelledby': 'bot-title' }, [
+      el('h4', { id: 'bot-title', text: 'Lo que ve un bot' }),
+      el('p', { class: 'help', text: 'Texto del contenido principal en el HTML inicial, tal como lo lee un rastreador que no ejecuta JavaScript (se extrae igual que en la comprobación C03). Los rastreadores que sí lo ejecutan, como Googlebot, pueden ver más.' }),
+      el('ul', { class: 'inline-stats' }, [
+        el('li', {}, ['Contenido principal: ', el('strong', { text: v.fuente })]),
+        el('li', {}, [el('strong', { text: fmtNumber(v.palabras, 0) }), v.palabras === 1 ? ' palabra' : ' palabras']),
+        el('li', {}, [el('strong', { text: fmtNumber(v.caracteres, 0) }), v.caracteres === 1 ? ' carácter' : ' caracteres'])
+      ])
+    ]);
+    if (v.poco_texto) {
+      sec.appendChild(el('div', { class: 'notice notice--warn' }, [
+        el('p', { text: 'Poco texto: ' + fmtNumber(v.palabras, 0) + ' palabras, por debajo del mínimo orientativo de ' + fmtNumber(v.minimo_palabras, 0) + '. Puede que el contenido se cargue con JavaScript o que la página tenga poco texto.' })
+      ]));
+    }
+    if (v.html_recortado) {
+      sec.appendChild(el('p', { class: 'help', text: 'El HTML se truncó al llegar al límite de 2 MB: el texto puede estar incompleto.' }));
+    }
+    if (!v.texto) {
+      sec.appendChild(el('p', { text: 'El contenido principal no tiene texto en el HTML inicial.' }));
+      return sec;
+    }
+    var full = v.texto;
+    var preview = cutText(full, BOT_PREVIEW_CHARS);
+    var textEl = el('p', { text: preview.text });
+    sec.appendChild(el('div', { id: 'bot-text', class: 'bot-text', role: 'region', 'aria-label': 'Texto que ve un bot', tabindex: '0' }, [textEl]));
+    if (preview.cut) {
+      var more = el('button', { type: 'button', class: 'button button--secondary no-print', 'aria-controls': 'bot-text', 'aria-expanded': 'false', text: 'Mostrar el texto completo' });
+      more.addEventListener('click', function () {
+        var expanded = more.getAttribute('aria-expanded') === 'true';
+        textEl.textContent = expanded ? preview.text : full;
+        more.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+        more.textContent = expanded ? 'Mostrar el texto completo' : 'Mostrar solo el principio';
+      });
+      sec.appendChild(el('p', { class: 'help', text: 'Se muestran unos ' + fmtNumber(BOT_PREVIEW_CHARS, 0) + ' caracteres del principio.' }));
+      sec.appendChild(more);
+    }
+    if (v.texto_recortado) {
+      sec.appendChild(el('p', { class: 'help', text: 'Por su extensión, el texto completo se limita al principio de la página; el recuento de palabras sí incluye todo el texto.' }));
+    }
+    return sec;
+  }
+
   function renderGlossary() {
     var terms = i18n.glosario || {};
     return defList('glossary', Object.keys(terms).map(function (t) { return [t, terms[t]]; }));

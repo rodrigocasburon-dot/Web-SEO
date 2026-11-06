@@ -11,6 +11,10 @@ Estado: **fase 9** (identidad visual de Proconsi). Las fases están descritas en
 - **01 Simulador de mejora** (`src/Simulator.php`): recalcula con el mismo `Scorer` las notas por área y la global
   suponiendo corregidos los N fallos que más restan (w × P; N = `simulator_top_n`, 3 por defecto, de 1 a 15) y
   las muestra como «antes / después», marcadas como estimación.
+- **02 Lo que ve un bot** (`src/Insights.php`, nuevo apartado 7 «Análisis complementario (no puntúa)», antes del
+  glosario; el informe pasa a diez apartados): texto del contenido
+  principal del HTML inicial con la misma extracción y el mismo recuento que C03 (`DomHelper::mainContent` /
+  `countWords`), nº de palabras, aviso si hay poco texto y unos 5.000 caracteres ampliables al texto completo.
 
 ## Identidad visual (fase 9)
 

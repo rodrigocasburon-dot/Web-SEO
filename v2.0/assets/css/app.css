@@ -340,6 +340,14 @@ code, pre { font-family: var(--mono); }
 .data-table .num { text-align: right; white-space: nowrap; }
 .data-table tr.is-total th, .data-table tr.is-total td { font-weight: 600; border-bottom: 2px solid var(--black); }
 
+/* Cifras breves en línea (vistas complementarias) */
+.inline-stats { display: flex; flex-wrap: wrap; gap: 0.25rem 1.75rem; margin: 0.75rem 0; padding: 0; list-style: none; }
+.inline-stats strong { font-weight: 600; }
+
+/* «Lo que ve un bot»: texto en una caja con desplazamiento propio */
+.bot-text { max-height: 24rem; overflow-y: auto; margin: 0.75rem 0 0; padding: 0.75rem 1rem; background: var(--surface); border-left: 4px solid var(--gray); overflow-wrap: anywhere; }
+.bot-text p { margin: 0; }
+
 /* Tableta */
 @media (min-width: 40em) {
   .container { padding: 0 2rem; }
@@ -414,4 +422,5 @@ code, pre { font-family: var(--mono); }
     print-color-adjust: exact;
   }
   .limitations, .report-evidence { margin-top: 2rem; }
+  .bot-text { max-height: none; overflow: visible; }
 }
