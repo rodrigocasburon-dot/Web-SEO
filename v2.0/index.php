@@ -42,6 +42,7 @@ $e = fn(string $s): string => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
 <meta name="description" content="Herramienta interna de Proconsi que analiza una URL y evalúa de forma automática su SEO, su preparación para buscadores de IA y su accesibilidad.">
 <meta name="robots" content="noindex">
 <link rel="stylesheet" href="<?= $asset('assets/css/app.css') ?>">
+<script src="<?= $asset('assets/js/export.js') ?>" defer></script>
 <script src="<?= $asset('assets/js/app.js') ?>" defer></script>
 </head>
 <body>

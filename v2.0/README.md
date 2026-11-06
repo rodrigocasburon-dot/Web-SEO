@@ -28,6 +28,9 @@ Estado: **fase 9** (identidad visual de Proconsi). Las fases están descritas en
   marcados (criterio de C05) y recuento de regiones header/nav/main/aside/footer y sus roles ARIA, con ocultas y nombres.
 - **07 Redirecciones y peso**: con los datos que ya da el `Fetcher`, cadena de peticiones (URL, código, tiempo), tiempo
   total, tamaño del HTML (descomprimido) y `Content-Encoding`; aviso informativo con más de 2 redirecciones.
+- **08 Exportar CSV y JSON** (`assets/js/export.js`): botones «Descargar CSV / JSON» generados en el navegador (Blob),
+  sin guardar nada en el servidor. CSV con «;», UTF-8 con BOM y protección frente a fórmulas (apóstrofo ante `=`, `+`,
+  `-`, `@`, tabulador o retorno). Se prueba en Edge/Chrome sin interfaz (`tests/js/`); sin navegador queda OMITIDA.
 
 ## Identidad visual (fase 9)
 

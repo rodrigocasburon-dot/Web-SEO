@@ -285,6 +285,7 @@ code, pre { font-family: var(--mono); }
 
 /* Informe */
 .report-head .meta-list { margin-bottom: 0.25rem; }
+.report-actions { display: flex; flex-wrap: wrap; gap: 0 0.75rem; }
 
 .report-toc { margin: 2rem 0; padding: 1rem 0; border-top: 1px solid var(--black); border-bottom: 1px solid var(--line); }
 .report-toc__title { margin: 0 0 0.5rem; font-size: 0.85rem; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
