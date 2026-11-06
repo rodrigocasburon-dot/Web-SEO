@@ -23,6 +23,9 @@ return [
     'sitemap_max_files' => 5,
     'sitemap_budget'    => 8,
 
+    // Simulador de mejora: nº de fallos (los que más puntos restan) que se suponen corregidos (1 a 15)
+    'simulator_top_n' => 3,
+
     // Límite de uso por IP (se guarda en storage/)
     'rate_limit' => ['max_requests' => 10, 'window_seconds' => 600],
 

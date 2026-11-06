@@ -425,6 +425,57 @@
     ]));
     var incomplete = !blocked && ['seo', 'ia', 'accesibilidad'].some(function (a) { return p.areas[a].incompleta; });
     if (incomplete) host.appendChild(el('p', { class: 'help', text: i18n.nota_incompleta }));
+    var sim = renderSimulation(run.data.informe.simulacion);
+    if (sim) host.appendChild(sim);
+  }
+
+  /** Simulador de mejora: estimación «antes / después» si se corrigen los N fallos que más restan. */
+  function renderSimulation(s) {
+    if (!s) return null;
+    var box = el('section', { class: 'subsection', 'aria-labelledby': 'sim-title' }, [
+      el('h4', { id: 'sim-title', text: 'Simulación de mejora (estimación)' })
+    ]);
+    if (!s.corregidos.length) {
+      box.appendChild(el('p', { text: 'No hay fallos que simular: ninguna comprobación resta puntos.' }));
+      return box;
+    }
+    var names = s.corregidos.map(function (c) { return c.nombre; });
+    var lead = s.corregidos.length === 1
+      ? 'Si se corrigiera el fallo que más puntos resta (' + names[0] + ')'
+      : 'Si se corrigieran los ' + s.corregidos.length + ' fallos que más puntos restan (' + joinList(names) + ')';
+    if (s.fallos_totales > s.corregidos.length) lead += ', de ' + s.fallos_totales + ' fallos detectados';
+    box.appendChild(el('p', { text: lead + ', las notas quedarían así:' }));
+
+    var rows = [['seo', i18n.areas.seo], ['ia', i18n.areas.ia], ['accesibilidad', i18n.areas.accesibilidad], ['global', 'Nota global']];
+    box.appendChild(el('div', { class: 'table-wrap' }, [el('table', { class: 'data-table' }, [
+      el('caption', { class: 'visually-hidden', text: 'Notas antes y después de la corrección simulada' }),
+      el('thead', {}, [el('tr', {}, [
+        el('th', { scope: 'col', text: 'Área' }),
+        el('th', { scope: 'col', class: 'num', text: 'Antes' }),
+        el('th', { scope: 'col', class: 'num', text: 'Después' }),
+        el('th', { scope: 'col', class: 'num', text: 'Diferencia' })
+      ])]),
+      el('tbody', {}, rows.map(function (r) {
+        var n = s.notas[r[0]];
+        return el('tr', { class: r[0] === 'global' ? 'is-total' : null }, [
+          el('th', { scope: 'row', text: r[1] }),
+          el('td', { class: 'num', text: fmtNumber(n.antes, 1) }),
+          el('td', { class: 'num', text: fmtNumber(n.despues, 1) }),
+          el('td', { class: 'num', text: (n.mejora > 0 ? '+' : '') + fmtNumber(n.mejora, 1) })
+        ]);
+      }))
+    ])]));
+    if (s.riesgo_alto.antes && !s.riesgo_alto.despues) {
+      box.appendChild(el('p', { text: 'Con esas correcciones desaparecería el aviso de riesgo alto.' }));
+    }
+    box.appendChild(el('p', { class: 'help', text: 'Es una estimación, no una medición: supone que cada fallo se corrige por completo y que no aparecen otros. Los avisos y las comprobaciones sin datos no cambian.' }));
+    return box;
+  }
+
+  /** «a, b y c» */
+  function joinList(items) {
+    if (items.length <= 1) return items.join('');
+    return items.slice(0, -1).join(', ') + ' y ' + items[items.length - 1];
   }
 
   function scoreCard(label, score, isGlobal, blocked) {

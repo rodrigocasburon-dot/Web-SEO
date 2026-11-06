@@ -40,10 +40,12 @@ try {
     }
 
     $score = (new Scorer())->score($records);
+    $config = Config::load();
     Api::respond(200, [
         'ok' => true,
         'puntuacion' => $score,
-        'informe' => Report::build($records, $score, ($input['bloqueado'] ?? false) === true),
+        'informe' => Report::build($records, $score, ($input['bloqueado'] ?? false) === true,
+            (int) ($config['simulator_top_n'] ?? Simulator::DEFAULT_TOP)),
     ]);
 } catch (Throwable $e) {
     error_log('[score] ' . $e->getMessage() . ' en ' . $e->getFile() . ':' . $e->getLine());

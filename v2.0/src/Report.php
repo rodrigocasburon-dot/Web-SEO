@@ -28,8 +28,9 @@ class Report
      * @param array $checks registros de las comprobaciones
      * @param array $score  resultado de Scorer::score()
      * @param bool  $blocked el sitio bloqueó el acceso (no se muestran notas)
+     * @param int   $simulateTop nº de fallos del simulador de mejora (config 'simulator_top_n')
      */
-    public static function build(array $checks, array $score, bool $blocked = false): array
+    public static function build(array $checks, array $score, bool $blocked = false, int $simulateTop = Simulator::DEFAULT_TOP): array
     {
         $priorities = self::priorities($checks);
 
@@ -50,6 +51,8 @@ class Report
             'criticos' => $critical,
             'prioridades' => $priorities,
             'matriz' => $matrix,
+            // Estimación informativa; sin notas (acceso bloqueado) no hay nada que simular
+            'simulacion' => $blocked ? null : Simulator::simulate($checks, $simulateTop, $score),
         ];
     }
 
