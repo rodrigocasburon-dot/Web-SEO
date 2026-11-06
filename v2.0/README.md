@@ -6,6 +6,12 @@ no sustituye una auditoría manual ni certifica el cumplimiento de WCAG ni de ni
 
 Estado: **fase 9** (identidad visual de Proconsi). Las fases están descritas en `CLAUDE.md`.
 
+## Funciones informativas (no puntúan)
+
+- **01 Simulador de mejora** (`src/Simulator.php`): recalcula con el mismo `Scorer` las notas por área y la global
+  suponiendo corregidos los N fallos que más restan (w × P; N = `simulator_top_n`, 3 por defecto, de 1 a 15) y
+  las muestra como «antes / después», marcadas como estimación.
+
 ## Identidad visual (fase 9)
 
 - Estilo suizo: fondo blanco, retícula limpia, filetes finos y mucho espacio en blanco. Paleta corporativa

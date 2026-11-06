@@ -50,7 +50,8 @@ try {
         'fetch' => $fetch,
         'checks' => $result['checks'],
         'puntuacion' => $result['puntuacion'],
-        'informe' => Report::build($result['checks'], $result['puntuacion'], !empty($result['blocked'])),
+        'informe' => Report::build($result['checks'], $result['puntuacion'], !empty($result['blocked']),
+            (int) ($config['simulator_top_n'] ?? Simulator::DEFAULT_TOP)),
     ]);
 } catch (Throwable $e) {
     error_log('[analyze] ' . $e->getMessage() . ' en ' . $e->getFile() . ':' . $e->getLine());
