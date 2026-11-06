@@ -644,6 +644,11 @@
   function updateRecommendations(run) {
     var host = run.view.recs;
     var items = run.data.informe.prioridades || [];
+    // Las propuestas de corrección abiertas siguen abiertas al repintar (llegada de PageSpeed)
+    var open = {};
+    Array.prototype.forEach.call(host.querySelectorAll('details.fix[open]'), function (d) { open[d.getAttribute('data-check')] = true; });
+    var fixes = {};
+    (run.data.checks || []).forEach(function (c) { if (c.correccion) fixes[c.id] = c.correccion; });
     host.textContent = '';
     if (!items.length) {
       host.appendChild(el('p', { text: 'No hay recomendaciones: no se han detectado fallos ni avisos de forma automática.' }));
@@ -661,9 +666,39 @@
           findingLink(r.id, r.nombre)
         ]),
         el('p', { class: 'finding__meta', text: meta.join(' · ') }),
-        el('p', { text: r.recomendacion })
+        el('p', { text: r.recomendacion }),
+        fixes[r.id] ? renderFix(r.id, fixes[r.id], !!open[r.id]) : null
       ]);
     })));
+  }
+
+  /**
+   * 09. Propuesta de corrección: código «antes» (tomado de la evidencia) y «después» (plantilla
+   * de lang/es.php). Es un borrador informativo; todo se pinta como texto.
+   */
+  function renderFix(id, fix, isOpen) {
+    var list = el('ol', { class: 'fix__list' }, (fix.fragmentos || []).map(function (f) {
+      return el('li', {}, [
+        el('p', { class: 'fix__label', text: 'Antes' }),
+        f.antes === null
+          ? el('p', { class: 'fix__absent', text: 'No existe en la página.' })
+          : el('pre', { class: 'fix__code fix__code--before' }, [el('code', { text: f.antes })]),
+        el('p', { class: 'fix__label', text: 'Después' }),
+        el('pre', { class: 'fix__code' }, [el('code', { text: f.despues })])
+      ]);
+    }));
+    var shown = (fix.fragmentos || []).length;
+    var details = el('details', { class: 'fix', 'data-check': id }, [
+      el('summary', { text: 'Propuesta de corrección (borrador)' }),
+      el('div', { class: 'fix__body' }, [
+        el('p', { class: 'help', text: fix.borrador }),
+        fix.nota ? el('p', { text: fix.nota }) : null,
+        list,
+        fix.total > shown ? el('p', { class: 'help', text: 'Se muestran ' + shown + ' de ' + fix.total + ' casos.' }) : null
+      ])
+    ]);
+    if (isOpen) details.open = true;
+    return details;
   }
 
   // 6. Plan de acción: matriz impacto × esfuerzo

@@ -45,6 +45,8 @@ class Analyzer
         $ctx = CheckContext::fromFetch($page, $this->config, $robots, $options);
         $ctx->fetch = $this->resourceFetch;
         $checks = (new CheckRunner())->run($ctx);
+        // Fragmentos de corrección (borrador informativo; no cambia estados ni puntuación)
+        $checks = FixSnippets::attach($checks, (string) $page['final_url']);
         return [
             'ok' => true,
             'url' => $page['final_url'],
