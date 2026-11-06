@@ -24,6 +24,8 @@ Estado: **fase 9** (identidad visual de Proconsi). Las fases están descritas en
 - **05 Palabra clave objetivo** (campo opcional del formulario, `palabra_clave`, máx. 100 caracteres): si la frase
   aparece, sin distinguir mayúsculas ni tildes (la ñ sí), en title, H1, meta description, URL y primeras 100 palabras
   del contenido principal. Lista informativa con «Aparece / No aparece» por elemento.
+- **06 Esquema del documento**: árbol anidado (`ul` dentro de `li`) de los h1-h6 visibles con los saltos de nivel
+  marcados (criterio de C05) y recuento de regiones header/nav/main/aside/footer y sus roles ARIA, con ocultas y nombres.
 
 ## Identidad visual (fase 9)
 
