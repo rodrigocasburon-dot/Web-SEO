@@ -165,4 +165,47 @@ return [
             'recomendacion_aviso' => 'Cambia a https las URL de imágenes, audio y vídeo, y renueva el certificado antes de que caduque, preferiblemente con renovación automática.',
         ],
     ],
+
+    // Función 09: fragmentos de corrección (antes / después). Se rellenan con el código real de la evidencia
+    // (src/FixSnippets.php). Los textos en MAYÚSCULAS son marcadores que debe sustituir el equipo.
+    // {texto}, {idioma} y {url} se sustituyen al generar el fragmento.
+    'correcciones' => [
+        'borrador' => 'Primer borrador generado automáticamente a partir del código encontrado en la página: debe revisarlo el equipo antes de aplicarlo.',
+        'C04' => [
+            'atributo' => 'aria-label',
+            'textos' => ['enlace' => 'NOMBRE DEL ENLACE', 'boton' => 'NOMBRE DEL BOTÓN', 'campo' => 'NOMBRE DEL CAMPO'],
+            'nota' => 'Sustituye el texto en mayúsculas por un nombre que diga para qué sirve el elemento. En los campos de formulario es preferible una etiqueta <label> visible.',
+        ],
+        'C06' => [
+            'atributo' => 'alt',
+            'texto' => 'DESCRIPCIÓN DE LA IMAGEN',
+            'nota' => 'Describe el contenido o la función de la imagen; si es decorativa, deja el atributo vacío: alt="".',
+        ],
+        'C07' => [
+            'atributo' => 'lang',
+            'idioma' => 'IDIOMA',
+            'nota' => 'Sustituye IDIOMA por el código del idioma del contenido (por ejemplo es, es-ES o en).',
+            'nota_formato' => 'Se corrige el formato del código de idioma: guion en lugar de guion bajo.',
+        ],
+        'C09' => [
+            'nuevo' => '<meta name="viewport" content="width=device-width, initial-scale=1">',
+            'nota' => 'Va dentro de <head>. No impidas el zoom: sin user-scalable=no ni maximum-scale menor que 2.',
+        ],
+        'C10' => [
+            'nuevo' => '<title>TÍTULO DE LA PÁGINA (35-60 CARACTERES)</title>',
+            'nota' => 'Va dentro de <head>, una sola vez. Escribe un título que identifique la página.',
+        ],
+        'C12' => [
+            'nuevo' => '<link rel="canonical" href="{url}">',
+            'nota' => 'Va dentro de <head>. Úsalo solo si esta URL es la versión preferida de la página; si no, pon la URL de la versión preferida.',
+        ],
+        'C15' => [
+            'nuevo' => '<meta name="description" content="DESCRIPCIÓN DE LA PÁGINA (120-155 CARACTERES)">',
+            'texto' => 'DESCRIPCIÓN DE LA PÁGINA (120-155 CARACTERES)',
+            'nota' => 'Va dentro de <head>. Resume el contenido de esta página en concreto.',
+        ],
+        'C20' => [
+            'nota' => 'Comprueba antes que el recurso se sirve por https en esa misma dirección; si no, alójalo en el propio sitio o usa una ruta relativa.',
+        ],
+    ],
 ];

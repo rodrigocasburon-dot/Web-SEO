@@ -31,6 +31,9 @@ Estado: **fase 9** (identidad visual de Proconsi). Las fases están descritas en
 - **08 Exportar CSV y JSON** (`assets/js/export.js`): botones «Descargar CSV / JSON» generados en el navegador (Blob),
   sin guardar nada en el servidor. CSV con «;», UTF-8 con BOM y protección frente a fórmulas (apóstrofo ante `=`, `+`,
   `-`, `@`, tabulador o retorno). Se prueba en Edge/Chrome sin interfaz (`tests/js/`); sin navegador queda OMITIDA.
+- **09 Fragmento de corrección** (`src/FixSnippets.php`, plantillas en `lang/es.php` → `correcciones`): en las
+  recomendaciones, «antes / después» para C04, C06, C07, C09, C10, C12, C15 y C20 (máx. 3 casos). «Antes» es la
+  etiqueta real de la evidencia; si está recortada o el fallo no es sencillo, no se muestra nada. Primer borrador.
 
 ## Identidad visual (fase 9)
 
