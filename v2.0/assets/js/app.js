@@ -692,6 +692,82 @@
       ]));
     }
     if (c.vista_bot) host.appendChild(renderBotView(c.vista_bot));
+    if (c.vista_previa) host.appendChild(renderPreview(c.vista_previa));
+  }
+
+  /** Texto o, si falta, un aviso en cursiva. */
+  function textOrMissing(tag, cls, value, missing) {
+    return value
+      ? el(tag, { class: cls, text: value })
+      : el(tag, { class: cls + ' is-missing', text: missing });
+  }
+
+  // 03. Vista previa en Google y redes
+  function renderPreview(p) {
+    var g = p.google;
+    var s = p.social;
+    var sec = el('section', { class: 'subsection', 'aria-labelledby': 'preview-title' }, [
+      el('h4', { id: 'preview-title', text: 'Vista previa en Google y redes' }),
+      el('p', { class: 'help', text: 'Aproximación: los buscadores y las redes recortan según el ancho en píxeles y pueden mostrar otros textos distintos de los indicados en la página.' }),
+      el('h5', { text: 'Resultado de búsqueda' }),
+      el('div', { class: 'serp' }, [
+        el('p', { class: 'serp__url', text: g.url_mostrado }),
+        textOrMissing('p', 'serp__title', g.titulo_mostrado, 'Sin title: el buscador generaría un título.'),
+        textOrMissing('p', 'serp__desc', g.descripcion_mostrado, 'Sin meta description: el buscador mostraría un fragmento del contenido.')
+      ]),
+      el('ul', { class: 'inline-stats' }, [
+        el('li', { text: 'Title: ' + fmtNumber(g.titulo_longitud, 0) + ' caracteres' + (g.titulo_recortado ? ' (se recorta a unos 60)' : '') }),
+        el('li', { text: 'Meta description: ' + fmtNumber(g.descripcion_longitud, 0) + ' caracteres' + (g.descripcion_recortado ? ' (se recorta a unos 155)' : '') })
+      ]),
+      el('h5', { text: 'Tarjeta en redes sociales' })
+    ]);
+
+    var media = el('div', { class: 'social-card__media' });
+    var placeholder = function (text) {
+      media.textContent = '';
+      media.appendChild(el('p', { class: 'social-card__placeholder', text: text }));
+    };
+    // Solo se carga una imagen https; la pide el navegador, sin enviar la dirección de esta herramienta
+    if (s.imagen && s.imagen_https && /^https:\/\//i.test(s.imagen)) {
+      var img = el('img', { src: s.imagen, alt: 'Imagen indicada en ' + s.imagen_origen, referrerpolicy: 'no-referrer', loading: 'lazy', decoding: 'async' });
+      img.addEventListener('error', function () { placeholder('No se ha podido cargar la imagen.'); });
+      media.appendChild(img);
+    } else if (s.imagen) {
+      placeholder('Imagen no mostrada: solo se cargan imágenes servidas por https.');
+    } else {
+      placeholder('Sin imagen: falta og:image.');
+    }
+    sec.appendChild(el('div', { class: 'social-card' }, [
+      media,
+      el('div', { class: 'social-card__body' }, [
+        el('p', { class: 'social-card__domain', text: s.dominio }),
+        textOrMissing('p', 'social-card__title', s.titulo, 'Sin título'),
+        textOrMissing('p', 'social-card__desc', s.descripcion, 'Sin descripción')
+      ])
+    ]));
+
+    var notes = [];
+    if (s.titulo_origen && s.titulo_origen !== 'og:title') notes.push('El título sale de ' + s.titulo_origen + ' porque falta og:title.');
+    if (s.descripcion_origen && s.descripcion_origen !== 'og:description') notes.push('La descripción sale de ' + s.descripcion_origen + ' porque falta og:description.');
+    if (s.imagen_origen && s.imagen_origen !== 'og:image') notes.push('La imagen sale de ' + s.imagen_origen + ' porque falta og:image.');
+    if (s.imagen && s.imagen_https) notes.push('La imagen la descarga tu navegador directamente del servidor de la web analizada.');
+    notes.forEach(function (n) { sec.appendChild(el('p', { class: 'help', text: n })); });
+
+    var tags = Object.keys(s.etiquetas);
+    sec.appendChild(el('div', { class: 'table-wrap' }, [
+      el('table', { class: 'data-table' }, [
+        el('caption', { class: 'visually-hidden', text: 'Etiquetas para redes sociales' }),
+        el('thead', {}, [el('tr', {}, [el('th', { scope: 'col', text: 'Etiqueta' }), el('th', { scope: 'col', text: 'Valor' })])]),
+        el('tbody', {}, tags.map(function (t) {
+          var v = s.etiquetas[t];
+          return el('tr', {}, [el('th', { scope: 'row' }, [el('code', { text: t })]), v ? el('td', { text: v }) : el('td', { class: 'is-missing', text: 'Ausente' })]);
+        }))
+      ])
+    ]));
+    sec.appendChild(el('p', {}, [s.ausentes.length
+      ? 'Etiquetas ausentes: ' + joinList(s.ausentes) + '.'
+      : 'Están las cuatro etiquetas comprobadas.']));
+    return sec;
   }
 
   var BOT_PREVIEW_CHARS = 5000;

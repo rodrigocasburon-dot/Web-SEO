@@ -15,6 +15,9 @@ Estado: **fase 9** (identidad visual de Proconsi). Las fases están descritas en
   glosario; el informe pasa a diez apartados): texto del contenido
   principal del HTML inicial con la misma extracción y el mismo recuento que C03 (`DomHelper::mainContent` /
   `countWords`), nº de palabras, aviso si hay poco texto y unos 5.000 caracteres ampliables al texto completo.
+- **03 Vista previa en Google y redes**: title / URL / meta description recortados a unos 60 / 60 / 155 caracteres
+  y tarjeta social (og:title, og:description, og:image, twitter:card) con las etiquetas ausentes; la imagen solo se
+  carga si es https, con `referrerpolicy="no-referrer"` (la CSP admite `img-src https:`). Es una aproximación.
 
 ## Identidad visual (fase 9)
 
