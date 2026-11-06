@@ -52,6 +52,7 @@ try {
         'puntuacion' => $result['puntuacion'],
         'informe' => Report::build($result['checks'], $result['puntuacion'], !empty($result['blocked']),
             (int) ($config['simulator_top_n'] ?? Simulator::DEFAULT_TOP)),
+        'complementario' => $result['complementario'] ?? null,
     ]);
 } catch (Throwable $e) {
     error_log('[analyze] ' . $e->getMessage() . ' en ' . $e->getFile() . ':' . $e->getLine());

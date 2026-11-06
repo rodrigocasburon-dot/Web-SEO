@@ -68,6 +68,42 @@ class DomHelper
         return ['selector' => $selector, 'extracto' => $text, 'linea' => null];
     }
 
+    /**
+     * Contenido principal del HTML (lo usan C03 y la vista «lo que ve un bot»):
+     * main; si no, los article de primer nivel; si no, body sin nav/header/footer/aside/script/style/noscript.
+     * @return array{0:string,1:string,2:DOMElement[]} [fuente, texto con espacios normalizados, nodos]
+     */
+    public static function mainContent(DOMXPath $x): array
+    {
+        $main = $x->query('//main[not(ancestor::template)]');
+        if ($main->length > 0) {
+            return ['main', self::text($main->item(0)), [$main->item(0)]];
+        }
+        $articles = $x->query('//article[not(ancestor::article) and not(ancestor::template)]');
+        if ($articles->length > 0) {
+            $text = '';
+            $nodes = [];
+            foreach ($articles as $a) {
+                $text .= ' ' . self::text($a);
+                $nodes[] = $a;
+            }
+            return ['article', trim($text), $nodes];
+        }
+        $body = $x->query('//body')->item(0);
+        if (!$body instanceof DOMElement) {
+            return ['body', '', []];
+        }
+        $skip = ['nav', 'header', 'footer', 'aside', 'script', 'style', 'noscript', 'template'];
+        return ['body (sin nav, header, footer ni aside)', self::text($body, $skip), [$body]];
+    }
+
+    /** Nº de palabras (secuencias de letras o cifras, con apóstrofos y guiones internos). */
+    public static function countWords(string $text): int
+    {
+        $n = preg_match_all('/[\p{L}\p{N}][\p{L}\p{N}\'’\-]*/u', $text);
+        return $n === false ? 0 : $n;
+    }
+
     /** Texto del nodo con espacios normalizados, sin script/style/noscript/template. */
     public static function text(DOMNode $n, array $skip = ['script', 'style', 'noscript', 'template', 'head']): string
     {
