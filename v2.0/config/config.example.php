@@ -35,4 +35,6 @@ return [
     // Bots de IA a comprobar en robots.txt [lista por completar]
     'ai_search_bots'   => ['OAI-SearchBot', 'PerplexityBot'],
     'ai_training_bots' => ['GPTBot', 'ClaudeBot', 'Google-Extended'],
+    // Buscadores que se añaden a la tabla informativa de bots (no afecta a C02) [lista por completar]
+    'search_engine_bots' => ['Googlebot'],
 ];

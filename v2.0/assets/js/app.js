@@ -693,6 +693,46 @@
     }
     if (c.vista_bot) host.appendChild(renderBotView(c.vista_bot));
     if (c.vista_previa) host.appendChild(renderPreview(c.vista_previa));
+    if (c.bots_ia) host.appendChild(renderBotsTable(c.bots_ia));
+  }
+
+  // 04. Bots de IA y buscadores en robots.txt
+  var ACCESS_TEXT = { permitido: 'Permitido', bloqueado: 'Bloqueado', sin_datos: 'Sin datos' };
+  var BOT_TYPES = [
+    ['busqueda', 'Bots de búsqueda (buscadores y asistentes de IA)', 'bots-search'],
+    ['entrenamiento', 'Bots de entrenamiento de IA', 'bots-training']
+  ];
+
+  function renderBotsTable(b) {
+    var sec = el('section', { class: 'subsection', 'aria-labelledby': 'bots-title' }, [
+      el('h4', { id: 'bots-title', text: 'Bots de IA y buscadores en robots.txt' }),
+      el('p', { class: 'help', text: 'Acceso de cada bot a esta URL (' + b.ruta + ') según robots.txt: se aplica el grupo del propio bot o, si no lo hay, el de «*», y la regla más larga (en empate, Allow). Es informativo: lo que puntúa es la comprobación C02.' })
+    ]);
+    if (b.nota) sec.appendChild(el('p', { text: b.nota }));
+    BOT_TYPES.forEach(function (t) {
+      var rows = b.bots.filter(function (r) { return r.tipo === t[0]; });
+      if (!rows.length) return;
+      sec.appendChild(el('h5', { id: t[2], text: t[1] }));
+      sec.appendChild(el('div', { class: 'table-wrap' }, [
+        el('table', { class: 'data-table', 'aria-labelledby': t[2] }, [
+          el('thead', {}, [el('tr', {}, ['Bot', 'Acceso a esta URL', 'Grupo aplicado', 'Regla'].map(function (h) {
+            return el('th', { scope: 'col', text: h });
+          }))]),
+          el('tbody', {}, rows.map(function (r) {
+            var access = ACCESS_TEXT[r.acceso] || r.acceso;
+            var group = r.grupo === '*' ? '* (todos los bots)' : (r.grupo || (b.robots_txt === 'presente' ? 'Ninguno' : '—'));
+            return el('tr', {}, [
+              el('th', { scope: 'row', text: r.bot }),
+              el('td', {}, [r.acceso === 'bloqueado' ? el('strong', { text: access }) : access]),
+              el('td', { text: group }),
+              el('td', {}, [r.regla ? el('code', { text: r.regla }) : (b.robots_txt === 'presente' ? 'Ninguna coincide' : '—')])
+            ]);
+          }))
+        ])
+      ]));
+    });
+    sec.appendChild(el('p', { class: 'help', text: 'Los bots de entrenamiento recopilan contenido para entrenar modelos de IA; los de búsqueda, para mostrar la página en resultados y respuestas. Bloquear solo a los primeros no impide aparecer en buscadores.' }));
+    return sec;
   }
 
   /** Texto o, si falta, un aviso en cursiva. */

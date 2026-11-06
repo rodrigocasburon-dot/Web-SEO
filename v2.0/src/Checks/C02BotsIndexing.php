@@ -20,17 +20,16 @@ class C02BotsIndexing extends BaseCheck
     {
         $searchBots = (array) ($ctx->config['ai_search_bots'] ?? ['OAI-SearchBot', 'PerplexityBot']);
         $trainingBots = (array) ($ctx->config['ai_training_bots'] ?? ['GPTBot', 'ClaudeBot', 'Google-Extended']);
-        $path = (string) (parse_url($ctx->url, PHP_URL_PATH) ?: '/');
-        $query = parse_url($ctx->url, PHP_URL_QUERY);
-        if ($query !== null && $query !== '') {
-            $path .= '?' . $query;
-        }
+        $path = RobotsAnalyzer::pathOf($ctx->url);
 
         $ev = [];
         $notes = [];
 
-        // --- robots.txt
-        [$robotsState, $robots] = $this->robotsState($ctx, $notes);
+        // --- robots.txt (misma lectura que la tabla de bots de IA)
+        [$robotsState, $robots, $robotsNote] = RobotsAnalyzer::state($ctx->robots);
+        if ($robotsNote !== '') {
+            $notes[] = $robotsNote;
+        }
         $access = ['googlebot' => 'sin_datos', 'bots_busqueda_ia' => [], 'bots_entrenamiento' => []];
         $blockedHard = [];
         $blockedTraining = [];
@@ -95,31 +94,6 @@ class C02BotsIndexing extends BaseCheck
             return $this->result(self::NO_DATA, $access, $umbral, $ev, 'No se ha podido obtener robots.txt; no hay noindex en la página.' . $suffix);
         }
         return $this->result(self::OK, $access, $umbral, $ev, 'Googlebot y los bots de IA configurados tienen acceso y no hay noindex.' . $suffix);
-    }
-
-    /** @return array{0:string,1:?RobotsTxt} estado present|absent|unknown */
-    private function robotsState(CheckContext $ctx, array &$notes): array
-    {
-        $r = $ctx->robots;
-        if (!$r || ($r['status'] ?? null) === null) {
-            $notes[] = 'robots.txt no disponible' . (!empty($r['error']) ? ' (' . $r['error'] . ')' : '') . '.';
-            return ['unknown', null];
-        }
-        $status = (int) $r['status'];
-        if ($status === 404 || $status === 410) {
-            $notes[] = 'No existe robots.txt (HTTP ' . $status . '): se permite todo.';
-            return ['absent', null];
-        }
-        if ($status >= 200 && $status < 300) {
-            $body = (string) ($r['body'] ?? '');
-            if (preg_match('/^\s*<(!doctype|html)/i', $body)) {
-                $notes[] = 'robots.txt devuelve una página HTML: se trata como inexistente.';
-                return ['absent', null];
-            }
-            return ['present', RobotsTxt::parse($body)];
-        }
-        $notes[] = 'robots.txt respondió HTTP ' . $status . ': no se puede interpretar.';
-        return ['unknown', null];
     }
 
     /** Busca noindex/none en meta robots o googlebot y en X-Robots-Tag (sin prefijo o con googlebot). */

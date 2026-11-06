@@ -29,7 +29,7 @@ class RobotsTxt
                     $o->groups[] = ['agents' => [], 'rules' => []];
                     $current = count($o->groups) - 1;
                 }
-                $o->groups[$current]['agents'][] = strtolower($value);
+                $o->groups[$current]['agents'][] = self::token($value);
                 $lastWasAgent = true;
             } elseif ($field === 'allow' || $field === 'disallow') {
                 if ($current !== null) {
@@ -48,7 +48,7 @@ class RobotsTxt
      */
     public function explain(string $agent, string $path): array
     {
-        $agent = strtolower($agent);
+        $agent = self::token($agent);
         $rules = [];
         $group = null;
         foreach ($this->groups as $g) {
@@ -88,6 +88,19 @@ class RobotsTxt
             'rule' => $best ? ucfirst($best[0]) . ': ' . $best[1] : null,
             'group' => $group,
         ];
+    }
+
+    /**
+     * Token de producto en minúsculas (RFC 9309 2.2.1: letras, «_» y «-»). Se ignora el resto, como hace
+     * Google: «GPTBot/1.0» y «googlebot*» equivalen a «gptbot» y «googlebot». «*» se conserva.
+     */
+    public static function token(string $ua): string
+    {
+        $ua = strtolower(trim($ua));
+        if ($ua === '*') {
+            return '*';
+        }
+        return preg_match('/^[a-z_\-]+/', $ua, $m) ? $m[0] : $ua;
     }
 
     public function isAllowed(string $agent, string $path): bool
