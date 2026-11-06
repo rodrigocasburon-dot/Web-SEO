@@ -316,6 +316,18 @@
     var title = el('h2', { id: 'results-title', tabindex: '-1', text: 'Informe' });
     var printButton = el('button', { type: 'button', class: 'button button--secondary no-print', text: 'Imprimir o guardar como PDF' });
     printButton.addEventListener('click', function () { window.print(); });
+    // 08. Exportación: se genera en el navegador con los datos actuales (tras PageSpeed, ya actualizados)
+    var csvButton = el('button', { type: 'button', class: 'button button--secondary no-print', text: 'Descargar CSV' });
+    csvButton.addEventListener('click', function () {
+      var X = window.AnalyzerExport;
+      X.download(X.fileName(run.data.url, new Date(), 'csv'), 'text/csv;charset=utf-8', X.toCsv(X.buildRows(run.data.checks, i18n)));
+    });
+    var jsonButton = el('button', { type: 'button', class: 'button button--secondary no-print', text: 'Descargar JSON' });
+    jsonButton.addEventListener('click', function () {
+      var X = window.AnalyzerExport;
+      X.download(X.fileName(run.data.url, new Date(), 'json'), 'application/json;charset=utf-8',
+        X.buildJson(run.data, { provisional: psiPending(run) && !run.data.blocked }));
+    });
 
     results.appendChild(el('div', { class: 'report-head' }, [
       title,
@@ -323,7 +335,8 @@
         el('li', {}, ['URL analizada: ', el('strong', { text: data.url })]),
         el('li', { text: 'Fecha del análisis: ' + fmtDate(data.fecha) })
       ]),
-      printButton
+      el('div', { class: 'report-actions no-print' }, [printButton, csvButton, jsonButton]),
+      el('p', { class: 'help no-print', text: 'Los archivos se generan en tu navegador; no se guarda nada en el servidor. El CSV usa «;» y UTF-8 para abrirlo en Excel en español.' })
     ]));
 
     results.appendChild(el('nav', { class: 'report-toc', 'aria-labelledby': 'toc-title' }, [

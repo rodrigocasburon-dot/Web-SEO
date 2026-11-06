@@ -7,6 +7,16 @@ function test(string $name, callable $fn): void
     $GLOBALS['__tests'][] = [$name, $fn];
 }
 
+/** Prueba que no se puede ejecutar en este equipo (p. ej. falta un navegador): se informa como omitida. */
+class SkippedTest extends Exception
+{
+}
+
+function skipTest(string $reason): void
+{
+    throw new SkippedTest($reason);
+}
+
 function assertTrue($cond, string $msg = ''): void
 {
     if (!$cond) {
@@ -106,16 +116,20 @@ function runTests(): int
 {
     $pass = 0;
     $fail = 0;
+    $skip = 0;
     foreach ($GLOBALS['__tests'] as [$name, $fn]) {
         try {
             $fn();
             $pass++;
             echo "  ok    $name\n";
+        } catch (SkippedTest $e) {
+            $skip++;
+            echo "  OMITIDA $name\n        " . $e->getMessage() . "\n";
         } catch (Throwable $e) {
             $fail++;
             echo "  FALLO $name\n        " . $e->getMessage() . "\n";
         }
     }
-    echo "\n$pass correctas, $fail fallidas.\n";
+    echo "\n$pass correctas, $fail fallidas" . ($skip ? ", $skip omitidas" : '') . ".\n";
     return $fail === 0 ? 0 : 1;
 }
