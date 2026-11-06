@@ -378,6 +378,14 @@ code, pre { font-family: var(--mono); }
 .keyword-name { font-weight: 500; }
 .keyword-text { flex-basis: 100%; color: var(--muted); font-size: 0.88rem; overflow-wrap: anywhere; }
 
+/* Esquema del documento: lista anidada con sangría y filete por nivel */
+.outline, .outline ul { margin: 0; padding: 0; list-style: none; }
+.outline { margin: 0.75rem 0; }
+.outline ul { margin-left: 0.4rem; padding-left: 0.9rem; border-left: 1px solid var(--line); }
+.outline li { padding: 0.2rem 0; overflow-wrap: anywhere; }
+.outline__level { display: inline-block; min-width: 2.1rem; font-family: var(--mono); font-size: 0.8rem; font-weight: 600; color: var(--muted); }
+.outline__jump { display: block; color: var(--red); font-size: 0.85rem; font-weight: 600; }
+
 /* Tableta */
 @media (min-width: 40em) {
   .container { padding: 0 2rem; }

@@ -696,6 +696,65 @@
     if (c.vista_previa) host.appendChild(renderPreview(c.vista_previa));
     if (c.bots_ia) host.appendChild(renderBotsTable(c.bots_ia));
     if (!c.sin_contenido) host.appendChild(renderKeyword(c.palabra_clave));
+    if (c.esquema) host.appendChild(renderOutline(c.esquema));
+  }
+
+  // 06. Esquema del documento: lista anidada real (ul dentro de li) y regiones
+  function outlineList(nodes) {
+    return el('ul', {}, nodes.map(function (n) {
+      return el('li', {}, [
+        el('span', { class: 'outline__level', text: 'H' + n.nivel }),
+        ' ',
+        n.texto ? el('span', { text: n.texto }) : el('span', { class: 'is-missing', text: '(encabezado vacío)' }),
+        n.salto ? el('strong', { class: 'outline__jump', text: ' Salto de nivel: de H' + n.desde + ' a H' + n.nivel }) : null,
+        n.hijos && n.hijos.length ? outlineList(n.hijos) : null
+      ]);
+    }));
+  }
+
+  function renderOutline(o) {
+    var sec = el('section', { class: 'subsection', 'aria-labelledby': 'outline-title' }, [
+      el('h4', { id: 'outline-title', text: 'Esquema del documento' }),
+      el('h5', { id: 'outline-headings', text: 'Encabezados' }),
+      el('p', { text: o.total_encabezados
+        ? fmtNumber(o.total_encabezados, 0) + (o.total_encabezados === 1 ? ' encabezado visible' : ' encabezados visibles') + ', '
+          + (o.saltos ? fmtNumber(o.saltos, 0) + (o.saltos === 1 ? ' salto de nivel.' : ' saltos de nivel.') : 'sin saltos de nivel.')
+        : 'La página no tiene encabezados visibles (h1-h6).' })
+    ]);
+    if (o.encabezados.length) {
+      var tree = outlineList(o.encabezados);
+      tree.className = 'outline';
+      tree.setAttribute('aria-labelledby', 'outline-headings');
+      sec.appendChild(tree);
+    }
+    if (o.recortado) sec.appendChild(el('p', { class: 'help', text: 'Se muestran los ' + fmtNumber(countNodes(o.encabezados), 0) + ' primeros encabezados.' }));
+    sec.appendChild(el('p', { class: 'help', text: 'Hay un salto cuando un encabezado baja más de un nivel respecto al anterior (por ejemplo, de H2 a H4); es el mismo criterio de la comprobación C05. No se incluyen los encabezados ocultos.' }));
+
+    sec.appendChild(el('h5', { id: 'outline-landmarks', text: 'Regiones (landmarks)' }));
+    sec.appendChild(el('div', { class: 'table-wrap' }, [
+      el('table', { class: 'data-table', 'aria-labelledby': 'outline-landmarks' }, [
+        el('thead', {}, [el('tr', {}, [
+          el('th', { scope: 'col', text: 'Región' }),
+          el('th', { scope: 'col', text: 'Elemento o rol' }),
+          el('th', { scope: 'col', class: 'num', text: 'Cantidad' }),
+          el('th', { scope: 'col', text: 'Nombres' })
+        ])]),
+        el('tbody', {}, o.regiones.map(function (r) {
+          return el('tr', {}, [
+            el('th', { scope: 'row', text: r.nombre }),
+            el('td', {}, [el('code', { text: r.elemento }), ' / ', el('code', { text: 'role="' + r.rol + '"' })]),
+            el('td', { class: 'num', text: fmtNumber(r.total, 0) + (r.ocultas ? ' (+' + r.ocultas + ' oculta' + (r.ocultas === 1 ? '' : 's') + ')' : '') }),
+            el('td', { text: r.etiquetas.length ? r.etiquetas.join(' · ') : '—' })
+          ]);
+        }))
+      ])
+    ]));
+    sec.appendChild(el('p', { class: 'help', text: 'header y footer solo cuentan como cabecera y pie de la página cuando no están dentro de article, aside, main, nav o section. Los nombres salen de aria-label o aria-labelledby.' }));
+    return sec;
+  }
+
+  function countNodes(nodes) {
+    return nodes.reduce(function (n, x) { return n + 1 + countNodes(x.hijos || []); }, 0);
   }
 
   // 05. Palabra clave objetivo (opcional)

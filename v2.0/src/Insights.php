@@ -18,6 +18,7 @@ class Insights
             // robots.txt se descarga aparte: la tabla se muestra aunque la página esté bloqueada
             'bots_ia' => RobotsAnalyzer::table($ctx->url, $ctx->robots, $ctx->config),
             'palabra_clave' => $reason === null ? self::keyword($ctx, (string) ($ctx->options['palabra_clave'] ?? '')) : null,
+            'esquema' => $reason === null ? self::outline($ctx) : null,
         ];
     }
 
@@ -178,6 +179,143 @@ class Insights
             'elementos' => $items,
             'presente_en' => count(array_filter($items, fn($i) => $i['presente'])),
         ];
+    }
+
+    /** Máximo de encabezados del esquema y longitud de su texto */
+    public const OUTLINE_MAX = 150;
+    public const OUTLINE_TEXT_MAX = 120;
+    /** Regiones (landmarks): rol ARIA => elemento HTML equivalente y nombre en el informe */
+    public const LANDMARKS = [
+        'banner' => ['header', 'Cabecera'],
+        'navigation' => ['nav', 'Navegación'],
+        'main' => ['main', 'Contenido principal'],
+        'complementary' => ['aside', 'Contenido complementario'],
+        'contentinfo' => ['footer', 'Pie'],
+    ];
+
+    /**
+     * Función 06 «Esquema del documento»: árbol de encabezados h1-h6 visibles (mismo criterio que C05:
+     * sin los ocultos; salto = más de un nivel por debajo del anterior) y recuento de regiones.
+     */
+    public static function outline(CheckContext $ctx): array
+    {
+        $x = $ctx->xpath();
+        $flat = [];
+        $total = 0;
+        $jumps = 0;
+        $prev = null;
+        foreach ($x->query('//h1|//h2|//h3|//h4|//h5|//h6') as $h) {
+            if (!$h instanceof DOMElement || DomHelper::isHidden($h)) {
+                continue;
+            }
+            $level = (int) substr(strtolower($h->tagName), 1);
+            $jump = $prev !== null && $level > $prev + 1;
+            $total++;
+            $jumps += $jump ? 1 : 0;
+            if (count($flat) < self::OUTLINE_MAX) {
+                $text = DomHelper::text($h);
+                $flat[] = [
+                    'nivel' => $level,
+                    'texto' => $text === '' ? null : self::truncate($text, self::OUTLINE_TEXT_MAX),
+                    'salto' => $jump,
+                    'desde' => $jump ? $prev : null,
+                ];
+            }
+            $prev = $level;
+        }
+        $i = 0;
+        return [
+            'encabezados' => self::nest($flat, $i, 0),
+            'total_encabezados' => $total,
+            'saltos' => $jumps,
+            'recortado' => $total > count($flat),
+            'regiones' => self::landmarks($x),
+        ];
+    }
+
+    /** Anida la lista plana: cada encabezado contiene los siguientes de nivel mayor. */
+    private static function nest(array $flat, int &$i, int $parentLevel): array
+    {
+        $out = [];
+        while ($i < count($flat) && $flat[$i]['nivel'] > $parentLevel) {
+            $node = $flat[$i];
+            $i++;
+            $node['hijos'] = self::nest($flat, $i, $node['nivel']);
+            $out[] = $node;
+        }
+        return $out;
+    }
+
+    /**
+     * Recuento de regiones por rol. Un role explícito de región manda sobre el elemento; header y footer
+     * solo son cabecera y pie de la página fuera de article, aside, main, nav y section.
+     */
+    private static function landmarks(DOMXPath $x): array
+    {
+        $out = [];
+        foreach (self::LANDMARKS as $role => [$tag, $name]) {
+            $out[$role] = ['rol' => $role, 'elemento' => $tag, 'nombre' => $name, 'total' => 0, 'ocultas' => 0, 'etiquetas' => []];
+        }
+        $query = '//*[(self::header or self::nav or self::main or self::aside or self::footer or @role) and not(ancestor::template)]';
+        foreach ($x->query($query) as $el) {
+            if (!$el instanceof DOMElement) {
+                continue;
+            }
+            $role = self::landmarkRole($el);
+            if ($role === null) {
+                continue;
+            }
+            if (DomHelper::isHidden($el)) {
+                $out[$role]['ocultas']++;
+                continue;
+            }
+            $out[$role]['total']++;
+            $label = self::accessibleLabel($x, $el);
+            if ($label !== '') {
+                $out[$role]['etiquetas'][] = self::truncate($label, 80);
+            }
+        }
+        return array_values($out);
+    }
+
+    private static function landmarkRole(DOMElement $el): ?string
+    {
+        $tokens = preg_split('/\s+/', strtolower(trim($el->getAttribute('role'))), -1, PREG_SPLIT_NO_EMPTY);
+        if ($tokens) {
+            return isset(self::LANDMARKS[$tokens[0]]) ? $tokens[0] : null;
+        }
+        $tag = strtolower($el->tagName);
+        if ($tag === 'header' || $tag === 'footer') {
+            for ($p = $el->parentNode; $p instanceof DOMElement; $p = $p->parentNode) {
+                if (in_array(strtolower($p->tagName), ['article', 'aside', 'main', 'nav', 'section'], true)) {
+                    return null;
+                }
+            }
+            return $tag === 'header' ? 'banner' : 'contentinfo';
+        }
+        foreach (self::LANDMARKS as $role => [$t]) {
+            if ($t === $tag) {
+                return $role;
+            }
+        }
+        return null;
+    }
+
+    /** aria-labelledby (textos de los id citados) o aria-label. */
+    private static function accessibleLabel(DOMXPath $x, DOMElement $el): string
+    {
+        $parts = [];
+        foreach (preg_split('/\s+/', trim($el->getAttribute('aria-labelledby')), -1, PREG_SPLIT_NO_EMPTY) as $id) {
+            if (strpos($id, '"') !== false) {
+                continue;
+            }
+            $ref = $x->query('//*[@id="' . $id . '"]')->item(0);
+            if ($ref) {
+                $parts[] = DomHelper::text($ref);
+            }
+        }
+        $label = self::clean(implode(' ', $parts));
+        return $label !== '' ? $label : self::clean($el->getAttribute('aria-label'));
     }
 
     /** Minúsculas sin tildes ni diéresis (la ñ se conserva) y signos de puntuación como espacios. */

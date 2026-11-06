@@ -189,3 +189,55 @@ test('Palabra clave: opcional, recortada a 100 caracteres y sin caracteres de co
     assertSame('a e i o u u ñ c', Insights::fold('Á É Í Ó Ú Ü Ñ Ç'), 'La ñ se conserva');
     assertSame('consultoria tecnologica', Insights::fold("consultorí\u{00AD}a tecno\u{200B}lógica"), 'El guion blando no parte la palabra');
 });
+
+// ---------- 06 Esquema del documento ----------
+
+/** Árbol reducido a «hN texto» con hijos, para comparar. */
+function outlineShape(array $nodes): array
+{
+    return array_map(fn($n) => ['h' . $n['nivel'] . ($n['salto'] ? '!' : '') . ' ' . $n['texto'] => outlineShape($n['hijos'])], $nodes);
+}
+
+test('Esquema: árbol anidado de encabezados con saltos marcados (criterio de C05)', function () {
+    $html = '<body><h1>Inicio</h1><h2>Servicios</h2><h4>ERP</h4><h3>CRM</h3><h2>Contacto</h2>'
+        . '<h3 hidden>Oculto</h3><template><h2>Plantilla</h2></template><h6>Final</h6></body>';
+    $o = Insights::build(htmlCtx($html))['esquema'];
+    assertSame([['h1 Inicio' => [
+        ['h2 Servicios' => [['h4! ERP' => []], ['h3 CRM' => []]]],
+        ['h2 Contacto' => [['h6! Final' => []]]],
+    ]]], outlineShape($o['encabezados']));
+    assertSame(6, $o['total_encabezados'], 'Sin el oculto ni el de la plantilla');
+    assertSame(2, $o['saltos']);
+    $c05 = (new C05Headings())->run(htmlCtx($html));
+    assertSame($c05['valor_medido']['saltos'], $o['saltos'], 'Mismos saltos que C05');
+    $erp = $o['encabezados'][0]['hijos'][0]['hijos'][0];
+    assertSame(2, $erp['desde']);
+});
+
+test('Esquema: sin h1 al principio, encabezado vacío y límite de encabezados', function () {
+    $o = Insights::outline(htmlCtx('<h3>Tres</h3><h2></h2><h1>Uno</h1>'));
+    assertSame([3, 2, 1], array_column($o['encabezados'], 'nivel'), 'Ninguno es hijo de otro: los siguientes no son de nivel mayor');
+    assertSame(null, $o['encabezados'][1]['texto'], 'Encabezado vacío');
+    assertSame(0, $o['saltos'], 'El primer encabezado no cuenta como salto');
+
+    $many = Insights::outline(htmlCtx(str_repeat('<h2>x</h2>', Insights::OUTLINE_MAX + 5)));
+    assertSame(Insights::OUTLINE_MAX + 5, $many['total_encabezados']);
+    assertSame(Insights::OUTLINE_MAX, count($many['encabezados']));
+    assertSame(true, $many['recortado']);
+});
+
+test('Esquema: regiones con recuento, equivalentes ARIA, nombres y ocultas', function () {
+    $html = '<body><header>Cabecera</header><div role="banner">Otra</div>'
+        . '<nav aria-label="Menú principal">a</nav><div role="navigation" aria-labelledby="t"><h2 id="t">Migas</h2></div>'
+        . '<main><article><header>De artículo</header><footer>Pie de artículo</footer></article></main>'
+        . '<main hidden>copia</main><aside>Lateral</aside><nav role="menubar">no es región</nav>'
+        . '<footer>Pie</footer><div role="contentinfo complementary">x</div><template><nav>t</nav></template></body>';
+    $r = array_column(Insights::outline(htmlCtx($html))['regiones'], null, 'rol');
+    assertSame(2, $r['banner']['total'], 'header de página + role=banner; el de article no cuenta');
+    assertSame(2, $r['navigation']['total'], 'nav con role=menubar no es región');
+    assertSame(['Menú principal', 'Migas'], $r['navigation']['etiquetas']);
+    assertSame([1, 1], [$r['main']['total'], $r['main']['ocultas']]);
+    assertSame(1, $r['complementary']['total']);
+    assertSame(2, $r['contentinfo']['total'], 'footer de página + role=contentinfo (primer token)');
+    assertSame(['banner', 'navigation', 'main', 'complementary', 'contentinfo'], array_keys($r));
+});
