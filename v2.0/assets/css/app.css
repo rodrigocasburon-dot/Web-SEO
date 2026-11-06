@@ -369,6 +369,15 @@ code, pre { font-family: var(--mono); }
 .social-card__title { margin: 0.2rem 0 !important; font-weight: 600; }
 .social-card__desc { font-size: 0.9rem; color: var(--muted); }
 
+/* Palabra clave: lista con marca por elemento (el estado va en el texto, no solo en el color) */
+.keyword-list { margin: 0.75rem 0; padding: 0; list-style: none; border-top: 1px solid var(--line); }
+.keyword-list li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 0.75rem; padding: 0.55rem 0; border-bottom: 1px solid var(--line); }
+.keyword-mark { flex: none; min-width: 6.5rem; padding: 0.05rem 0.5rem; font-size: 0.82rem; font-weight: 600; text-align: center; border: 1px solid var(--black); }
+.is-yes .keyword-mark { color: var(--on-primary); background: var(--black); }
+.is-no .keyword-mark { color: var(--text); background: var(--bg); border-color: var(--gray); }
+.keyword-name { font-weight: 500; }
+.keyword-text { flex-basis: 100%; color: var(--muted); font-size: 0.88rem; overflow-wrap: anywhere; }
+
 /* Tableta */
 @media (min-width: 40em) {
   .container { padding: 0 2rem; }

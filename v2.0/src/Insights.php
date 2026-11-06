@@ -17,6 +17,7 @@ class Insights
             'vista_previa' => $reason === null ? self::preview($ctx) : null,
             // robots.txt se descarga aparte: la tabla se muestra aunque la página esté bloqueada
             'bots_ia' => RobotsAnalyzer::table($ctx->url, $ctx->robots, $ctx->config),
+            'palabra_clave' => $reason === null ? self::keyword($ctx, (string) ($ctx->options['palabra_clave'] ?? '')) : null,
         ];
     }
 
@@ -115,6 +116,97 @@ class Insights
                 'dominio' => (string) parse_url($ctx->url, PHP_URL_HOST),
             ],
         ];
+    }
+
+    /** Longitud máxima de la palabra clave y nº de palabras iniciales del contenido en que se busca */
+    public const KEYWORD_MAX = 100;
+    public const KEYWORD_FIRST_WORDS = 100;
+
+    /** Normaliza la palabra clave recibida en la petición ('' si no hay). */
+    public static function keywordInput($value): string
+    {
+        if (!is_string($value)) {
+            return '';
+        }
+        $value = self::clean((string) preg_replace('/[\p{C}]/u', ' ', $value));
+        return mb_substr($value, 0, self::KEYWORD_MAX, 'UTF-8');
+    }
+
+    /**
+     * Función 05 «Palabra clave objetivo»: presencia (sin distinguir mayúsculas ni tildes, como frase
+     * completa) en title, H1, meta description, URL y primeras 100 palabras del contenido principal.
+     * Informativa: no puntúa. null si no se ha indicado palabra clave.
+     */
+    public static function keyword(CheckContext $ctx, string $keyword): ?array
+    {
+        $keyword = self::keywordInput($keyword);
+        $needle = self::fold($keyword);
+        if ($needle === '') {
+            return null;
+        }
+        $x = $ctx->xpath();
+        $titleEl = $x->query('//title[not(ancestor::svg)]')->item(0);
+        $title = $titleEl ? self::clean($titleEl->textContent) : '';
+        $h1s = [];
+        foreach ($x->query('//h1[not(ancestor::template)]') as $h) {
+            $t = DomHelper::text($h);
+            if ($t !== '') {
+                $h1s[] = $t;
+            }
+        }
+        $desc = self::metaTags($x)['description'] ?? '';
+        $url = rawurldecode((string) preg_replace('#^https?://#i', '', $ctx->url));
+        [, $main] = DomHelper::mainContent($x);
+        $first = self::firstWords($main, self::KEYWORD_FIRST_WORDS);
+
+        $h1Match = null;
+        foreach ($h1s as $h) {
+            if (self::contains($h, $needle)) {
+                $h1Match = $h;
+                break;
+            }
+        }
+        $items = [
+            ['elemento' => 'title', 'nombre' => 'Title', 'presente' => self::contains($title, $needle), 'texto' => $title === '' ? null : $title],
+            ['elemento' => 'h1', 'nombre' => 'H1', 'presente' => $h1Match !== null, 'texto' => $h1Match ?? ($h1s[0] ?? null)],
+            ['elemento' => 'meta_description', 'nombre' => 'Meta description', 'presente' => self::contains($desc, $needle), 'texto' => $desc === '' ? null : $desc],
+            ['elemento' => 'url', 'nombre' => 'URL', 'presente' => self::contains($url, $needle), 'texto' => $ctx->url],
+            ['elemento' => 'primeras_palabras', 'nombre' => 'Primeras ' . self::KEYWORD_FIRST_WORDS . ' palabras del contenido principal', 'presente' => self::contains($first, $needle), 'texto' => null],
+        ];
+        return [
+            'palabra_clave' => $keyword,
+            'elementos' => $items,
+            'presente_en' => count(array_filter($items, fn($i) => $i['presente'])),
+        ];
+    }
+
+    /** Minúsculas sin tildes ni diéresis (la ñ se conserva) y signos de puntuación como espacios. */
+    public static function fold(string $s): string
+    {
+        // Guiones blandos y caracteres invisibles de formato (U+00AD, U+200B…) no separan palabras
+        $s = mb_strtolower((string) preg_replace('/\p{Cf}+/u', '', $s), 'UTF-8');
+        $s = strtr($s, [
+            'á' => 'a', 'à' => 'a', 'â' => 'a', 'ä' => 'a', 'ã' => 'a', 'é' => 'e', 'è' => 'e', 'ê' => 'e', 'ë' => 'e',
+            'í' => 'i', 'ì' => 'i', 'î' => 'i', 'ï' => 'i', 'ó' => 'o', 'ò' => 'o', 'ô' => 'o', 'ö' => 'o', 'õ' => 'o',
+            'ú' => 'u', 'ù' => 'u', 'û' => 'u', 'ü' => 'u', 'ç' => 'c',
+        ]);
+        return trim((string) preg_replace('/[^\p{L}\p{N}]+/u', ' ', $s));
+    }
+
+    /** ¿Aparece la frase (ya normalizada) como palabras completas? */
+    private static function contains(string $haystack, string $needle): bool
+    {
+        return $needle !== '' && strpos(' ' . self::fold($haystack) . ' ', ' ' . $needle . ' ') !== false;
+    }
+
+    /** Texto hasta el final de la palabra n.º $n (mismo criterio de palabra que DomHelper::countWords). */
+    private static function firstWords(string $text, int $n): string
+    {
+        if (!preg_match_all(DomHelper::WORD_RE, $text, $m, PREG_OFFSET_CAPTURE) || count($m[0]) <= $n) {
+            return $text;
+        }
+        [$word, $offset] = $m[0][$n - 1];
+        return substr($text, 0, $offset + strlen($word));
     }
 
     /**

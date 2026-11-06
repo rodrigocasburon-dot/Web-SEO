@@ -66,6 +66,11 @@ $e = fn(string $s): string => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
              autocapitalize="off" required aria-describedby="url-help url-error">
       <p id="url-error" class="field-error" hidden></p>
     </div>
+    <div class="field">
+      <label for="keyword">Palabra clave objetivo (opcional)</label>
+      <p id="keyword-help" class="help">Por ejemplo: software de gestión. Se comprueba si aparece en el title, el H1, la meta description, la URL y las primeras 100 palabras. No puntúa.</p>
+      <input id="keyword" name="palabra_clave" type="text" maxlength="100" autocomplete="off" aria-describedby="keyword-help">
+    </div>
     <div class="field field--check">
       <input id="noindex" name="noindex_intentional" type="checkbox">
       <label for="noindex">La página tiene <span lang="en">noindex</span> a propósito</label>
