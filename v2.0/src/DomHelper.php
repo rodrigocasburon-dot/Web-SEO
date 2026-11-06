@@ -4,6 +4,8 @@ class DomHelper
 {
     private const INLINE_TAGS = ['a', 'abbr', 'b', 'bdi', 'bdo', 'cite', 'code', 'data', 'dfn', 'em', 'font', 'i', 'kbd',
         'label', 'mark', 'q', 's', 'samp', 'small', 'span', 'strong', 'sub', 'sup', 'time', 'u', 'var'];
+    /** Palabra: secuencia de letras o cifras, con apóstrofos y guiones internos */
+    public const WORD_RE = '/[\p{L}\p{N}][\p{L}\p{N}\'’\-]*/u';
 
     /** Selector CSS aproximado del elemento (id si es sencillo; si no, ruta con nth-of-type). */
     public static function cssPath(DOMNode $n): string
@@ -100,7 +102,7 @@ class DomHelper
     /** Nº de palabras (secuencias de letras o cifras, con apóstrofos y guiones internos). */
     public static function countWords(string $text): int
     {
-        $n = preg_match_all('/[\p{L}\p{N}][\p{L}\p{N}\'’\-]*/u', $text);
+        $n = preg_match_all(self::WORD_RE, $text);
         return $n === false ? 0 : $n;
     }
 

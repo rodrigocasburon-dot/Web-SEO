@@ -16,6 +16,7 @@
   var form = document.getElementById('analyze-form');
   var input = document.getElementById('url');
   var noindex = document.getElementById('noindex');
+  var keywordInput = document.getElementById('keyword');
   var button = document.getElementById('submit');
   var statusEl = document.getElementById('status');
   var errorEl = document.getElementById('error');
@@ -200,10 +201,10 @@
       showFieldError('Escribe la URL de la página que quieres analizar.');
       return;
     }
-    analyze(url, noindex.checked);
+    analyze(url, noindex.checked, keywordInput.value.trim());
   });
 
-  function analyze(url, noindexIntentional) {
+  function analyze(url, noindexIntentional, keyword) {
     if (current) current.cancel();
     results.hidden = true;
     results.textContent = '';
@@ -237,7 +238,7 @@
       if (run.data) finishPsi(run);
     });
 
-    postJson('api/analyze.php', { url: url, noindex_intentional: noindexIntentional }, run.analyzeCtrl, REQUEST_TIMEOUT_MS).then(function (r) {
+    postJson('api/analyze.php', { url: url, noindex_intentional: noindexIntentional, palabra_clave: keyword }, run.analyzeCtrl, REQUEST_TIMEOUT_MS).then(function (r) {
       if (run !== current) return;
       setLoading(false);
       if (!r.data || !r.data.ok) {
@@ -694,6 +695,32 @@
     if (c.vista_bot) host.appendChild(renderBotView(c.vista_bot));
     if (c.vista_previa) host.appendChild(renderPreview(c.vista_previa));
     if (c.bots_ia) host.appendChild(renderBotsTable(c.bots_ia));
+    if (!c.sin_contenido) host.appendChild(renderKeyword(c.palabra_clave));
+  }
+
+  // 05. Palabra clave objetivo (opcional)
+  function renderKeyword(k) {
+    var sec = el('section', { class: 'subsection', 'aria-labelledby': 'keyword-title' }, [
+      el('h4', { id: 'keyword-title', text: 'Palabra clave objetivo' })
+    ]);
+    if (!k) {
+      sec.appendChild(el('p', { text: 'No se ha indicado ninguna palabra clave. Es opcional: puedes escribirla en el formulario y volver a analizar.' }));
+      return sec;
+    }
+    var found = k.presente_en;
+    sec.appendChild(el('p', {}, [
+      '«', el('strong', { text: k.palabra_clave }), '» aparece en ' + found + ' de ' + k.elementos.length + ' elementos.'
+    ]));
+    sec.appendChild(el('ul', { class: 'keyword-list' }, k.elementos.map(function (i) {
+      return el('li', { class: i.presente ? 'is-yes' : 'is-no' }, [
+        el('span', { class: 'keyword-mark', text: i.presente ? 'Aparece' : 'No aparece' }),
+        ' ',
+        el('span', { class: 'keyword-name', text: i.nombre }),
+        i.texto ? el('span', { class: 'keyword-text', text: i.texto }) : null
+      ]);
+    })));
+    sec.appendChild(el('p', { class: 'help', text: 'Se busca la frase completa sin distinguir mayúsculas ni tildes (la ñ sí se distingue) e ignorando los signos de puntuación. No se cuentan plurales ni sinónimos. Es informativo: no puntúa.' }));
+    return sec;
   }
 
   // 04. Bots de IA y buscadores en robots.txt

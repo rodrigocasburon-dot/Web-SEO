@@ -1,6 +1,6 @@
 <?php
 /**
- * POST api/analyze.php  (JSON: {"url": "...", "noindex_intentional": false})
+ * POST api/analyze.php  (JSON: {"url": "...", "noindex_intentional": false, "palabra_clave": "opcional"})
  * Descarga y analiza el HTML de una URL y devuelve comprobaciones y puntuación en JSON.
  * C08 y C14 (PageSpeed Insights) se obtienen aparte con api/psi.php.
  * No guarda nada de los análisis; solo cuenta peticiones por IP para el límite de uso.
@@ -28,7 +28,11 @@ try {
     $url = is_string($input['url'] ?? null) ? $input['url'] : '';
     // Página 10 s + robots.txt 5 s + enlaces 12 s + sitemap 8 s en el peor caso
     set_time_limit(50);
-    $result = (new Analyzer($config))->analyze($url, ['noindex_intentional' => !empty($input['noindex_intentional'])]);
+    $result = (new Analyzer($config))->analyze($url, [
+        'noindex_intentional' => !empty($input['noindex_intentional']),
+        // Palabra clave objetivo (opcional, solo informativa)
+        'palabra_clave' => Insights::keywordInput($input['palabra_clave'] ?? ''),
+    ]);
 
     // Datos de la descarga que se devuelven (sin cuerpo ni cabeceras de la web analizada)
     $fetch = array_intersect_key($result['fetch'] ?? [], array_flip(

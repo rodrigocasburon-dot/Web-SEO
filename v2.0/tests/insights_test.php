@@ -137,3 +137,55 @@ test('Vista previa: la CSP solo abre img-src a https y la imagen se pide sin ref
     assertTrue(strpos($js, "referrerpolicy: 'no-referrer'") !== false);
     assertTrue(strpos($js, "/^https:\/\//i.test(s.imagen)") !== false, 'La pantalla vuelve a comprobar que es https');
 });
+
+// ---------- 05 Palabra clave objetivo ----------
+
+function kwPage(): string
+{
+    return '<html><head><title>Software de Gestión para empresas | Proconsi</title>'
+        . '<meta name="description" content="Programas de GESTION y ERP para pymes."></head><body>'
+        . '<nav>Menú con software de gestión</nav><main><h1>Soluciones ERP</h1><h1>Software de gestión, a medida</h1>'
+        . '<p>Nuestro software de gestión ayuda a las pymes.</p></main></body></html>';
+}
+
+test('Palabra clave: presencia sin distinguir mayúsculas ni tildes en los cinco elementos', function () {
+    $ctx = htmlCtx(kwPage(), 'https://example.com/software-de-gestion/', [], null, ['palabra_clave' => 'software de gestión']);
+    $k = Insights::build($ctx)['palabra_clave'];
+    assertSame('software de gestión', $k['palabra_clave']);
+    $by = array_column($k['elementos'], 'presente', 'elemento');
+    assertSame(['title' => true, 'h1' => true, 'meta_description' => false, 'url' => true, 'primeras_palabras' => true], $by);
+    assertSame(4, $k['presente_en']);
+    assertSame('Software de gestión, a medida', $k['elementos'][1]['texto'], 'Se muestra el H1 que la contiene');
+
+    $k2 = Insights::keyword(htmlCtx(kwPage()), 'GESTIÓN');
+    assertSame(true, $k2['elementos'][2]['presente'], '«GESTION» en la description coincide con «GESTIÓN»');
+    assertSame(false, $k2['elementos'][3]['presente'], 'La URL de prueba no la contiene');
+});
+
+test('Palabra clave: frase completa, sin coincidencias parciales y con la ñ distinta de la n', function () {
+    $ctx = htmlCtx('<title>Superpotencia ERP</title><main><p>El año pasado.</p></main>');
+    assertSame(false, Insights::keyword($ctx, 'potencia')['elementos'][0]['presente']);
+    assertSame(true, Insights::keyword($ctx, 'erp')['elementos'][0]['presente']);
+    assertSame(false, Insights::keyword($ctx, 'ano')['elementos'][4]['presente']);
+    assertSame(true, Insights::keyword($ctx, 'Año')['elementos'][4]['presente']);
+    assertSame(false, Insights::keyword($ctx, 'pasado el')['elementos'][4]['presente'], 'El orden de la frase importa');
+});
+
+test('Palabra clave: solo cuentan las primeras 100 palabras del contenido principal', function () {
+    $html = '<main><p>' . str_repeat('relleno ', 99) . 'objetivo ' . str_repeat('más ', 50) . 'tardía</p></main>';
+    $ctx = htmlCtx($html);
+    assertSame(true, Insights::keyword($ctx, 'objetivo')['elementos'][4]['presente'], 'Palabra n.º 100');
+    assertSame(false, Insights::keyword($ctx, 'tardía')['elementos'][4]['presente'], 'Palabra n.º 151');
+    $nav = htmlCtx(kwPage());
+    assertSame(false, Insights::keyword($nav, 'menú')['elementos'][4]['presente'], 'El menú no es contenido principal');
+});
+
+test('Palabra clave: opcional, recortada a 100 caracteres y sin caracteres de control', function () {
+    assertSame(null, Insights::build(htmlCtx(kwPage()))['palabra_clave']);
+    assertSame(null, Insights::keyword(htmlCtx(kwPage()), '  ¿?  '), 'Solo signos: no hay nada que buscar');
+    assertSame('', Insights::keywordInput(['array']));
+    assertSame('erp para pymes', Insights::keywordInput("  erp\tpara\x00 pymes "));
+    assertSame(100, mb_strlen(Insights::keywordInput(str_repeat('ñ', 300))));
+    assertSame('a e i o u u ñ c', Insights::fold('Á É Í Ó Ú Ü Ñ Ç'), 'La ñ se conserva');
+    assertSame('consultoria tecnologica', Insights::fold("consultorí\u{00AD}a tecno\u{200B}lógica"), 'El guion blando no parte la palabra');
+});
