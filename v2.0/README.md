@@ -34,6 +34,9 @@ Estado: **fase 9** (identidad visual de Proconsi). Las fases están descritas en
 - **09 Fragmento de corrección** (`src/FixSnippets.php`, plantillas en `lang/es.php` → `correcciones`): en las
   recomendaciones, «antes / después» para C04, C06, C07, C09, C10, C12, C15 y C20 (máx. 3 casos). «Antes» es la
   etiqueta real de la evidencia; si está recortada o el fallo no es sencillo, no se muestra nada. Primer borrador.
+- **10 Comparar dos URLs** (`assets/js/compare.js`, modo «Comparar dos URLs» del formulario): el navegador lanza un
+  análisis independiente por URL (una URL por petición; cuenta como dos en el límite de uso) con PageSpeed para ambas
+  y muestra notas por área y global con su diferencia, recuento de estados y C01–C20 lado a lado (distintas / iguales).
 
 ## Identidad visual (fase 9)
 

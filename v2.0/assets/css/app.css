@@ -141,6 +141,41 @@ code, pre { font-family: var(--mono); }
 .field--check input { width: 1.25rem; height: 1.25rem; margin: 0.2rem 0 0; flex: none; accent-color: var(--black); }
 .field--check label { font-weight: 400; }
 
+/* 10. Selector «Analizar una URL / Comparar dos URLs» */
+.mode-switch { margin: 0 0 1.25rem; padding: 0; border: 0; min-width: 0; }
+.mode-switch legend { padding: 0; margin-bottom: 0.4rem; font-weight: 500; }
+.mode-switch__options { display: flex; flex-wrap: wrap; gap: 0.5rem 1.75rem; }
+.compare-table__meta { display: block; font-weight: 400; font-size: 0.85rem; color: var(--muted); }
+.compare-table td .badge { white-space: normal; overflow-wrap: break-word; }
+/* Las palabras de las cabeceras de fila no se parten («Accesibilidad»): la columna se ajusta a ellas */
+.compare-table tbody th { overflow-wrap: break-word; }
+/* En pantallas estrechas, las tablas de comprobaciones se apilan: nombre arriba y URL 1 / URL 2 debajo */
+@media (max-width: 39.99em) {
+  .compare-table--stack thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .compare-table--stack tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 0.35rem 0.75rem;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .compare-table--stack th, .compare-table--stack td { display: block; padding: 0; border-bottom: 0; }
+  .compare-table--stack tbody th { grid-column: 1 / -1; }
+  .compare-table--stack td::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+}
+
 .button {
   display: inline-block;
   width: 100%;

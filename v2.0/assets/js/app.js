@@ -8,7 +8,10 @@
  * Informe (diez apartados): 1 resumen ejecutivo, 2 puntuaciones, 3 problemas críticos, 4 hallazgos
  * detallados con evidencia, 5 recomendaciones priorizadas, 6 plan de acción (matriz 2×2), 7 análisis
  * complementario (vistas informativas que no puntúan), 8 glosario, 9 limitaciones (texto fijo de
- * index.php, siempre visible) y 10 evidencias del análisis. */
+ * index.php, siempre visible) y 10 evidencias del análisis.
+ *
+ * Comparar dos URLs (función 10): cada URL se analiza con sus propias peticiones (una URL por petición) y
+ * assets/js/compare.js pone los dos resultados lado a lado: notas, diferencia y estado de cada comprobación. */
 (function () {
   'use strict';
 
@@ -23,6 +26,15 @@
   var urlError = document.getElementById('url-error');
   var results = document.getElementById('results');
   var evidenceEl = document.getElementById('evidencias');
+  // 10. Comparar dos URLs
+  var modeCompare = document.getElementById('mode-compare');
+  var input2 = document.getElementById('url2');
+  var url2Field = document.getElementById('url2-field');
+  var url2Error = document.getElementById('url2-error');
+  var urlLabel = form.querySelector('label[for="url"]');
+  var keywordField = document.getElementById('keyword-field');
+  var noindexCompare = document.getElementById('noindex-compare');
+  var URL_NAMES = ['Primera URL', 'Segunda URL'];
 
   var REQUEST_TIMEOUT_MS = 60000;
   var PSI_TIMEOUT_MS = 100000;
@@ -144,13 +156,19 @@
     urlError.hidden = true;
     urlError.textContent = '';
     input.removeAttribute('aria-invalid');
+    url2Error.hidden = true;
+    url2Error.textContent = '';
+    input2.removeAttribute('aria-invalid');
   }
 
-  function showFieldError(message) {
-    urlError.textContent = message;
-    urlError.hidden = false;
-    input.setAttribute('aria-invalid', 'true');
-    input.focus();
+  /** Error en un campo de URL: el primero o, con field = 2, el segundo (modo comparar). */
+  function showFieldError(message, field) {
+    var target = field === 2 ? input2 : input;
+    var box = field === 2 ? url2Error : urlError;
+    box.textContent = message;
+    box.hidden = false;
+    target.setAttribute('aria-invalid', 'true');
+    target.focus();
   }
 
   function showError(message, hint) {
@@ -161,14 +179,15 @@
     errorEl.focus();
   }
 
-  function handleApiError(err) {
+  /** field y prefix solo en el modo comparar: campo de la URL que falló y texto que la identifica. */
+  function handleApiError(err, field, prefix) {
     var code = (err && err.code) || 'UNKNOWN';
     var message = (err && err.message) || 'No se ha podido completar el análisis.';
     if (FIELD_ERRORS.indexOf(code) !== -1) {
-      showFieldError(message);
+      showFieldError(message, field);
       return;
     }
-    showError(message, ERROR_HINTS[code] || '');
+    showError((prefix || '') + message, ERROR_HINTS[code] || '');
   }
 
   // ---------- Peticiones ----------
@@ -197,12 +216,62 @@
     ev.preventDefault();
     clearErrors();
     var url = input.value.trim();
+    if (isCompareMode()) {
+      var url2 = input2.value.trim();
+      if (!url) {
+        showFieldError('Escribe la primera URL que quieres comparar.');
+        return;
+      }
+      if (!url2) {
+        showFieldError('Escribe la segunda URL que quieres comparar.', 2);
+        return;
+      }
+      if (sameAddress(url, url2)) {
+        showFieldError('Las dos URL son iguales. Escribe dos direcciones distintas.', 2);
+        return;
+      }
+      compareUrls(url, url2, noindex.checked);
+      return;
+    }
     if (!url) {
       showFieldError('Escribe la URL de la página que quieres analizar.');
       return;
     }
     analyze(url, noindex.checked, keywordInput.value.trim());
   });
+
+  // ---------- 10. Modo «Comparar dos URLs» ----------
+
+  function isCompareMode() {
+    return modeCompare.checked;
+  }
+
+  /** Muestra u oculta los campos de cada modo. La palabra clave no se compara: se oculta al comparar. */
+  function syncMode() {
+    var cmp = isCompareMode();
+    url2Field.hidden = !cmp;
+    keywordField.hidden = cmp;
+    noindexCompare.hidden = !cmp;
+    if (cmp) noindex.setAttribute('aria-describedby', 'noindex-compare');
+    else noindex.removeAttribute('aria-describedby');
+    urlLabel.textContent = cmp ? 'Primera URL' : 'URL de la página';
+    input2.required = cmp;
+    button.textContent = cmp ? 'Comparar' : 'Analizar';
+    clearErrors();
+  }
+  Array.prototype.forEach.call(form.querySelectorAll('input[name="modo"]'), function (r) {
+    r.addEventListener('change', syncMode);
+  });
+  syncMode();   // el navegador puede restaurar el modo al volver a la página
+
+  /** Misma dirección escrita (sin esquema se supone https, como en el servidor). */
+  function sameAddress(a, b) {
+    var norm = function (u) {
+      var s = /^[a-z][a-z0-9+.\-]*:\/\//i.test(u) ? u : 'https://' + u;
+      try { return new URL(s).href; } catch (e) { return s.toLowerCase(); }
+    };
+    return norm(a) === norm(b);
+  }
 
   function analyze(url, noindexIntentional, keyword) {
     if (current) current.cancel();
@@ -274,11 +343,8 @@
       current = null;
       return;
     }
-    var merged = run.data.checks.filter(function (c) { return PSI_IDS.indexOf(c.id) === -1; }).concat(run.psi.checks);
-    var payload = merged.map(function (c) {
-      return { id: c.id, estado: c.estado, ocurrencias: c.ocurrencias || 0, aplica: c.aplica !== false };
-    });
-    postJson('api/score.php', { checks: payload, bloqueado: !!run.data.blocked }, new AbortController(), REQUEST_TIMEOUT_MS).then(function (r) {
+    var merged = mergedPsiChecks(run);
+    postJson('api/score.php', scoreBody(run, merged), new AbortController(), REQUEST_TIMEOUT_MS).then(function (r) {
       if (run !== current) return;
       if (!r.data || !r.data.ok || !r.data.informe) throw new Error('score');
       run.data.checks = merged;
@@ -298,6 +364,155 @@
       setStatus('Análisis completado. ' + run.psiFailure + ' Se mantiene la puntuación sin contraste ni Core Web Vitals.', false);
       current = null;
     });
+  }
+
+  /** Comprobaciones del análisis con C08 y C14 sustituidas por las de PageSpeed. */
+  function mergedPsiChecks(run) {
+    return run.data.checks.filter(function (c) { return PSI_IDS.indexOf(c.id) === -1; }).concat(run.psi.checks);
+  }
+
+  /** Cuerpo de api/score.php: solo lo que necesita el Scorer. */
+  function scoreBody(run, merged) {
+    return {
+      checks: merged.map(function (c) {
+        return { id: c.id, estado: c.estado, ocurrencias: c.ocurrencias || 0, aplica: c.aplica !== false };
+      }),
+      bloqueado: !!run.data.blocked
+    };
+  }
+
+  // ---------- 10. Comparar dos URLs: peticiones ----------
+
+  function newCompareRun(url) {
+    return {
+      url: url,
+      analyzeCtrl: new AbortController(),
+      psiCtrl: new AbortController(),
+      data: null,
+      psi: null,
+      psiFailure: null,
+      psiDone: false,
+      psiMerged: false,
+      settled: false       // PageSpeed incorporado o descartado
+    };
+  }
+
+  /**
+   * Analiza las dos URLs, cada una con sus propias peticiones (analyze, psi y score), igual que el análisis
+   * normal. Primero se piden los dos análisis y después PageSpeed. Si una URL falla, se cancela todo.
+   */
+  function compareUrls(urlA, urlB, noindexIntentional) {
+    if (current) current.cancel();
+    results.hidden = true;
+    results.textContent = '';
+    evidenceEl.hidden = true;
+    evidenceEl.textContent = '';
+    setLoading(true);
+    setStatus('Analizando las dos páginas, sus enlaces y sus sitemaps… puede tardar hasta un minuto.', true);
+
+    var cmp = {
+      runs: [newCompareRun(urlA), newCompareRun(urlB)],
+      view: null,
+      cancel: function () {
+        cmp.runs.forEach(function (r) { r.analyzeCtrl.abort(); r.psiCtrl.abort(); });
+      }
+    };
+    current = cmp;
+
+    cmp.runs.forEach(function (run, i) {
+      postJson('api/analyze.php', { url: run.url, noindex_intentional: noindexIntentional, palabra_clave: '' }, run.analyzeCtrl, REQUEST_TIMEOUT_MS).then(function (r) {
+        if (cmp !== current) return;
+        if (!r.data || !r.data.ok) {
+          failCompare(cmp, i, (r.data && r.data.error) || {}, null);
+          return;
+        }
+        run.data = r.data;
+        if (run.psiDone) settleComparePsi(cmp, run);
+        if (cmp.runs.every(function (x) { return x.data; })) {
+          setLoading(false);
+          renderComparison(cmp);
+          compareStatus(cmp);
+        }
+      }, function (e) {
+        if (cmp !== current) return;
+        failCompare(cmp, i, null, e);
+      });
+    });
+
+    cmp.runs.forEach(function (run) {
+      postJson('api/psi.php', { url: run.url }, run.psiCtrl, PSI_TIMEOUT_MS).then(function (r) {
+        if (r.data && r.data.ok) run.psi = r.data;
+        else run.psiFailure = (r.data && r.data.error && r.data.error.message) || 'Error al consultar PageSpeed Insights.';
+      }, function (e) {
+        run.psiFailure = e && e.name === 'AbortError'
+          ? 'PageSpeed Insights no respondió a tiempo.'
+          : 'No se ha podido contactar con el servidor del analizador para consultar PageSpeed Insights.';
+      }).then(function () {
+        if (cmp !== current) return;
+        run.psiDone = true;
+        if (run.data) settleComparePsi(cmp, run);
+      });
+    });
+  }
+
+  /** Incorpora C08 y C14 de una URL y recalcula su puntuación (mismo Scorer, api/score.php). */
+  function settleComparePsi(cmp, run) {
+    var done = function () {
+      if (cmp !== current) return;
+      run.settled = true;
+      if (cmp.view) updateComparison(cmp);
+      compareStatus(cmp);
+    };
+    if (!run.psi) {
+      done();
+      return;
+    }
+    var merged = mergedPsiChecks(run);
+    postJson('api/score.php', scoreBody(run, merged), new AbortController(), REQUEST_TIMEOUT_MS).then(function (r) {
+      if (!r.data || !r.data.ok || !r.data.informe) throw new Error('score');
+      run.data.checks = merged;
+      run.data.puntuacion = r.data.puntuacion;
+      run.data.informe = r.data.informe;
+      run.psiMerged = true;
+    }).catch(function () {
+      run.psiFailure = 'No se pudo recalcular la puntuación con los datos de PageSpeed Insights.';
+      run.psi = null;
+    }).then(done);
+  }
+
+  function compareStatus(cmp) {
+    if (!cmp.view) return;
+    if (cmp.runs.some(function (r) { return !r.settled; })) {
+      setStatus('Análisis completados. Consultando PageSpeed Insights para las dos URL (contraste y Core Web Vitals)… puede tardar hasta un minuto y medio.', true);
+      return;
+    }
+    var notes = [];
+    cmp.runs.forEach(function (r, i) {
+      if (r.data.blocked) return;
+      if (!r.psiMerged) notes.push(URL_NAMES[i] + ': ' + r.psiFailure + ' Su nota no incluye contraste ni Core Web Vitals.');
+      else if (!(r.psi.psi && r.psi.psi.ok)) notes.push(URL_NAMES[i] + ': PageSpeed Insights no devolvió datos; contraste y Core Web Vitals figuran como «Sin datos».');
+    });
+    setStatus('Comparación completada. ' + (notes.length ? notes.join(' ') : 'Notas actualizadas con los datos de PageSpeed Insights.'), false);
+    current = null;
+  }
+
+  /** Error en una de las dos URL: se cancela la otra y se indica cuál ha fallado. */
+  function failCompare(cmp, i, apiError, e) {
+    cmp.cancel();
+    current = null;
+    setLoading(false);
+    results.hidden = true;
+    results.textContent = '';
+    var prefix = URL_NAMES[i] + ' (' + cmp.runs[i].url + '): ';
+    if (apiError) {
+      handleApiError(apiError, i === 1 ? 2 : 1, prefix);
+    } else if (e && e.name === 'AbortError') {
+      showError(prefix + 'el análisis ha tardado demasiado y se ha cancelado.', ERROR_HINTS.TIMEOUT);
+    } else if (e && /Respuesta no válida/.test(e.message)) {
+      showError(prefix + e.message, ERROR_HINTS.INTERNAL_ERROR);
+    } else {
+      showError('No se ha podido contactar con el servidor del analizador.', 'Comprueba tu conexión e inténtalo de nuevo.');
+    }
   }
 
   // ---------- Informe ----------
@@ -1105,6 +1320,201 @@
     }
     if (run.psiFailure) return 'No disponible. ' + run.psiFailure + ' Contraste (C08) y Core Web Vitals (C14) no están incluidos.';
     return 'Consultando…';
+  }
+
+  // ---------- 10. Comparar dos URLs: resultado ----------
+
+  var COUNT_ROWS = [
+    ['NO_CUMPLE', 'Fallos'],
+    ['AVISO', 'Avisos'],
+    ['SIN_DATOS', 'Sin datos'],
+    ['NA', 'No aplica'],
+    ['CUMPLE', 'Sin errores detectables automáticamente']
+  ];
+
+  /**
+   * Tabla con cabecera de columnas; rows: filas (la primera celda es la cabecera de fila). Con stack, en
+   * pantallas estrechas cada fila se apila (CSS): el nombre arriba y las dos URL debajo, con su etiqueta.
+   */
+  function compareTable(labelledBy, headers, rows, stack) {
+    var table = el('table', { class: 'data-table compare-table' + (stack ? ' compare-table--stack' : ''), 'aria-labelledby': labelledBy }, [
+      el('thead', {}, [el('tr', {}, headers.map(function (h, i) {
+        return el('th', { scope: 'col', class: i > 0 && h.num ? 'num' : null, text: h.text || h });
+      }))]),
+      el('tbody', {}, rows)
+    ]);
+    if (stack) {
+      // Al cambiar el display de la tabla, algunos navegadores pierden su semántica: se declara con roles
+      var setRole = function (sel, role) {
+        Array.prototype.forEach.call(table.querySelectorAll(sel), function (n) {
+          n.setAttribute('role', typeof role === 'function' ? role(n) : role);
+        });
+      };
+      table.setAttribute('role', 'table');
+      setRole('thead, tbody', 'rowgroup');
+      setRole('tr', 'row');
+      setRole('th', function (n) { return n.getAttribute('scope') === 'row' ? 'rowheader' : 'columnheader'; });
+      setRole('td', 'cell');
+    }
+    return el('div', { class: 'table-wrap' }, [table]);
+  }
+
+  function renderComparison(cmp) {
+    var A = cmp.runs[0].data;
+    var B = cmp.runs[1].data;
+    var title = el('h2', { id: 'results-title', tabindex: '-1', text: 'Comparación de dos URLs' });
+    var printButton = el('button', { type: 'button', class: 'button button--secondary no-print', text: 'Imprimir o guardar como PDF' });
+    printButton.addEventListener('click', function () { window.print(); });
+
+    results.appendChild(el('div', { class: 'report-head' }, [
+      title,
+      el('ul', { class: 'meta-list' }, [
+        el('li', {}, ['URL 1: ', el('strong', { text: A.url })]),
+        el('li', {}, ['URL 2: ', el('strong', { text: B.url })]),
+        el('li', { text: 'Fecha del análisis: ' + fmtDate(A.fecha) })
+      ]),
+      el('div', { class: 'report-actions no-print' }, [printButton]),
+      el('p', { class: 'help', text: 'Cada URL se ha analizado con su propia petición y con la misma fórmula de puntuación. La comparación solo pone los resultados lado a lado: no cambia notas ni estados. Para ver los hallazgos con su evidencia y las recomendaciones de una URL, analízala en el modo «Analizar una URL».' })
+    ]));
+
+    if (A.url === B.url) {
+      results.appendChild(el('div', { class: 'notice notice--warn' }, [
+        el('p', { text: 'Las dos direcciones llevan, tras las redirecciones, a la misma URL final. Las diferencias solo pueden deberse a cambios de la página entre una descarga y otra.' })
+      ]));
+    }
+    cmp.runs.forEach(function (r, i) {
+      if (!r.data.blocked) return;
+      results.appendChild(el('div', { class: 'notice notice--warn' }, [
+        el('p', {}, [el('strong', { text: 'URL ' + (i + 1) + ': acceso bloqueado. ' }), r.data.blocked.message]),
+        el('p', { text: 'Sus comprobaciones dependientes del contenido figuran como «Sin datos» y no tiene nota.' })
+      ]));
+    });
+
+    cmp.view = {};
+    [['scores', 'cmp-notas', 'Notas por área y global'],
+      ['diff', 'cmp-distintas', 'Comprobaciones con resultado distinto'],
+      ['same', 'cmp-iguales', 'Comprobaciones con el mismo resultado'],
+      ['facts', 'cmp-datos', 'Datos de las descargas']].forEach(function (s) {
+      var sec = reportSection(s[1], s[2]);
+      cmp.view[s[0]] = sec.body;
+      results.appendChild(sec.node);
+    });
+    updateComparison(cmp);
+
+    results.hidden = false;
+    results.setAttribute('aria-busy', 'false');
+    title.focus();
+  }
+
+  /** Repinta las tablas (al llegar PageSpeed cambian notas, C08 y C14). */
+  function updateComparison(cmp) {
+    var X = window.AnalyzerCompare;
+    var A = cmp.runs[0].data;
+    var B = cmp.runs[1].data;
+    var pendingIds = function (run) { return run.settled ? [] : PSI_IDS; };
+
+    // Notas
+    var host = cmp.view.scores;
+    host.textContent = '';
+    var pending = cmp.runs.some(function (r) { return !r.settled && !r.data.blocked; });
+    if (pending) {
+      host.appendChild(el('p', { class: 'help', text: 'Notas provisionales: falta incorporar contraste (C08) y Core Web Vitals (C14), que se están consultando a PageSpeed Insights.' }));
+    }
+    cmp.runs.forEach(function (r, i) {
+      if (r.settled && !r.psiMerged && !r.data.blocked) {
+        host.appendChild(el('p', { class: 'help', text: 'La nota de la URL ' + (i + 1) + ' no incluye contraste (C08) ni Core Web Vitals (C14) porque PageSpeed Insights no estaba disponible.' }));
+      }
+    });
+    var cell = function (v, incomplete, blocked) {
+      if (blocked) return el('td', { class: 'num', text: 'Sin nota' });
+      if (v === null) return el('td', { class: 'num', text: '—' });
+      return el('td', { class: 'num' }, [fmtNumber(v, 1), incomplete ? el('span', { class: 'compare-table__meta', text: 'incompleta' }) : null]);
+    };
+    var scoreRows = X.scoreRows(A, B).map(function (r) {
+      var label = r.clave === 'global' ? 'Nota global' : i18n.areas[r.clave];
+      return el('tr', { class: r.clave === 'global' ? 'is-total' : null }, [
+        el('th', { scope: 'row', text: label }),
+        cell(r.a, r.incompleta_a, !!A.blocked),
+        cell(r.b, r.incompleta_b, !!B.blocked),
+        el('td', { class: 'num', text: X.diffText(r.diferencia) })
+      ]);
+    });
+    var risk = function (d) {
+      if (d.blocked) return '—';
+      return d.puntuacion.riesgo_alto ? 'Sí' : 'No';
+    };
+    scoreRows.push(el('tr', {}, [
+      el('th', { scope: 'row', text: 'Riesgo alto: revisar de inmediato' }),
+      el('td', { class: 'num', text: risk(A) }),
+      el('td', { class: 'num', text: risk(B) }),
+      el('td', { class: 'num', text: '' })
+    ]));
+    host.appendChild(el('p', { class: 'help', text: 'Diferencia: nota de la URL 2 menos nota de la URL 1 (positiva si la URL 2 tiene más nota).' }));
+    host.appendChild(compareTable('cmp-notas-t', ['Área', { text: 'URL 1', num: true }, { text: 'URL 2', num: true }, { text: 'Diferencia', num: true }], scoreRows));
+    var incomplete = [A, B].some(function (d) {
+      return !d.blocked && ['seo', 'ia', 'accesibilidad'].some(function (a) { return d.puntuacion.areas[a].incompleta; });
+    });
+    if (incomplete) host.appendChild(el('p', { class: 'help', text: i18n.nota_incompleta }));
+
+    var ca = X.counts(A);
+    var cb = X.counts(B);
+    host.appendChild(el('h4', { id: 'cmp-recuento', text: 'Recuento de comprobaciones' }));
+    host.appendChild(compareTable('cmp-recuento', ['Resultado', { text: 'URL 1', num: true }, { text: 'URL 2', num: true }], COUNT_ROWS.map(function (s) {
+      return el('tr', {}, [
+        el('th', { scope: 'row', text: s[1] }),
+        el('td', { class: 'num', text: String(ca[s[0]]) }),
+        el('td', { class: 'num', text: String(cb[s[0]]) })
+      ]);
+    })));
+
+    // Comprobaciones
+    var rows = X.checkRows(A, B);
+    var stateCell = function (c, id, run, label) {
+      if (pendingIds(run).indexOf(id) !== -1 && !run.data.blocked) return el('td', { 'data-label': label, text: 'Pendiente de PageSpeed Insights' });
+      return el('td', { 'data-label': label }, [el('span', { class: 'badge badge--' + c.estado, text: X.stateText(c, i18n) })]);
+    };
+    var checkRow = function (r) {
+      return el('tr', {}, [
+        el('th', { scope: 'row' }, [r.id + ' · ' + r.nombre, r.severidad ? el('span', { class: 'compare-table__meta', text: 'Gravedad ' + lower(i18n.severidades, r.severidad) }) : null]),
+        stateCell(r.a, r.id, cmp.runs[0], 'URL 1'),
+        stateCell(r.b, r.id, cmp.runs[1], 'URL 2')
+      ]);
+    };
+    var headers = ['Comprobación', 'URL 1', 'URL 2'];
+    var different = rows.filter(function (r) { return r.distinto; });
+    var equal = rows.filter(function (r) { return !r.distinto; });
+
+    host = cmp.view.diff;
+    host.textContent = '';
+    host.appendChild(el('p', { class: 'help', text: 'Cambia el estado o, si falla en las dos, el número de casos (y por tanto lo que resta). ' + different.length + ' de ' + rows.length + ' comprobaciones.' }));
+    if (different.length) host.appendChild(compareTable('cmp-distintas-t', headers, different.map(checkRow), true));
+    else host.appendChild(el('p', { text: 'Las dos URL tienen el mismo resultado en todas las comprobaciones.' }));
+
+    host = cmp.view.same;
+    host.textContent = '';
+    host.appendChild(el('p', { class: 'help', text: equal.length + ' de ' + rows.length + ' comprobaciones.' }));
+    if (equal.length) host.appendChild(compareTable('cmp-iguales-t', headers, equal.map(checkRow), true));
+    else host.appendChild(el('p', { text: 'Ninguna comprobación tiene el mismo resultado.' }));
+
+    // Datos de las descargas
+    host = cmp.view.facts;
+    host.textContent = '';
+    var fact = function (label, fn) {
+      return el('tr', {}, [el('th', { scope: 'row', text: label })].concat(cmp.runs.map(function (r) {
+        return el('td', { text: fn(r) });
+      })));
+    };
+    host.appendChild(compareTable('cmp-datos-t', ['Dato', 'URL 1', 'URL 2'], [
+      fact('URL solicitada', function (r) { return (r.data.fetch && r.data.fetch.requested_url) || r.url; }),
+      fact('URL final', function (r) { return r.data.url; }),
+      fact('Respuesta', function (r) {
+        var f = r.data.fetch || {};
+        return 'HTTP ' + (f.status || '—') + ' · ' + fmtNumber((f.bytes || 0) / 1024, 1) + ' KB';
+      }),
+      fact('Redirecciones', function (r) { return String(((r.data.fetch && r.data.fetch.redirects) || []).length); }),
+      fact('PageSpeed Insights', function (r) { return psiText(r); })
+    ]));
+    host.appendChild(el('p', { class: 'help', text: 'No se guarda ninguno de estos datos.' }));
   }
 
   // ---------- Navegación e impresión ----------
