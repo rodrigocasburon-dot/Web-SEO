@@ -43,6 +43,7 @@ $e = fn(string $s): string => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
 <meta name="robots" content="noindex">
 <link rel="stylesheet" href="<?= $asset('assets/css/app.css') ?>">
 <script src="<?= $asset('assets/js/export.js') ?>" defer></script>
+<script src="<?= $asset('assets/js/compare.js') ?>" defer></script>
 <script src="<?= $asset('assets/js/app.js') ?>" defer></script>
 </head>
 <body>
@@ -60,6 +61,19 @@ $e = fn(string $s): string => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
   <noscript><p class="notice notice--fail">Esta herramienta necesita JavaScript activado para funcionar.</p></noscript>
 
   <form id="analyze-form" class="analyze-form" novalidate>
+    <fieldset class="field mode-switch">
+      <legend>Tipo de análisis</legend>
+      <div class="mode-switch__options">
+        <div class="field--check">
+          <input id="mode-single" name="modo" type="radio" value="una" checked>
+          <label for="mode-single">Analizar una URL</label>
+        </div>
+        <div class="field--check">
+          <input id="mode-compare" name="modo" type="radio" value="comparar">
+          <label for="mode-compare">Comparar dos URLs</label>
+        </div>
+      </div>
+    </fieldset>
     <div class="field">
       <label for="url">URL de la página</label>
       <p id="url-help" class="help">Por ejemplo: https://www.ejemplo.com/servicios. Si no indicas http o https, se usará https.</p>
@@ -67,7 +81,14 @@ $e = fn(string $s): string => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
              autocapitalize="off" required aria-describedby="url-help url-error">
       <p id="url-error" class="field-error" hidden></p>
     </div>
-    <div class="field">
+    <div class="field" id="url2-field" hidden>
+      <label for="url2">Segunda URL</label>
+      <p id="url2-help" class="help">Cada URL se analiza con su propia petición, así que una comparación cuenta como dos análisis en el límite de uso.</p>
+      <input id="url2" name="url2" type="text" inputmode="url" autocomplete="url" spellcheck="false"
+             autocapitalize="off" aria-describedby="url2-help url2-error">
+      <p id="url2-error" class="field-error" hidden></p>
+    </div>
+    <div class="field" id="keyword-field">
       <label for="keyword">Palabra clave objetivo (opcional)</label>
       <p id="keyword-help" class="help">Por ejemplo: software de gestión. Se comprueba si aparece en el title, el H1, la meta description, la URL y las primeras 100 palabras. No puntúa.</p>
       <input id="keyword" name="palabra_clave" type="text" maxlength="100" autocomplete="off" aria-describedby="keyword-help">
@@ -76,6 +97,7 @@ $e = fn(string $s): string => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
       <input id="noindex" name="noindex_intentional" type="checkbox">
       <label for="noindex">La página tiene <span lang="en">noindex</span> a propósito</label>
     </div>
+    <p id="noindex-compare" class="help" hidden>En la comparación, esta casilla se aplica a las dos URLs.</p>
     <button type="submit" class="button" id="submit">Analizar</button>
   </form>
 
