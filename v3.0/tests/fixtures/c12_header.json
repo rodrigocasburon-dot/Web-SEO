@@ -1,0 +1,6 @@
+{
+    "headers": {
+        "content-type": "text/html",
+        "link": "<https://example.com/pagina>; rel=\"canonical\""
+    }
+}

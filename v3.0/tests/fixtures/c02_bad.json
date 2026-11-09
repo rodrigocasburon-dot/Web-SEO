@@ -1,0 +1,7 @@
+{
+    "url": "https://example.com/blog/post",
+    "robots": {
+        "status": 200,
+        "body": "User-agent: Googlebot\nDisallow: /blog/\n\nUser-agent: *\nAllow: /"
+    }
+}
