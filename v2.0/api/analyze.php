@@ -26,6 +26,12 @@ try {
     Api::rateLimit($config, 'analyze', 'análisis');
 
     $url = is_string($input['url'] ?? null) ? $input['url'] : '';
+    // Google Maps, acortadores y direcciones locales: mensaje claro antes de descargar nada (UrlGuard valida después)
+    try {
+        InputUrlPolicy::check($url);
+    } catch (UrlGuardException $e) {
+        Api::fail(400, $e->getErrorCode(), $e->getMessage());
+    }
     // Página 10 s + robots.txt 5 s + enlaces 12 s + sitemap 8 s en el peor caso
     set_time_limit(50);
     $result = (new Analyzer($config))->analyze($url, [

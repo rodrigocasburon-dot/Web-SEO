@@ -19,7 +19,9 @@ try {
 
     // Misma política de URL que el análisis (aunque la descarga la haga Google)
     try {
-        $target = (new UrlGuard())->validate(is_string($input['url'] ?? null) ? $input['url'] : '');
+        $rawUrl = is_string($input['url'] ?? null) ? $input['url'] : '';
+        InputUrlPolicy::check($rawUrl);   // Google Maps, acortadores y direcciones locales, sin consultar a Google
+        $target = (new UrlGuard())->validate($rawUrl);
     } catch (UrlGuardException $e) {
         Api::fail(400, $e->getErrorCode(), $e->getMessage());
     }
