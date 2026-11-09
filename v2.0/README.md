@@ -106,6 +106,9 @@ robots.txt, agente de usuario y datos de PageSpeed).
   mismo `Scorer`; la gravedad y el reparto se toman del servidor, no de la petición.
 - La pantalla pide `analyze.php` y `psi.php` en paralelo, muestra primero la puntuación provisional y la
   actualiza al llegar PageSpeed sin mover el foco.
+- **Campos pedidos**: `fields` no admite seleccionar una auditoría suelta (`lighthouseResult/audits/color-contrast`
+  devuelve HTTP 400), así que se piden todas las auditorías. En una prueba con proconsi.com (una sola medición)
+  la respuesta ocupó unos 420 KB y tardó unos 23 s.
 - **Clave obligatoria**: sin `psi_api_key` en `config/config.php` la API responde 429 (cuota 0) y C08 y C14
   quedan siempre en «Sin datos». La clave se crea en Google Cloud (API «PageSpeed Insights API»).
 - **Tiempo de espera**: Lighthouse tarda entre 15 y 60 s. `psi_timeout` (75 s) debe caber en los límites del

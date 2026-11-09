@@ -153,7 +153,15 @@ test('PsiClient: URL de la petición (categorías, estrategia, idioma, campos y 
     assertTrue(strpos($url, 'https://www.googleapis.com/pagespeedonline/v5/runPagespeed?') === 0);
     assertTrue(strpos($url, 'url=https%3A%2F%2Fexample.com%2Fa%20b%3Fx%3D1%26y%3D2') !== false, $url);
     assertTrue(strpos($url, '&strategy=mobile&category=ACCESSIBILITY&category=PERFORMANCE&locale=es') !== false);
-    assertTrue(strpos($url, 'color-contrast') !== false);
+    // La API rechaza con HTTP 400 seleccionar auditorías sueltas: hay que pedir lighthouseResult/audits entero
+    parse_str((string) parse_url($url, PHP_URL_QUERY), $query);
+    $fields = explode(',', (string) ($query['fields'] ?? ''));
+    assertTrue(in_array('lighthouseResult/audits', $fields, true), 'Pide las auditorías (C08)');
+    assertTrue(in_array('loadingExperience', $fields, true), 'Pide los datos de campo (C14)');
+    foreach ($fields as $field) {
+        assertTrue(strpos($field, 'lighthouseResult/audits/') !== 0 && strpos($field, '(') === false,
+            'Selección de campos que la API rechaza: ' . $field);
+    }
     assertTrue(strpos($url, 'key=') === false);
     assertTrue(strpos((new PsiClient('ABC123'))->buildUrl('https://example.com/'), '&key=ABC123') !== false);
 });
