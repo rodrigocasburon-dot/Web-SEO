@@ -3,7 +3,7 @@
 // Solo casos que no salen a internet (UrlGuard rechaza antes de cualquier petición).
 
 (function () {
-    [$proc, $port] = startPhpServer(dirname(__DIR__), null, ['WEBSEO_STORAGE_DIR' => tempDir('webseo')]);
+    [$proc, $port] = startPhpServer(dirname(__DIR__), null, ['WEBSEO_STORAGE_DIR' => tempDir('webseo'), 'WEBSEO_CONFIG_DIR' => testConfigDir()]);
     $base = "http://127.0.0.1:$port";
     $skip = function () use ($proc) {
         if ($proc === null) {

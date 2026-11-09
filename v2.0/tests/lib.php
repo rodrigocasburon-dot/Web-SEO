@@ -112,6 +112,17 @@ function tempDir(string $prefix): string
     return $dir;
 }
 
+/**
+ * Directorio de configuración para el servidor de pruebas (variable WEBSEO_CONFIG_DIR): solo contiene
+ * config.example.php, de modo que los endpoints nunca cargan el config/config.php local con la clave real.
+ */
+function testConfigDir(): string
+{
+    $dir = tempDir('webseo-config');
+    copy(__DIR__ . '/../config/config.example.php', $dir . '/config.example.php');
+    return $dir;
+}
+
 function runTests(): int
 {
     $pass = 0;

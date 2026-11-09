@@ -174,33 +174,109 @@ test('PsiClient: respuesta correcta', function () {
     assertTrue(strpos((string) $called, 'key=K') !== false);
 });
 
-test('PsiClient: errores clasificados y sin la clave en los mensajes', function () {
-    $key = 'SECRETKEY123';
-    $quotaBody = json_encode(['error' => ['code' => 429, 'message' => "Quota exceeded for quota metric 'Queries' key=$key"]]);
-    $cases = [
-        // [respuesta, clave, código esperado, texto esperado en el mensaje]
-        [['status' => 429, 'body' => $quotaBody], '', 'PSI_QUOTA', 'Falta la clave'],
-        [['status' => 429, 'body' => $quotaBody], $key, 'PSI_QUOTA', 'cuota'],
-        [['status' => 400, 'body' => json_encode(['error' => ['message' => "API key not valid. key=$key"]])], $key, 'PSI_KEY', 'no es válida'],
-        [['status' => 403, 'body' => '{}'], $key, 'PSI_KEY', 'no es válida'],
-        [['status' => 500, 'body' => json_encode(['error' => ['message' => 'Lighthouse returned error: FAILED_DOCUMENT_REQUEST']])], $key, 'PSI_ERROR', 'FAILED_DOCUMENT_REQUEST'],
-        [['status' => 200, 'body' => 'no es json'], $key, 'PSI_ERROR', 'no válida'],
-        [['errno' => 28, 'status' => 0], $key, 'PSI_TIMEOUT', 'a tiempo'],
-        [['errno' => 6, 'status' => 0], $key, 'PSI_NETWORK', 'conectar'],
+/**
+ * Respuestas de error simuladas (sin red): [respuesta del transporte, clave, código esperado, texto esperado].
+ * La clave es ficticia y aparece a propósito en algunos mensajes de Google para comprobar que nunca se devuelve.
+ */
+function psiErrorCases(string $key): array
+{
+    $googleError = fn(int $code, string $message) => json_encode(['error' => ['code' => $code, 'message' => $message]]);
+    $quotaBody = $googleError(429, "Quota exceeded for quota metric 'Queries' key=$key");
+    return [
+        '429 sin clave' => [['status' => 429, 'body' => $quotaBody], '', 'PSI_QUOTA', 'Falta la clave'],
+        '429 con clave' => [['status' => 429, 'body' => $quotaBody], $key, 'PSI_QUOTA', 'cuota'],
+        '400 clave no válida' => [['status' => 400, 'body' => $googleError(400, "API key not valid. key=$key")], $key, 'PSI_KEY', 'no es válida'],
+        '400 petición rechazada' => [['status' => 400, 'body' => $googleError(400, "Request contains an invalid argument. key=$key")], $key, 'PSI_ERROR', 'rechazó la consulta'],
+        '403' => [['status' => 403, 'body' => '{}'], $key, 'PSI_KEY', 'no es válida'],
+        '500 web caída' => [['status' => 500, 'body' => $googleError(500, "Lighthouse returned error: FAILED_DOCUMENT_REQUEST. key=$key")], $key, 'PSI_ERROR', 'FAILED_DOCUMENT_REQUEST'],
+        '200 con JSON inválido' => [['status' => 200, 'body' => 'no es json'], $key, 'PSI_ERROR', 'no válida'],
+        '200 vacío' => [['status' => 200, 'body' => ''], $key, 'PSI_ERROR', 'no válida'],
+        'tiempo agotado' => [['errno' => 28, 'status' => 0], $key, 'PSI_TIMEOUT', 'a tiempo'],
+        'red (DNS)' => [['errno' => 6, 'status' => 0], $key, 'PSI_NETWORK', 'conectar'],
+        'red (conexión)' => [['errno' => 7, 'status' => 0], $key, 'PSI_NETWORK', 'conectar'],
+        'más de 5 MB' => [['errno' => 23, 'status' => 0], $key, 'PSI_TOO_LARGE', 'tamaño máximo'],
     ];
-    foreach ($cases as $i => [$resp, $k, $code, $text]) {
+}
+
+test('PsiClient: errores clasificados, explicados en español y sin la clave en los mensajes', function () {
+    $key = 'CLAVE-FICTICIA-123';
+    foreach (psiErrorCases($key) as $name => [$resp, $k, $code, $text]) {
         $r = psiClientWith($resp, $k)->run('https://example.com/');
-        assertSame(false, $r['ok'], "caso $i");
-        assertSame($code, $r['error']['code'], "caso $i");
-        assertTrue(stripos($r['error']['message'], $text) !== false, "caso $i: " . $r['error']['message']);
-        assertTrue(strpos($r['error']['message'], $key) === false, "caso $i: la clave aparece en el mensaje");
+        $message = $r['error']['message'];
+        assertSame(false, $r['ok'], $name);
+        assertSame(null, $r['data'], $name);
+        assertSame($code, $r['error']['code'], $name);
+        assertTrue(stripos($message, $text) !== false, "$name: $message");
+        assertTrue(strpos($message, $key) === false, "$name: la clave aparece en el mensaje");
+        // La explicación es española; el mensaje original de Google, si lo hay, va al final y entre comillas
+        $own = (string) preg_replace('/ Mensaje de Google: «.*»\.$/su', '', $message);
+        assertTrue(strpos($own, 'PageSpeed Insights') !== false, "$name: $own");
+        assertTrue(preg_match('/\b(the|request|invalid|failed|returned|error)\b/i', $own) === 0, "$name: texto en inglés: $own");
     }
+});
+
+test('PsiClient: cualquier fallo deja C08 y C14 en «Sin datos», con el motivo, sin la clave y sin bajar la nota', function () {
+    $key = 'CLAVE-FICTICIA-123';
+    foreach (psiErrorCases($key) as $name => [$resp, $k]) {
+        $r = psiClientWith($resp, $k)->run('https://example.com/');
+        $out = (new CheckRunner())->runPsi(psiCtx(null, $r['error']));
+        assertSame(['C08', 'C14'], array_column($out, 'id'), $name);
+        foreach ($out as $c) {
+            assertSame('SIN_DATOS', $c['estado'], "$name {$c['id']}");
+            assertSame(0, $c['ocurrencias'], "$name {$c['id']}");
+            assertTrue(strpos($c['detalle'], 'Sin datos de PageSpeed Insights: ' . $r['error']['message']) === 0, "$name {$c['id']}: {$c['detalle']}");
+            assertTrue(strpos((string) json_encode($c, JSON_UNESCAPED_UNICODE), $key) === false, "$name {$c['id']}: la clave aparece");
+        }
+        $s = (new Scorer())->score($out);
+        foreach (['seo', 'ia', 'accesibilidad'] as $area) {
+            assertTrue(abs($s['areas'][$area]['puntuacion'] - 100) < 1e-9, "$name: «Sin datos» no resta en $area");
+        }
+    }
+});
+
+test('C08 con el fixture psi_pass: auditoría ausente o con score null → «Sin datos»; C14 se evalúa igual', function () {
+    $cases = [
+        'auditoría ausente' => [null, 'no incluye la auditoría de contraste'],
+        'score null sin modo' => [['id' => 'color-contrast', 'score' => null], 'no se pudo completar'],
+        'score null en modo binario' => [['id' => 'color-contrast', 'score' => null, 'scoreDisplayMode' => 'binary'], 'no se pudo completar'],
+        'score null en modo manual' => [['id' => 'color-contrast', 'score' => null, 'scoreDisplayMode' => 'manual'], 'no se pudo completar'],
+    ];
+    foreach ($cases as $name => [$audit, $text]) {
+        $psi = psiFixture('psi_pass');
+        if ($audit === null) {
+            unset($psi['lighthouseResult']['audits']['color-contrast']);
+        } else {
+            $psi['lighthouseResult']['audits']['color-contrast'] = $audit;
+        }
+        [$c08, $c14] = (new CheckRunner())->runPsi(psiCtx($psi));
+        assertSame('SIN_DATOS', $c08['estado'], $name);
+        assertSame(0, $c08['ocurrencias'], $name);
+        assertTrue(strpos($c08['detalle'], $text) !== false, "$name: {$c08['detalle']}");
+        assertSame('CUMPLE', $c14['estado'], "$name: C14 no depende de la auditoría de contraste");
+    }
+});
+
+test('Pruebas: los endpoints cargan la configuración de WEBSEO_CONFIG_DIR, nunca el config.php local', function () {
+    $dir = testConfigDir();
+    assertTrue(is_file($dir . '/config.example.php'));
+    assertTrue(!is_file($dir . '/config.php'), 'El directorio de pruebas no debe tener config.php');
+    // Config::load respeta la variable: con un config.php de prueba (sin clave real) se lee ese
+    file_put_contents($dir . '/config.php', "<?php return ['marca_de_prueba' => 'directorio de pruebas'];");
+    putenv('WEBSEO_CONFIG_DIR=' . $dir);
+    try {
+        $config = Config::load();
+    } finally {
+        putenv('WEBSEO_CONFIG_DIR');
+    }
+    assertTrue(($config['marca_de_prueba'] ?? null) === 'directorio de pruebas', 'No se usó WEBSEO_CONFIG_DIR');
+    // assertTrue y no assertSame: si fallara, el mensaje no debe mostrar ninguna clave
+    assertTrue(($config['psi_api_key'] ?? null) === '', 'La clave no viene vacía de config.example.php');
 });
 
 // ---------- Endpoints (sin red) ----------
 
 (function () {
-    [$proc, $port] = startPhpServer(dirname(__DIR__), null, ['WEBSEO_STORAGE_DIR' => tempDir('webseo')]);
+    [$proc, $port] = startPhpServer(dirname(__DIR__), null, ['WEBSEO_STORAGE_DIR' => tempDir('webseo'), 'WEBSEO_CONFIG_DIR' => testConfigDir()]);
     $base = "http://127.0.0.1:$port";
     $post = fn(string $ep, $data, array $headers = []) => httpRequest('POST', "$base/api/$ep", is_string($data) ? $data : json_encode($data),
         array_merge(['Content-Type: application/json'], $headers));
