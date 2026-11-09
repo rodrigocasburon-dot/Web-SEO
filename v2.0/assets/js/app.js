@@ -533,12 +533,24 @@
     return { node: node, body: body };
   }
 
-  /** Apartado plegable: <details> con el título (h3) dentro del <summary>. */
+  /**
+   * Título de un apartado plegable para la navegación por encabezados. Va fuera del <summary>: dentro,
+   * algunos lectores de pantalla (p. ej., VoiceOver en Safari) lo anuncian solo como botón. Está oculto a
+   * la vista porque el <summary> muestra el mismo texto.
+   */
+  function foldHeading(tag, text, id) {
+    return el(tag, { class: 'visually-hidden', id: id || null, text: text });
+  }
+
+  /** Apartado plegable: título (h3) para lectores de pantalla y <details> con el mismo texto en el <summary>. */
   function foldSection(id, title) {
     var body = el('div', { class: 'fold__body' });
-    var node = el('details', { class: 'fold', id: id, 'data-key': id }, [
-      el('summary', {}, [el('h3', { class: 'fold__title', text: title })]),
-      body
+    var node = el('div', { class: 'fold-wrap' }, [
+      foldHeading('h3', title),
+      el('details', { class: 'fold', id: id, 'data-key': id }, [
+        el('summary', {}, [el('span', { class: 'fold__title', text: title })]),
+        body
+      ])
     ]);
     return { node: node, body: body };
   }
@@ -898,7 +910,7 @@
     if (g.pending.length) counts.push(plural(g.pending.length, 'pendiente', 'pendientes'));
     var body = el('div', { class: 'fold__body' });
     var block = el('details', { class: 'fold area-block', id: 'bloque-' + area, 'data-key': 'area-' + area }, [
-      el('summary', {}, [el('h3', { class: 'fold__title' }, [
+      el('summary', {}, [el('span', { class: 'fold__title' }, [
         i18n.areas[area],
         el('span', { class: 'fold__count', text: ' · ' + (counts.length ? counts.join(', ') : 'sin errores detectables automáticamente') })
       ])]),
@@ -929,7 +941,7 @@
         el('div', { class: 'fold__body' }, [el('ul', { class: 'points' }, g.ok.map(function (c) { return renderPoint(c, area); }))])
       ]));
     }
-    return block;
+    return el('div', { class: 'fold-wrap' }, [foldHeading('h3', i18n.areas[area]), block]);
   }
 
   /** Un punto: estado, gravedad, otras áreas afectadas, qué se ha encontrado, cómo arreglarlo y, plegada, la evidencia. */
@@ -1531,11 +1543,12 @@
       el('p', { class: 'help', text: 'Datos de la descarga y de las consultas en los que se basa el informe. Las evidencias de cada comprobación (selector, extracto y línea) figuran en cada punto de los bloques por área. No se guarda ninguno de estos datos.' })
     ]);
     var fold = el('details', { class: 'fold', 'data-key': 'evidencias' }, [
-      el('summary', {}, [el('h2', { id: 'evidence-title', class: 'fold__title', text: 'Evidencias del análisis' })]),
+      el('summary', {}, [el('span', { class: 'fold__title fold__title--h2', text: 'Evidencias del análisis' })]),
       body
     ]);
     if (wasOpen) fold.open = true;
     evidenceEl.textContent = '';
+    evidenceEl.appendChild(foldHeading('h2', 'Evidencias del análisis', 'evidence-title'));
     evidenceEl.appendChild(fold);
     body.appendChild(defList('facts', [
       ['Fecha del análisis', fmtDate(d.fecha)],

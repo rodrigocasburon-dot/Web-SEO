@@ -170,8 +170,10 @@ $e = fn(string $s): string => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
 
   <!-- Texto fijo, plegado al final de la pantalla (también al final del informe) -->
   <section id="limitaciones" class="limitations" aria-labelledby="limitations-title">
+    <!-- El título va fuera del <summary> para la navegación por encabezados; el <summary> repite el texto -->
+    <h2 id="limitations-title" class="visually-hidden">Limitaciones</h2>
     <details class="fold">
-      <summary><h2 id="limitations-title" class="fold__title">Limitaciones</h2></summary>
+      <summary><span class="fold__title fold__title--h2">Limitaciones</span></summary>
       <div class="fold__body">
         <p><?= $e($lang['limitaciones']) ?></p>
         <p><?= $e($lang['revision_manual']) ?></p>
