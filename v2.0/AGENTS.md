@@ -17,7 +17,9 @@ conocer la versión del servidor.
 - Nunca afirmar que una web «cumple WCAG» ni «cumple la ley». Si no hay fallos, decir «sin errores detectables automáticamente».
 - No inventar datos ni evidencias; mostrar solo lo extraído.
 - Separar lo medido de lo recomendado; las recomendaciones no penalizan.
-- Sin cuentas, login, cookies propias, analítica ni base de datos.
+- Sin cuentas, login, cookies propias ni analítica. Única base de datos: historial de notas por URL en MySQL
+  (Fase 4, aprobado por el grupo): URL, fecha, notas y fallos por gravedad; nunca contenido de las webs;
+  se borra a los 12 meses. Desactivado si no hay `historial.dsn` en la configuración.
 - Una sola URL por petición. No analizar el dominio completo, backlinks, duplicados ni la cita real por motores de IA.
 - Señalar siempre qué requiere revisión manual: calidad del ALT, orden real del teclado, contraste sobre imágenes y calidad de subtítulos.
 
@@ -46,7 +48,7 @@ conocer la versión del servidor.
 - Todas las pruebas de `tests/run.php` pasan (sin necesidad de internet).
 - Ningún texto del informe afirma cumplimiento legal ni WCAG.
 - Todo lo que se imprima (URL, extractos, textos de la web analizada) se escapa con `htmlspecialchars`.
-- Seguridad: solo http/https; rechazar IPs privadas/reservadas (`filter_var`); fijar IP con `CURLOPT_RESOLVE`; redirecciones manuales revalidadas (máx. 5); 10 s de espera; 2 MB de respuesta; límite de uso por IP en `storage/`; no guardar análisis.
+- Seguridad: solo http/https; rechazar IPs privadas/reservadas (`filter_var`); fijar IP con `CURLOPT_RESOLVE`; redirecciones manuales revalidadas (máx. 5); 10 s de espera; 2 MB de respuesta; límite de uso por IP en `storage/`; no guardar análisis salvo el historial de notas.
 - User-Agent propio e identificable. 403, captcha o login se informan como bloqueo, no como fallo del sitio.
 - Sin framework, sin Composer, sin librerías ni CDN: PHP estándar con cURL, DOM, OpenSSL y mbstring.
 - Cada comprobación es una clase independiente en `src/Checks/` que devuelve: id, pilares, estado, severidad, valor_medido, umbral, criterio, evidencia, recomendacion, impacto, esfuerzo, requiere_revision_manual. Textos de recomendación en `lang/es.php`.

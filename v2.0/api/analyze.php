@@ -3,7 +3,8 @@
  * POST api/analyze.php  (JSON: {"url": "...", "noindex_intentional": false, "palabra_clave": "opcional"})
  * Descarga y analiza el HTML de una URL y devuelve comprobaciones y puntuación en JSON.
  * C08 y C14 (PageSpeed Insights) se obtienen aparte con api/psi.php.
- * No guarda nada de los análisis; solo cuenta peticiones por IP para el límite de uso.
+ * Cuenta peticiones por IP para el límite de uso y, si el historial está activado (Fase 4), guarda la
+ * nota (sin PageSpeed) y los fallos por gravedad; nunca contenido de la web analizada.
  */
 declare(strict_types=1);
 
@@ -50,8 +51,30 @@ try {
         Api::respond(ERROR_STATUS[$code] ?? 502, ['ok' => false, 'error' => $result['error'], 'fetch' => $fetch]);
     }
 
+    // Historial (Fase 4): solo notas y recuentos; un fallo de la base de datos no impide el informe
+    $historial = ['activo' => false];
+    if (History::enabled($config)) {
+        $historial = ['activo' => false, 'error' => 'No se ha podido guardar este análisis en el historial.'];
+        $history = History::fromConfig($config);
+        if ($history) {
+            try {
+                $id = $history->record((string) $result['url'], $result['puntuacion'], $result['checks'], !empty($result['blocked']));
+                $historial = [
+                    'activo' => true,
+                    'id' => $id,
+                    'firma' => $history->signAnalysis($id, $result['checks']),
+                    'meses' => History::months($config),
+                    'anteriores' => $history->previous((string) $result['url'], $id),
+                ];
+            } catch (Throwable $e) {
+                error_log('[historial] ' . $e->getMessage());
+            }
+        }
+    }
+
     Api::respond(200, [
         'ok' => true,
+        'historial' => $historial,
         'url' => $result['url'],
         'fecha' => gmdate('c'),
         'user_agent' => (string) ($config['user_agent'] ?? 'ProconsiAnalyzer/0.1'),

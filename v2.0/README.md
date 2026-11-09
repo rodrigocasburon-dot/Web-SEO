@@ -6,6 +6,23 @@ no sustituye una auditoría manual ni certifica el cumplimiento de WCAG ni de ni
 
 Estado: **fase 9** (identidad visual de Proconsi). Las fases están descritas en `CLAUDE.md`.
 
+## Historial de notas por URL (rediseño, Fase 4)
+
+Opcional y desactivado por defecto. Guarda en MySQL, por cada análisis, la URL, la fecha (UTC), las tres notas y la
+global, si alguna es incompleta, si hubo bloqueo, si incluye PageSpeed y los fallos por gravedad. **Nunca** guarda
+contenido, evidencias ni extractos de la web analizada. Las filas de más de 12 meses se borran al guardar otra.
+El informe muestra, plegado, «Análisis anteriores de esta URL» (hasta 10; misma clave de `UrlNormalizer`).
+
+Activarlo:
+1. Importar `install.sql` en phpMyAdmin (crea la base `radar_web`, separada de la `web_seo` de la v1.0).
+2. Copiar a `config/config.php` el bloque `'historial'` de `config.example.php` con el DSN, el usuario y la clave.
+
+La nota se guarda al terminar `api/analyze.php` (sin PageSpeed) y se actualiza una vez en `api/score.php` cuando llegan
+C08 y C14. Para no aceptar notas enviadas por el navegador, `analyze.php` y `psi.php` firman (HMAC) los estados que
+calculan y `score.php` comprueba las dos firmas. La clave de firma se genera sola en `storage/historial.key` (no se sube
+a git ni es accesible por web). Sin historial, todo funciona como antes. No hay login: quien acceda a la herramienta
+ve el historial de cualquier URL que analice.
+
 ## Funciones informativas (no puntúan)
 
 - **01 Simulador de mejora** (`src/Simulator.php`): recalcula con el mismo `Scorer` las notas por área y la global

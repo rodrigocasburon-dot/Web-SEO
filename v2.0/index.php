@@ -15,6 +15,11 @@ if (!headers_sent()) {
 }
 
 $lang = Lang::all();
+// Pie: qué se guarda depende de si el historial (Fase 4) está activado
+$appConfig = Config::load();
+$storageNote = History::enabled($appConfig)
+    ? 'solo se guarda un historial de notas por URL durante ' . History::months($appConfig) . ' meses, sin el contenido de las páginas.'
+    : 'no se guarda ningún dato de los análisis.';
 $i18n = [
     'areas' => $lang['areas'],
     'estados' => $lang['estados'],
@@ -182,7 +187,7 @@ $e = fn(string $s): string => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
   <div class="site-footer__inner">
     <img class="site-footer__logo" src="<?= $asset('assets/img/logo-proconsi.png') ?>" alt="Proconsi" width="96" height="33">
     <p class="site-footer__name">Radar web</p>
-    <p>Evaluación automática y parcial. No sustituye una auditoría manual. Herramienta interna: no se guarda ningún dato de los análisis.</p>
+    <p>Evaluación automática y parcial. No sustituye una auditoría manual. Herramienta interna: <?= htmlspecialchars($storageNote, ENT_QUOTES, 'UTF-8') ?></p>
   </div>
 </footer>
 <script type="application/json" id="i18n"><?= json_encode($i18n, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>

@@ -373,7 +373,11 @@
       checks: merged.map(function (c) {
         return { id: c.id, estado: c.estado, ocurrencias: c.ocurrencias || 0, aplica: c.aplica !== false };
       }),
-      bloqueado: !!run.data.blocked
+      bloqueado: !!run.data.blocked,
+      // Historial (Fase 4): el servidor solo actualiza la fila si las dos firmas son válidas
+      historial: run.data.historial && run.data.historial.activo && run.psi && run.psi.firma
+        ? { id: run.data.historial.id, firma_analisis: run.data.historial.firma, firma_psi: run.psi.firma }
+        : null
     };
   }
 
@@ -602,6 +606,12 @@
     var extra = foldSection('sec-complementario', 'Análisis complementario (no puntúa)');
     renderComplementary(extra.body, data.complementario);
     results.appendChild(extra.node);
+    // Historial (Fase 4): solo si está activado en el servidor
+    if (data.historial && (data.historial.activo || data.historial.error)) {
+      var hist = foldSection('sec-historial', 'Análisis anteriores de esta URL');
+      renderHistory(hist.body, data.historial);
+      results.appendChild(hist.node);
+    }
 
     updateReport(run);
 
@@ -630,7 +640,7 @@
       el('h3', { id: 'downloads-title', text: 'Descargas' }),
       el('div', { class: 'report-actions' }, [csvButton, jsonButton, roadmapButton, printButton]),
       el('p', { class: 'help', text: 'CSV y JSON llevan todos los datos para hojas de cálculo u otras herramientas; la hoja de ruta resume, para repartir el trabajo, qué corregir y en qué orden y qué debe revisar una persona.' }),
-      el('p', { class: 'help', text: 'Los PDF se crean con el diálogo de impresión: elige «Guardar como PDF». Todo se genera en tu navegador; no se guarda nada en el servidor. El CSV usa «;» y UTF-8 para abrirlo en Excel en español.' })
+      el('p', { class: 'help', text: 'Los PDF se crean con el diálogo de impresión: elige «Guardar como PDF». Los archivos se generan en tu navegador; no pasan por el servidor. El CSV usa «;» y UTF-8 para abrirlo en Excel en español.' })
     ]);
   }
 
@@ -1115,6 +1125,53 @@
       host.appendChild(el('p', { text: 'Con esas correcciones desaparecería el aviso de riesgo alto.' }));
     }
     host.appendChild(el('p', { class: 'help', text: 'Es una estimación, no una medición: supone que cada fallo se corrige por completo y que no aparecen otros. Los avisos y las comprobaciones sin datos no cambian.' }));
+  }
+
+  // Historial (Fase 4): notas de análisis anteriores de la misma URL, del más reciente al más antiguo
+  function renderHistory(host, h) {
+    if (!h.activo) {
+      host.appendChild(el('p', { text: h.error || 'El historial no está disponible.' }));
+      return;
+    }
+    var prev = h.anteriores || [];
+    host.appendChild(el('p', { class: 'help', text: 'Se guardan solo las notas y el número de fallos de cada análisis, nunca el contenido de la página, durante ' + plural(h.meses, 'mes', 'meses') + '. Este análisis ya se ha guardado.' }));
+    if (!prev.length) {
+      host.appendChild(el('p', { text: 'No hay análisis anteriores de esta URL.' }));
+      return;
+    }
+    var note = function (v) { return v === null ? '—' : fmtNumber(v, 1); };
+    var shortDate = function (iso) {
+      var d = new Date(iso);
+      return isNaN(d.getTime()) ? '—' : d.toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' });
+    };
+    host.appendChild(el('div', { class: 'table-wrap' }, [el('table', { class: 'data-table data-table--history' }, [
+      el('caption', { class: 'visually-hidden', text: 'Notas de los análisis anteriores de esta URL' }),
+      el('thead', {}, [el('tr', {}, [
+        el('th', { scope: 'col', text: 'Fecha' }),
+        el('th', { scope: 'col', class: 'num', text: i18n.areas.seo }),
+        el('th', { scope: 'col', class: 'num', text: i18n.areas.ia }),
+        el('th', { scope: 'col', class: 'num', text: i18n.areas.accesibilidad }),
+        el('th', { scope: 'col', class: 'num', text: 'Global' }),
+        el('th', { scope: 'col', class: 'num', text: 'Fallos críticos y altos' }),
+        el('th', { scope: 'col', text: 'Observaciones' })
+      ])]),
+      el('tbody', {}, prev.map(function (r) {
+        var obs = [];
+        if (r.bloqueado) obs.push('acceso bloqueado');
+        else if (!r.pagespeed) obs.push('sin PageSpeed');
+        if (r.incompleta) obs.push('nota incompleta');
+        return el('tr', {}, [
+          el('th', { scope: 'row', text: shortDate(r.fecha) }),
+          el('td', { class: 'num', text: note(r.nota_seo) }),
+          el('td', { class: 'num', text: note(r.nota_ia) }),
+          el('td', { class: 'num', text: note(r.nota_accesibilidad) }),
+          el('td', { class: 'num', text: note(r.nota_global) }),
+          el('td', { class: 'num', text: r.criticos + ' y ' + r.altos }),
+          el('td', { text: obs.join('; ') || '—' })
+        ]);
+      }))
+    ])]));
+    host.appendChild(el('p', { class: 'help', text: 'Las notas «sin PageSpeed» no incluyen contraste ni Core Web Vitals, y las comprobaciones o la página pueden haber cambiado entre un análisis y otro: compáralas con cautela.' }));
   }
 
   /** «a, b y c» */

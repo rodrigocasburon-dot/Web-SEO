@@ -516,6 +516,9 @@ code, pre { font-family: var(--mono); }
 .data-table tbody th { font-weight: 500; }
 .data-table .num { text-align: right; white-space: nowrap; }
 .data-table tr.is-total th, .data-table tr.is-total td { font-weight: 600; border-bottom: 2px solid var(--black); }
+/* Historial: sin cortes a mitad de palabra; en pantallas estrechas la tabla se desplaza en horizontal */
+.data-table--history th, .data-table--history td { overflow-wrap: normal; }
+.data-table--history tbody th { white-space: nowrap; }
 
 /* Cifras breves en línea (vistas complementarias) */
 .inline-stats { display: flex; flex-wrap: wrap; gap: 0.25rem 1.75rem; margin: 0.75rem 0; padding: 0; list-style: none; }

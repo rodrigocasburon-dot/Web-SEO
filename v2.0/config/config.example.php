@@ -26,6 +26,11 @@ return [
     // Simulador de mejora: nº de fallos (los que más puntos restan) que se suponen corregidos (1 a 15)
     'simulator_top_n' => 3,
 
+    // Historial de notas por URL en MySQL (Fase 4). Con 'dsn' vacío está desactivado.
+    // Crear la base con install.sql y copiar este bloque a config.php con los datos reales, p. ej.:
+    // 'dsn' => 'mysql:host=localhost;dbname=radar_web;charset=utf8mb4'
+    'historial' => ['dsn' => '', 'usuario' => '', 'clave' => '', 'meses' => 12],
+
     // Límite de uso por IP (se guarda en storage/)
     'rate_limit' => ['max_requests' => 10, 'window_seconds' => 600],
 

@@ -39,6 +39,8 @@ try {
         'ok' => true,
         'url' => $target['url'],
         'checks' => $checks,
+        // Firma de C08 y C14 para que api/score.php pueda actualizar el historial (Fase 4)
+        'firma' => History::enabled($config) ? History::sign(History::secretKey(), 'psi', $checks) : null,
         'psi' => [
             'ok' => $r['ok'],
             'error' => $r['error'],
