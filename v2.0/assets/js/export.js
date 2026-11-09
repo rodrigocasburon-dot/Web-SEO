@@ -8,7 +8,7 @@
   var BOM = '﻿';
   var SEP = ';';
   var EOL = '\r\n';
-  var COLUMNS = ['id', 'área', 'estado', 'severidad', 'valor medido', 'umbral', 'criterio', 'evidencia', 'recomendación', 'impacto', 'esfuerzo'];
+  var COLUMNS = ['id', 'comprobación', 'área', 'estado', 'detalle', 'severidad', 'valor medido', 'umbral', 'criterio', 'evidencia', 'recomendación', 'impacto', 'esfuerzo'];
 
   /** Celda CSV: neutraliza fórmulas y escapa comillas. */
   function csvCell(v) {
@@ -69,8 +69,10 @@
     (checks || []).forEach(function (c) {
       rows.push([
         c.id,
+        c.nombre || '',
         areasText(c.pilares, i18n.areas),
         c.aplica === false ? 'No aplica' : label(i18n.estados, c.estado),
+        c.detalle || '',
         label(i18n.severidades, c.severidad),
         valueText(c.valor_medido),
         c.umbral === null || c.umbral === undefined ? '' : valueText(c.umbral),

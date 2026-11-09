@@ -40,7 +40,8 @@
       niveles: { ALTO: 'Alto', MEDIO: 'Medio', BAJO: 'Bajo' }
     };
     var checks = [
-      { id: 'C06', pilares: { seo: 0.2, ia: 0.2, accesibilidad: 0.6 }, estado: 'NO_CUMPLE', aplica: true, severidad: 'ALTO',
+      { id: 'C06', nombre: 'Texto alternativo', detalle: '2 imágenes sin atributo alt.',
+        pilares: { seo: 0.2, ia: 0.2, accesibilidad: 0.6 }, estado: 'NO_CUMPLE', aplica: true, severidad: 'ALTO',
         valor_medido: { imagenes: 8, sin_alt: 2, ratio: 0.25, lista: ['a', 'b'] }, umbral: 'Todas con alt', criterio: 'WCAG 1.1.1',
         evidencia: [{ selector: 'img#logo', extracto: '<img src="=x.png">', linea: 12 }, { selector: null, extracto: 'nota', linea: null }],
         recomendacion: '=HYPERLINK("http://x")', impacto: 'ALTO', esfuerzo: 'BAJO' },
@@ -48,11 +49,11 @@
         valor_medido: null, umbral: null, criterio: '', evidencia: [], recomendacion: '', impacto: 'MEDIO', esfuerzo: 'MEDIO' }
     ];
     var rows = X.buildRows(checks, i18n);
-    same(['id', 'área', 'estado', 'severidad', 'valor medido', 'umbral', 'criterio', 'evidencia', 'recomendación', 'impacto', 'esfuerzo'], rows[0], 'cabecera');
-    same(['C06', 'SEO 20 %; Preparación para IA 20 %; Accesibilidad 60 %', 'Fallo', 'Alta',
+    same(['id', 'comprobación', 'área', 'estado', 'detalle', 'severidad', 'valor medido', 'umbral', 'criterio', 'evidencia', 'recomendación', 'impacto', 'esfuerzo'], rows[0], 'cabecera');
+    same(['C06', 'Texto alternativo', 'SEO 20 %; Preparación para IA 20 %; Accesibilidad 60 %', 'Fallo', '2 imágenes sin atributo alt.', 'Alta',
       'imagenes: 8; sin alt: 2; ratio: 0,25; lista: a, b', 'Todas con alt', 'WCAG 1.1.1',
       'img#logo: <img src="=x.png"> (línea 12) | nota', '=HYPERLINK("http://x")', 'Alto', 'Bajo'], rows[1], 'fila C06');
-    same(['C13', 'SEO 100 %', 'No aplica', 'Alta', '', '', '', '', '', 'Medio', 'Medio'], rows[2], 'fila no aplica');
+    same(['C13', '', 'SEO 100 %', 'No aplica', '', 'Alta', '', '', '', '', '', 'Medio', 'Medio'], rows[2], 'fila no aplica');
     var csv = X.toCsv(rows);
     same(true, csv.indexOf('"\'=HYPERLINK(""http://x"")"') !== -1, 'la recomendación con fórmula se neutraliza en el CSV');
     same(3, csv.split('\r\n').length - 1, 'una línea por fila');
