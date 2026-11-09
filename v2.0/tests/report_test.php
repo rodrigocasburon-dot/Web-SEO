@@ -131,12 +131,41 @@ test('Report: lista en español con «y» / «e»', function () {
     assertSame('a y hierro', Report::joinList(['a', 'hierro']));
 });
 
+test('Report: cobertura por área, bloque de cada punto y resumen breve (máx. 8 líneas)', function () {
+    $checks = reportSample();
+    $r = Report::build($checks, (new Scorer())->score($checks));
+    // C11 no aplica; C06 sin datos (afecta a las tres áreas)
+    assertSame(['seo' => ['evaluados' => 6, 'total' => 7], 'ia' => ['evaluados' => 2, 'total' => 3],
+        'accesibilidad' => ['evaluados' => 3, 'total' => 4]], $r['cobertura']);
+    assertSame('seo', $r['bloque']['C10']);
+    assertSame('ia', $r['bloque']['C02']);
+    assertSame('accesibilidad', $r['bloque']['C04']);
+    assertSame('accesibilidad', $r['bloque']['C05']);   // .3 / .3 / .4
+    assertSame('seo', Report::primaryArea(['seo' => 0.5, 'ia' => 0, 'accesibilidad' => 0.5]));   // empate: orden de áreas
+    $t = array_column($r['resumen_breve'], 'texto');
+    assertTrue(count($t) <= 8);
+    assertSame('SEO: 1 fallo de gravedad alta.', $t[0]);
+    assertSame('Preparación para IA: 1 fallo crítico.', $t[1]);
+    assertSame('Accesibilidad: 1 fallo crítico.', $t[2]);
+    assertSame(['C04', 'C02', 'C10'], array_slice(array_column($r['resumen_breve'], 'id'), 3, 3));
+    assertTrue(strpos($t[3], 'Primero: ' . Lang::check('C04', 'nombre')) === 0);
+    assertSame('Se han evaluado 7 de 8 comprobaciones; las que no tienen datos no restan puntos.', $t[6]);
+    // Sin fallos ni datos bloqueados
+    $ok = reportRecords([['C12', 'CUMPLE']]);
+    $t = array_column(Report::build($ok, (new Scorer())->score($ok))['resumen_breve'], 'texto');
+    assertSame('SEO: ningún fallo crítico ni de gravedad alta.', $t[0]);
+    assertSame('Sin fallos detectables automáticamente.', $t[3]);
+    assertSame(2, count(Report::build($ok, (new Scorer())->score($ok), true)['resumen_breve']));
+});
+
 test('Report y glosario: ningún texto afirma cumplimiento', function () {
     $all = reportRecords(array_map(fn($id) => [$id, 'NO_CUMPLE', 2], array_keys(CheckRunner::catalog())));
     $texts = array_merge(
         reportStrings(Report::build($all, (new Scorer())->score($all))),
-        reportStrings(Lang::all()['glosario'])
+        reportStrings(Lang::all()['glosario']),
+        reportStrings(Lang::all()['revisiones_manuales'])
     );
+    assertSame(10, count(Lang::all()['revisiones_manuales']));
     assertTrue(count(Lang::all()['glosario']) >= 20);
     foreach ($texts as $t) {
         assertTrue(!preg_match('/\bcumplen?\b|\bconforme\b/iu', $t), $t);

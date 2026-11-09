@@ -16,6 +16,19 @@ return [
     // Texto fijo y siempre visible
     'limitaciones' => 'La evaluación es automática y parcial. No sustituye una auditoría manual y no certifica el cumplimiento de WCAG ni de ninguna ley. Cuando no se detectan fallos, el resultado significa «sin errores detectables automáticamente».',
     'revision_manual' => 'Requieren revisión manual, entre otros aspectos: la calidad de los textos alternativos, el orden real de navegación con teclado, el contraste del texto sobre imágenes y la calidad de los subtítulos.',
+    // Revisiones manuales RM-01…RM-10 de la lista unificada (v1.0/docs/Lista_unificada.pdf). No puntúan.
+    'revisiones_manuales' => [
+        'RM-01' => ['Calidad del texto alternativo', 'Que el alt describa bien cada imagen informativa.'],
+        'RM-02' => ['Recorrido real con teclado', 'Orden lógico de tabulación y sin trampas de foco.'],
+        'RM-03' => ['Foco no tapado', 'Que menús o barras fijas no oculten el elemento que tiene el foco (WCAG 2.4.11).'],
+        'RM-04' => ['Zoom al 200 % y adaptación', 'Que nada se rompa al ampliar ni en pantallas estrechas.'],
+        'RM-05' => ['Mensajes de error en formularios', 'Que los errores se expliquen con texto, no solo con color.'],
+        'RM-06' => ['Alternativas al arrastre', 'Que carruseles y gestos tengan botones equivalentes.'],
+        'RM-07' => ['Calidad de los subtítulos', 'Que sean correctos y estén sincronizados.'],
+        'RM-08' => ['Rechazar cookies', 'Que rechazar sea tan fácil como aceptar.'],
+        'RM-09' => ['Intención de búsqueda y calidad del contenido', 'Que la página responda a lo que busca la gente.'],
+        'RM-10' => ['Prueba con lector de pantalla', 'Con NVDA o VoiceOver y, si es posible, con personas usuarias reales.'],
+    ],
     'riesgo_alto' => 'Riesgo alto: revisar de inmediato',
     'nota_incompleta' => 'Nota incompleta: más de la mitad de las comprobaciones de esta área no tienen datos.',
     // Glosario del informe (orden alfabético). Definiciones breves; ninguna afirma cumplimiento.

@@ -5,10 +5,10 @@
  * análisis, con puntuación provisional; cuando llega PageSpeed (C08, C14) se recalculan puntuación e
  * informe en el servidor (api/score.php, mismo Scorer y mismo Report) y se actualiza sin mover el foco.
  *
- * Informe (diez apartados): 1 resumen ejecutivo, 2 puntuaciones, 3 problemas críticos, 4 hallazgos
- * detallados con evidencia, 5 recomendaciones priorizadas, 6 plan de acción (matriz 2×2), 7 análisis
- * complementario (vistas informativas que no puntúan), 8 glosario, 9 limitaciones (texto fijo de
- * index.php, siempre visible) y 10 evidencias del análisis.
+ * Informe: puntuaciones con cobertura, resumen ejecutivo breve, descargas, un bloque plegable por área
+ * con sus puntos, revisiones manuales y, plegados, recomendaciones priorizadas, plan de acción,
+ * simulación y análisis complementario; después, limitaciones y evidencias (index.php). El glosario
+ * no se muestra (renderGlossary() y lang/es.php 'glosario' se conservan).
  *
  * Comparar dos URLs (función 10): cada URL se analiza con sus propias peticiones (una URL por petición) y
  * assets/js/compare.js pone los dos resultados lado a lado: notas, diferencia y estado de cada comprobación. */
@@ -34,6 +34,9 @@
   var urlLabel = form.querySelector('label[for="url"]');
   var keywordField = document.getElementById('keyword-field');
   var noindexCompare = document.getElementById('noindex-compare');
+  var localBusiness = document.getElementById('local-business');
+  var localField = document.getElementById('local-field');
+  var moreOptions = document.getElementById('more-options');
   var URL_NAMES = ['Primera URL', 'Segunda URL'];
 
   var REQUEST_TIMEOUT_MS = 60000;
@@ -41,19 +44,6 @@
   var SEVERITY_ORDER = { CRITICO: 0, ALTO: 1, MEDIO: 2, BAJO: 3 };
   var LEVEL_ORDER = { ALTO: 0, MEDIO: 1, BAJO: 2 };
   var PSI_IDS = Object.keys(i18n.psi_checks || {});
-  // Apartados del informe, en orden (ids de las secciones)
-  var SECTIONS = [
-    ['sec-resumen', 'Resumen ejecutivo'],
-    ['sec-puntuaciones', 'Puntuaciones por área y global'],
-    ['sec-criticos', 'Problemas críticos'],
-    ['sec-hallazgos', 'Hallazgos detallados con evidencia'],
-    ['sec-recomendaciones', 'Recomendaciones priorizadas'],
-    ['sec-plan', 'Plan de acción por impacto y esfuerzo'],
-    ['sec-complementario', 'Análisis complementario (no puntúa)'],
-    ['sec-glosario', 'Glosario'],
-    ['limitaciones', 'Limitaciones'],
-    ['evidencias', 'Evidencias del análisis']
-  ];
   // Errores que se deben a la URL escrita: se señalan en el propio campo
   var FIELD_ERRORS = ['INVALID_URL', 'SCHEME_NOT_ALLOWED', 'CREDENTIALS_IN_URL', 'PORT_NOT_ALLOWED', 'INVALID_HOST', 'PRIVATE_ADDRESS'];
   var ERROR_HINTS = {
@@ -146,6 +136,8 @@
 
   function setLoading(on) {
     button.disabled = on;
+    // Con un análisis en marcha o un informe en pantalla se ocultan la ilustración y los bloques de presentación
+    if (on) document.body.classList.add('has-report');
     results.setAttribute('aria-busy', on ? 'true' : 'false');
     setStatus(on ? 'Analizando la página, sus enlaces y su sitemap… puede tardar hasta medio minuto.' : '', on);
   }
@@ -237,7 +229,7 @@
       showFieldError('Escribe la URL de la página que quieres analizar.');
       return;
     }
-    analyze(url, noindex.checked, keywordInput.value.trim());
+    analyze(url, noindex.checked, keywordInput.value.trim(), localBusiness.checked);
   });
 
   // ---------- 10. Modo «Comparar dos URLs» ----------
@@ -251,18 +243,21 @@
     var cmp = isCompareMode();
     url2Field.hidden = !cmp;
     keywordField.hidden = cmp;
+    localField.hidden = cmp;
     noindexCompare.hidden = !cmp;
     if (cmp) noindex.setAttribute('aria-describedby', 'noindex-compare');
     else noindex.removeAttribute('aria-describedby');
-    urlLabel.textContent = cmp ? 'Primera URL' : 'URL de la página';
+    urlLabel.textContent = cmp ? 'Primera URL' : 'Empecemos por tu URL';
     input2.required = cmp;
-    button.textContent = cmp ? 'Comparar' : 'Analizar';
+    button.textContent = cmp ? 'Comparar' : 'Analizar URL';
     clearErrors();
   }
   Array.prototype.forEach.call(form.querySelectorAll('input[name="modo"]'), function (r) {
     r.addEventListener('change', syncMode);
   });
   syncMode();   // el navegador puede restaurar el modo al volver a la página
+  // «Más opciones» empieza plegado, salvo que el navegador haya restaurado alguna opción distinta de la habitual
+  if (isCompareMode() || noindex.checked || keywordInput.value.trim()) moreOptions.open = true;
 
   /** Misma dirección escrita (sin esquema se supone https, como en el servidor). */
   function sameAddress(a, b) {
@@ -273,7 +268,7 @@
     return norm(a) === norm(b);
   }
 
-  function analyze(url, noindexIntentional, keyword) {
+  function analyze(url, noindexIntentional, keyword, isLocal) {
     if (current) current.cancel();
     results.hidden = true;
     results.textContent = '';
@@ -288,6 +283,7 @@
       psi: null,           // respuesta de psi.php (ok: true)
       psiFailure: null,    // mensaje si psi.php no se pudo usar
       psiDone: false,
+      localBusiness: !!isLocal,   // dato indicado por la persona; no interviene en ninguna comprobación
       view: null,          // contenedores de los apartados que se actualizan
       cancel: function () { run.analyzeCtrl.abort(); run.psiCtrl.abort(); }
     };
@@ -516,6 +512,13 @@
   }
 
   // ---------- Informe ----------
+  // Orden: puntuaciones con cobertura, resumen ejecutivo breve, descargas, un bloque plegable por área
+  // (fallos, avisos y sin datos; lo que no tiene errores o no aplica, plegado), revisiones manuales y,
+  // plegados, recomendaciones priorizadas, plan de acción, simulación y análisis complementario.
+  // Limitaciones y evidencias van después, fuera de #results (index.php). Cada punto aparece una sola
+  // vez, en el bloque del área con más peso (informe.bloque), con etiquetas de las otras áreas.
+
+  var AREAS = ['seo', 'ia', 'accesibilidad'];
 
   function reportSection(id, title) {
     var body = el('div');
@@ -526,37 +529,41 @@
     return { node: node, body: body };
   }
 
+  /** Apartado plegable: <details> con el título (h3) dentro del <summary>. */
+  function foldSection(id, title) {
+    var body = el('div', { class: 'fold__body' });
+    var node = el('details', { class: 'fold', id: id, 'data-key': id }, [
+      el('summary', {}, [el('h3', { class: 'fold__title', text: title })]),
+      body
+    ]);
+    return { node: node, body: body };
+  }
+
+  function plural(n, one, many) {
+    return n + ' ' + (n === 1 ? one : many);
+  }
+
+  /** Área con más peso de una comprobación (empates: orden de AREAS). Igual que Report::primaryArea(). */
+  function primaryArea(pilares) {
+    var best = AREAS[0];
+    var max = -1;
+    AREAS.forEach(function (a) {
+      var w = Number((pilares || {})[a] || 0);
+      if (w > max) { max = w; best = a; }
+    });
+    return best;
+  }
+
   function renderResults(run) {
     var data = run.data;
     var title = el('h2', { id: 'results-title', tabindex: '-1', text: 'Informe' });
-    var printButton = el('button', { type: 'button', class: 'button button--secondary no-print', text: 'Imprimir o guardar como PDF' });
-    printButton.addEventListener('click', function () { window.print(); });
-    // 08. Exportación: se genera en el navegador con los datos actuales (tras PageSpeed, ya actualizados)
-    var csvButton = el('button', { type: 'button', class: 'button button--secondary no-print', text: 'Descargar CSV' });
-    csvButton.addEventListener('click', function () {
-      var X = window.AnalyzerExport;
-      X.download(X.fileName(run.data.url, new Date(), 'csv'), 'text/csv;charset=utf-8', X.toCsv(X.buildRows(run.data.checks, i18n)));
-    });
-    var jsonButton = el('button', { type: 'button', class: 'button button--secondary no-print', text: 'Descargar JSON' });
-    jsonButton.addEventListener('click', function () {
-      var X = window.AnalyzerExport;
-      X.download(X.fileName(run.data.url, new Date(), 'json'), 'application/json;charset=utf-8',
-        X.buildJson(run.data, { provisional: psiPending(run) && !run.data.blocked }));
-    });
-
     results.appendChild(el('div', { class: 'report-head' }, [
       title,
       el('ul', { class: 'meta-list' }, [
         el('li', {}, ['URL analizada: ', el('strong', { text: data.url })]),
-        el('li', { text: 'Fecha del análisis: ' + fmtDate(data.fecha) })
-      ]),
-      el('div', { class: 'report-actions no-print' }, [printButton, csvButton, jsonButton]),
-      el('p', { class: 'help no-print', text: 'Los archivos se generan en tu navegador; no se guarda nada en el servidor. El CSV usa «;» y UTF-8 para abrirlo en Excel en español.' })
-    ]));
-
-    results.appendChild(el('nav', { class: 'report-toc', 'aria-labelledby': 'toc-title' }, [
-      el('h3', { id: 'toc-title', class: 'report-toc__title', text: 'Contenido del informe' }),
-      el('ol', {}, SECTIONS.map(function (s) { return el('li', {}, [el('a', { href: '#' + s[0], text: s[1] })]); }))
+        el('li', { text: 'Fecha del análisis: ' + fmtDate(data.fecha) }),
+        run.localBusiness ? el('li', { text: 'Negocio local: sí (indicado al analizar; no cambia ninguna comprobación ni la nota)' }) : null
+      ])
     ]));
 
     if (data.blocked) {
@@ -566,20 +573,35 @@
       ]));
     }
 
-    var keys = ['summary', 'scores', 'critical', 'findings', 'recs', 'plan'];
     run.view = {};
-    keys.forEach(function (k, i) {
-      var s = reportSection(SECTIONS[i][0], SECTIONS[i][1]);
-      run.view[k] = s.body;
-      results.appendChild(s.node);
-    });
+    var scores = reportSection('sec-puntuaciones', 'Puntuaciones');
+    run.view.scores = scores.body;
+    results.appendChild(scores.node);
+    var summary = reportSection('sec-resumen', 'Resumen ejecutivo');
+    run.view.summary = summary.body;
+    results.appendChild(summary.node);
+    results.appendChild(downloadBar(run));
+
+    run.view.blocks = el('div', { class: 'area-blocks', id: 'sec-areas' });
+    results.appendChild(run.view.blocks);
+
+    var manual = foldSection('sec-revisiones', 'Revisiones manuales (no puntúan)');
+    renderManualReviews(manual.body);
+    results.appendChild(manual.node);
+
+    var recs = foldSection('sec-recomendaciones', 'Recomendaciones priorizadas');
+    run.view.recs = recs.body;
+    results.appendChild(recs.node);
+    var plan = foldSection('sec-plan', 'Plan de acción por impacto y esfuerzo');
+    run.view.plan = plan.body;
+    results.appendChild(plan.node);
+    var sim = foldSection('sec-simulacion', 'Simulación de mejora (estimación)');
+    run.view.sim = sim.body;
+    results.appendChild(sim.node);
     // El análisis complementario se pinta una sola vez: no cambia al llegar PageSpeed
-    var extra = reportSection(SECTIONS[6][0], SECTIONS[6][1]);
+    var extra = foldSection('sec-complementario', 'Análisis complementario (no puntúa)');
     renderComplementary(extra.body, data.complementario);
     results.appendChild(extra.node);
-    var glossary = reportSection(SECTIONS[7][0], SECTIONS[7][1]);
-    glossary.body.appendChild(renderGlossary());
-    results.appendChild(glossary.node);
 
     updateReport(run);
 
@@ -588,13 +610,102 @@
     title.focus();
   }
 
+  /** Barra de descargas: se generan en el navegador con los datos actuales (tras PageSpeed, ya actualizados). */
+  function downloadBar(run) {
+    var X = window.AnalyzerExport;
+    var csvButton = el('button', { type: 'button', class: 'button button--secondary', text: 'Descargar CSV' });
+    csvButton.addEventListener('click', function () {
+      X.download(X.fileName(run.data.url, new Date(), 'csv'), 'text/csv;charset=utf-8', X.toCsv(X.buildRows(run.data.checks, i18n)));
+    });
+    var jsonButton = el('button', { type: 'button', class: 'button button--secondary', text: 'Descargar JSON' });
+    jsonButton.addEventListener('click', function () {
+      X.download(X.fileName(run.data.url, new Date(), 'json'), 'application/json;charset=utf-8',
+        X.buildJson(run.data, { provisional: psiPending(run) && !run.data.blocked }));
+    });
+    var roadmapButton = el('button', { type: 'button', class: 'button button--secondary', text: 'Hoja de ruta (PDF)' });
+    roadmapButton.addEventListener('click', function () { printRoadmap(run); });
+    var printButton = el('button', { type: 'button', class: 'button button--secondary', text: 'Informe completo (PDF)' });
+    printButton.addEventListener('click', function () { window.print(); });
+    return el('section', { class: 'downloads no-print', 'aria-labelledby': 'downloads-title' }, [
+      el('h3', { id: 'downloads-title', text: 'Descargas' }),
+      el('div', { class: 'report-actions' }, [csvButton, jsonButton, roadmapButton, printButton]),
+      el('p', { class: 'help', text: 'CSV y JSON llevan todos los datos para hojas de cálculo u otras herramientas; la hoja de ruta resume, para repartir el trabajo, qué corregir y en qué orden y qué debe revisar una persona.' }),
+      el('p', { class: 'help', text: 'Los PDF se crean con el diálogo de impresión: elige «Guardar como PDF». Todo se genera en tu navegador; no se guarda nada en el servidor. El CSV usa «;» y UTF-8 para abrirlo en Excel en español.' })
+    ]);
+  }
+
+  /**
+   * Hoja de ruta imprimible: correcciones en el orden de informe.prioridades (fallos por puntos que
+   * restan, después avisos) y revisiones manuales RM-01…RM-10. Se construye al pulsar, con los datos
+   * vigentes, y solo existe mientras dura la impresión.
+   */
+  function printRoadmap(run) {
+    var old = document.getElementById('hoja-ruta');
+    if (old) old.remove();
+    results.appendChild(buildRoadmap(run));
+    document.body.classList.add('print-roadmap');
+    window.print();
+    // Chrome y Edge esperan a que se cierre el diálogo; afterprint limpia en los demás
+    if (!window.matchMedia || !window.matchMedia('print').matches) endRoadmap();
+  }
+
+  function endRoadmap() {
+    document.body.classList.remove('print-roadmap');
+    var node = document.getElementById('hoja-ruta');
+    if (node) node.remove();
+  }
+
+  function buildRoadmap(run) {
+    var data = run.data;
+    var p = data.puntuacion;
+    var items = data.informe.prioridades || [];
+    var blockOf = data.informe.bloque || {};
+    var rm = i18n.revisiones_manuales || {};
+    var meta = [
+      el('li', {}, ['URL analizada: ', el('strong', { text: data.url })]),
+      el('li', { text: 'Fecha del análisis: ' + fmtDate(data.fecha) })
+    ];
+    if (!data.blocked) {
+      meta.push(el('li', { text: AREAS.map(function (a) { return i18n.areas[a] + ' ' + fmtNumber(p.areas[a].redondeada, 1); })
+        .concat('Nota global ' + fmtNumber(p.global.redondeada, 1)).join(' · ') + ' (sobre 100)' }));
+    }
+    var note = psiScoreNote(run);
+    return el('section', { id: 'hoja-ruta', class: 'roadmap', 'aria-hidden': 'true' }, [
+      el('h2', { text: 'Hoja de ruta' }),
+      el('ul', { class: 'meta-list' }, meta),
+      data.blocked ? el('p', { text: 'Acceso bloqueado: ' + data.blocked.message }) : null,
+      note ? el('p', { class: 'help', text: note }) : null,
+      el('h3', { text: '1. Qué corregir, por orden' }),
+      items.length
+        ? el('p', { class: 'help', text: 'Primero los fallos, ordenados por los puntos que restan; después los avisos, que no restan puntos.' })
+        : null,
+      items.length
+        ? el('ol', { class: 'roadmap__list' }, items.map(function (r) {
+          var m = [i18n.estados[r.estado] || r.estado, 'gravedad ' + lower(i18n.severidades, r.severidad),
+            'área ' + (i18n.areas[blockOf[r.id]] || '—'), 'impacto ' + lower(i18n.niveles, r.impacto), 'esfuerzo ' + lower(i18n.niveles, r.esfuerzo)];
+          if (r.estado === 'NO_CUMPLE') m.push('resta ' + fmtNumber(r.penalizacion, 1) + ' puntos' + (r.ocurrencias > 1 ? ' (' + r.ocurrencias + ' casos)' : ''));
+          return el('li', {}, [
+            el('p', { class: 'roadmap__name' }, [el('strong', { text: r.nombre }), ' (' + r.id + ')']),
+            el('p', { class: 'roadmap__meta', text: m.join(' · ') }),
+            el('p', { text: r.recomendacion })
+          ]);
+        }))
+        : el('p', { text: 'Nada que corregir: no se han detectado fallos ni avisos de forma automática.' }),
+      el('h3', { text: '2. Qué debe revisar una persona (no puntúa)' }),
+      el('ul', { class: 'roadmap__checks' }, Object.keys(rm).map(function (id) {
+        return el('li', {}, [el('strong', { text: id + ' · ' + rm[id][0] + '. ' }), rm[id][1]]);
+      })),
+      el('p', { class: 'help', text: 'Evaluación automática y parcial. No sustituye una auditoría manual.' })
+    ]);
+  }
+
   function updateReport(run) {
-    updateSummary(run);
     updateScores(run);
-    updateCritical(run);
-    updateFindings(run);
+    updateSummary(run);
+    updateBlocks(run);
     updateRecommendations(run);
     updatePlan(run);
+    updateSimulation(run);
     updateEvidence(run);
   }
 
@@ -610,6 +721,11 @@
       : 'La puntuación no incluye contraste (C08) ni Core Web Vitals (C14) porque PageSpeed Insights no estaba disponible.';
   }
 
+  /** Comprobaciones de PageSpeed que aún no han llegado. */
+  function pendingIds(run) {
+    return psiPending(run) && !run.data.blocked ? PSI_IDS : [];
+  }
+
   function checkById(run, id) {
     for (var i = 0; i < run.data.checks.length; i++) {
       if (run.data.checks[i].id === id) return run.data.checks[i];
@@ -623,97 +739,43 @@
     return out;
   }
 
-  /** Enlace al hallazgo detallado (abre el desplegable al seguirlo). */
+  /** Enlace a un punto de los bloques por área (abre los desplegables que lo contienen). */
   function findingLink(id, name) {
-    return el('a', { href: '#hallazgo-' + id, 'data-finding': id, text: name || id });
+    return el('a', { href: '#hallazgo-' + id, text: name || id });
   }
 
-  // 1. Resumen ejecutivo
-  function updateSummary(run) {
-    var host = run.view.summary;
-    var p = run.data.puntuacion;
-    host.textContent = '';
-    if (p.riesgo_alto) {
-      host.appendChild(el('div', { class: 'notice notice--risk' }, [
-        el('p', { text: p.riesgo_mensaje }),
-        el('ul', {}, p.riesgo_motivos.map(function (m) { return el('li', { text: m }); }))
-      ]));
-    }
-    (run.data.informe.resumen || []).forEach(function (t) { host.appendChild(el('p', { text: t })); });
-    var note = psiScoreNote(run);
-    if (note) host.appendChild(el('p', { class: 'help', text: note }));
-  }
-
-  // 2. Puntuaciones
+  // Puntuaciones: las tres áreas en grande y la global debajo, con la cobertura de cada una
   function updateScores(run) {
     var p = run.data.puntuacion;
     var blocked = !!run.data.blocked;
     var host = run.view.scores;
+    var cov = run.data.informe.cobertura || {};
+    var pending = pendingIds(run);
     host.textContent = '';
     var note = psiScoreNote(run);
     if (note) host.appendChild(el('p', { class: 'help', text: note }));
-    host.appendChild(el('ul', { class: 'scores' }, [
-      scoreCard(i18n.areas.seo, p.areas.seo, false, blocked),
-      scoreCard(i18n.areas.ia, p.areas.ia, false, blocked),
-      scoreCard(i18n.areas.accesibilidad, p.areas.accesibilidad, false, blocked),
-      scoreCard('Nota global', p.global, true, blocked)
+
+    var areaPending = function (a) {
+      return pending.filter(function (id) { return ((i18n.psi_bloque || {})[id] || '') === a; }).length;
+    };
+    host.appendChild(el('ul', { class: 'scores' }, AREAS.map(function (a) {
+      var c = cov[a] || { evaluados: 0, total: 0 };
+      return scoreCard(i18n.areas[a], p.areas[a], false, blocked, coverageText(c.evaluados, c.total + areaPending(a), areaPending(a)));
+    })));
+    var all = (run.data.checks || []).filter(function (c) { return c.aplica !== false; });
+    var done = all.filter(function (c) { return c.estado !== 'SIN_DATOS'; }).length;
+    host.appendChild(el('ul', { class: 'scores scores--global' }, [
+      scoreCard('Nota global', p.global, true, blocked, coverageText(done, all.length + pending.length, pending.length))
     ]));
-    var incomplete = !blocked && ['seo', 'ia', 'accesibilidad'].some(function (a) { return p.areas[a].incompleta; });
+    var incomplete = !blocked && AREAS.some(function (a) { return p.areas[a].incompleta; });
     if (incomplete) host.appendChild(el('p', { class: 'help', text: i18n.nota_incompleta }));
-    var sim = renderSimulation(run.data.informe.simulacion);
-    if (sim) host.appendChild(sim);
   }
 
-  /** Simulador de mejora: estimación «antes / después» si se corrigen los N fallos que más restan. */
-  function renderSimulation(s) {
-    if (!s) return null;
-    var box = el('section', { class: 'subsection', 'aria-labelledby': 'sim-title' }, [
-      el('h4', { id: 'sim-title', text: 'Simulación de mejora (estimación)' })
-    ]);
-    if (!s.corregidos.length) {
-      box.appendChild(el('p', { text: 'No hay fallos que simular: ninguna comprobación resta puntos.' }));
-      return box;
-    }
-    var names = s.corregidos.map(function (c) { return c.nombre; });
-    var lead = s.corregidos.length === 1
-      ? 'Si se corrigiera el fallo que más puntos resta (' + names[0] + ')'
-      : 'Si se corrigieran los ' + s.corregidos.length + ' fallos que más puntos restan (' + joinList(names) + ')';
-    if (s.fallos_totales > s.corregidos.length) lead += ', de ' + s.fallos_totales + ' fallos detectados';
-    box.appendChild(el('p', { text: lead + ', las notas quedarían así:' }));
-
-    var rows = [['seo', i18n.areas.seo], ['ia', i18n.areas.ia], ['accesibilidad', i18n.areas.accesibilidad], ['global', 'Nota global']];
-    box.appendChild(el('div', { class: 'table-wrap' }, [el('table', { class: 'data-table' }, [
-      el('caption', { class: 'visually-hidden', text: 'Notas antes y después de la corrección simulada' }),
-      el('thead', {}, [el('tr', {}, [
-        el('th', { scope: 'col', text: 'Área' }),
-        el('th', { scope: 'col', class: 'num', text: 'Antes' }),
-        el('th', { scope: 'col', class: 'num', text: 'Después' }),
-        el('th', { scope: 'col', class: 'num', text: 'Diferencia' })
-      ])]),
-      el('tbody', {}, rows.map(function (r) {
-        var n = s.notas[r[0]];
-        return el('tr', { class: r[0] === 'global' ? 'is-total' : null }, [
-          el('th', { scope: 'row', text: r[1] }),
-          el('td', { class: 'num', text: fmtNumber(n.antes, 1) }),
-          el('td', { class: 'num', text: fmtNumber(n.despues, 1) }),
-          el('td', { class: 'num', text: (n.mejora > 0 ? '+' : '') + fmtNumber(n.mejora, 1) })
-        ]);
-      }))
-    ])]));
-    if (s.riesgo_alto.antes && !s.riesgo_alto.despues) {
-      box.appendChild(el('p', { text: 'Con esas correcciones desaparecería el aviso de riesgo alto.' }));
-    }
-    box.appendChild(el('p', { class: 'help', text: 'Es una estimación, no una medición: supone que cada fallo se corrige por completo y que no aparecen otros. Los avisos y las comprobaciones sin datos no cambian.' }));
-    return box;
+  function coverageText(done, total, pending) {
+    return 'Evaluados ' + done + ' de ' + total + ' puntos' + (pending ? ' (' + plural(pending, 'pendiente', 'pendientes') + ' de PageSpeed)' : '');
   }
 
-  /** «a, b y c» */
-  function joinList(items) {
-    if (items.length <= 1) return items.join('');
-    return items.slice(0, -1).join(', ') + ' y ' + items[items.length - 1];
-  }
-
-  function scoreCard(label, score, isGlobal, blocked) {
+  function scoreCard(label, score, isGlobal, blocked, coverage) {
     var cls = 'score' + (isGlobal ? ' score--global' : '');
     // Con acceso bloqueado no se ha evaluado el contenido: no se muestra una cifra que parezca un resultado
     if (blocked) {
@@ -730,48 +792,53 @@
       el('p', { class: 'score__label', text: label }),
       el('p', { class: 'score__value' }, [fmtNumber(value, 1), el('span', { class: 'score__max', text: ' / 100' })]),
       meter,
+      coverage ? el('p', { class: 'score__coverage', text: coverage }) : null,
       score.incompleta ? el('p', { class: 'tag', text: 'Nota incompleta', title: i18n.nota_incompleta }) : null
     ]);
   }
 
-  // 3. Problemas críticos
-  function updateCritical(run) {
-    var host = run.view.critical;
-    var ids = run.data.informe.criticos || [];
+  // Resumen ejecutivo breve (reglas en Report::brief(); 8 líneas como máximo)
+  function updateSummary(run) {
+    var host = run.view.summary;
+    var p = run.data.puntuacion;
     host.textContent = '';
-    if (!ids.length) {
-      host.appendChild(el('p', { text: 'No se han detectado fallos de gravedad crítica de forma automática.' }));
-      return;
+    if (p.riesgo_alto) {
+      host.appendChild(el('div', { class: 'notice notice--risk' }, [
+        el('p', { text: p.riesgo_mensaje }),
+        el('ul', {}, p.riesgo_motivos.map(function (m) { return el('li', { text: m }); }))
+      ]));
     }
-    host.appendChild(el('p', { class: 'help', text: 'Fallos de gravedad crítica: cada uno resta 15 puntos, más si se repite. Los de gravedad alta figuran en las recomendaciones priorizadas.' }));
-    host.appendChild(el('ul', { class: 'critical-list' }, ids.map(function (id) {
-      var c = checkById(run, id) || { id: id };
-      return el('li', {}, [
-        el('p', { class: 'critical__name' }, [findingLink(id, c.nombre), el('span', { class: 'finding__meta', text: ' ' + id })]),
-        c.detalle ? el('p', { class: 'critical__detail', text: c.detalle }) : null
-      ]);
+    var note = psiScoreNote(run);
+    host.appendChild(el('ul', { class: 'brief' }, (run.data.informe.resumen_breve || []).map(function (item) {
+      // Mientras falta PageSpeed, la línea de cobertura se sustituye por la nota de puntuación provisional
+      if (item.tipo === 'cobertura' && note) return el('li', { text: note });
+      var c = item.id ? checkById(run, item.id) : null;
+      return el('li', {}, [item.texto, c ? ' ' : null, c ? findingLink(item.id, 'Ver «' + (c.nombre || c.id) + '»') : null]);
     })));
   }
 
-  // 4. Hallazgos detallados (lo medido; las recomendaciones van en el apartado 5)
-  /** Repinta los hallazgos conservando qué desplegables estaban abiertos y el foco. */
-  function updateFindings(run) {
-    var host = run.view.findings;
+  // Bloques por área
+  /** Desplegables abiertos y foco dentro de host, para conservarlos al repintar (llegada de PageSpeed). */
+  function saveState(host) {
     var open = {};
-    Array.prototype.forEach.call(host.querySelectorAll('details[open]'), function (d) { open[d.getAttribute('data-check')] = true; });
+    Array.prototype.forEach.call(host.querySelectorAll('details[open]'), function (d) { open[d.getAttribute('data-key')] = true; });
     var active = document.activeElement;
-    var focusedCheck = active && host.contains(active) && active.closest('details') ? active.closest('details').getAttribute('data-check') : null;
-
-    host.textContent = '';
-    renderFindings(host, run.data.checks, psiPending(run), priorityIndex(run));
-
-    Array.prototype.forEach.call(host.querySelectorAll('details'), function (d) {
-      if (open[d.getAttribute('data-check')]) d.open = true;
-    });
-    if (focusedCheck) {
-      var target = host.querySelector('details[data-check="' + focusedCheck + '"] > summary');
-      if (target) target.focus();
+    var focus = null;
+    if (active && host.contains(active)) {
+      var keyed = active.closest('[data-key]');
+      if (active.tagName === 'SUMMARY' && keyed) focus = { key: keyed.getAttribute('data-key') };
+      else if (active.id) focus = { id: active.id };
     }
+    return { open: open, focus: focus };
+  }
+
+  function restoreState(host, state) {
+    Array.prototype.forEach.call(host.querySelectorAll('details[data-key]'), function (d) {
+      if (state.open[d.getAttribute('data-key')]) d.open = true;
+    });
+    var f = state.focus;
+    var target = f && f.key ? host.querySelector('details[data-key="' + f.key + '"] > summary') : f && f.id ? document.getElementById(f.id) : null;
+    if (target && host.contains(target)) target.focus();
   }
 
   function bySeverity(a, b) {
@@ -780,49 +847,108 @@
       || String(a.id).localeCompare(String(b.id));
   }
 
-  function renderFindings(host, checks, pending, priorities) {
-    var groups = [
-      { id: 'g-fail', title: 'Fallos', items: [] },
-      { id: 'g-warn', title: 'Avisos', items: [] },
-      { id: 'g-nodata', title: 'Sin datos', items: [] },
-      { id: 'g-na', title: 'No aplica', items: [] },
-      { id: 'g-ok', title: 'Sin errores detectables automáticamente', items: [] }
-    ];
-    checks.forEach(function (c) {
-      if (c.aplica === false) groups[3].items.push(c);
-      else if (c.estado === 'NO_CUMPLE') groups[0].items.push(c);
-      else if (c.estado === 'AVISO') groups[1].items.push(c);
-      else if (c.estado === 'SIN_DATOS') groups[2].items.push(c);
-      else groups[4].items.push(c);
-    });
-    groups[0].items.sort(bySeverity);
-    groups[1].items.sort(bySeverity);
+  /** Área con la nota más baja (empates: orden de AREAS): su bloque es el único que se abre al principio. */
+  function lowestArea(run) {
+    var areas = run.data.puntuacion.areas;
+    return AREAS.reduce(function (best, a) { return areas[a].redondeada < areas[best].redondeada ? a : best; }, AREAS[0]);
+  }
 
-    if (pending) {
-      host.appendChild(el('h4', { id: 'g-pending' }, ['Pendientes de PageSpeed Insights ', el('span', { class: 'group-count', text: '(' + PSI_IDS.length + ')' })]));
-      host.appendChild(el('ul', { class: 'pending-list', 'aria-labelledby': 'g-pending' }, PSI_IDS.map(function (id) {
+  function updateBlocks(run) {
+    var host = run.view.blocks;
+    var state = saveState(host);
+    var blockOf = run.data.informe.bloque || {};
+    var groups = {};
+    AREAS.forEach(function (a) { groups[a] = { fail: [], warn: [], nodata: [], ok: [], pending: [] }; });
+    run.data.checks.forEach(function (c) {
+      var g = groups[blockOf[c.id] || primaryArea(c.pilares)];
+      if (c.aplica === false) g.ok.push(c);
+      else if (c.estado === 'NO_CUMPLE') g.fail.push(c);
+      else if (c.estado === 'AVISO') g.warn.push(c);
+      else if (c.estado === 'SIN_DATOS') g.nodata.push(c);
+      else g.ok.push(c);
+    });
+    pendingIds(run).forEach(function (id) { groups[(i18n.psi_bloque || {})[id] || AREAS[2]].pending.push(id); });
+
+    host.textContent = '';
+    var open = run.blocksRendered ? null : lowestArea(run);
+    AREAS.forEach(function (a) {
+      groups[a].fail.sort(bySeverity);
+      groups[a].warn.sort(bySeverity);
+      host.appendChild(renderAreaBlock(a, groups[a], open === a));
+    });
+    restoreState(host, state);
+    run.blocksRendered = true;
+  }
+
+  function renderAreaBlock(area, g, isOpen) {
+    var counts = [];
+    if (g.fail.length) counts.push(plural(g.fail.length, 'fallo', 'fallos'));
+    if (g.warn.length) counts.push(plural(g.warn.length, 'aviso', 'avisos'));
+    if (g.nodata.length) counts.push(g.nodata.length + ' sin datos');
+    if (g.pending.length) counts.push(plural(g.pending.length, 'pendiente', 'pendientes'));
+    var body = el('div', { class: 'fold__body' });
+    var block = el('details', { class: 'fold area-block', id: 'bloque-' + area, 'data-key': 'area-' + area }, [
+      el('summary', {}, [el('h3', { class: 'fold__title' }, [
+        i18n.areas[area],
+        el('span', { class: 'fold__count', text: ' · ' + (counts.length ? counts.join(', ') : 'sin errores detectables automáticamente') })
+      ])]),
+      body
+    ]);
+    if (isOpen) block.open = true;
+
+    if (!g.fail.length && !g.warn.length && !g.nodata.length && !g.pending.length) {
+      body.appendChild(el('p', { text: 'No hay fallos, avisos ni comprobaciones sin datos en esta área.' }));
+    }
+    [['fail', 'Fallos'], ['warn', 'Avisos'], ['nodata', 'Sin datos']].forEach(function (k) {
+      var items = g[k[0]];
+      if (!items.length) return;
+      var hid = 'g-' + k[0] + '-' + area;
+      body.appendChild(el('h4', { id: hid }, [k[1] + ' ', el('span', { class: 'group-count', text: '(' + items.length + ')' })]));
+      body.appendChild(el('ul', { class: 'points', 'aria-labelledby': hid }, items.map(function (c) { return renderPoint(c, area); })));
+    });
+    if (g.pending.length) {
+      var pid = 'g-pending-' + area;
+      body.appendChild(el('h4', { id: pid }, ['Pendientes de PageSpeed Insights ', el('span', { class: 'group-count', text: '(' + g.pending.length + ')' })]));
+      body.appendChild(el('ul', { class: 'pending-list', 'aria-labelledby': pid }, g.pending.map(function (id) {
         return el('li', { text: i18n.psi_checks[id] + ' (' + id + ')' });
       })));
     }
-    groups.forEach(function (g) {
-      if (!g.items.length) return;
-      host.appendChild(el('h4', { id: g.id }, [g.title + ' ', el('span', { class: 'group-count', text: '(' + g.items.length + ')' })]));
-      host.appendChild(el('ul', { class: 'findings', 'aria-labelledby': g.id }, g.items.map(function (c) {
-        return el('li', {}, [renderCheck(c, priorities[c.id])]);
-      })));
-    });
+    if (g.ok.length) {
+      body.appendChild(el('details', { class: 'fold fold--inner', 'data-key': 'ok-' + area }, [
+        el('summary', { text: 'Sin errores detectables automáticamente o no aplica (' + g.ok.length + ')' }),
+        el('div', { class: 'fold__body' }, [el('ul', { class: 'points' }, g.ok.map(function (c) { return renderPoint(c, area); }))])
+      ]));
+    }
+    return block;
   }
 
-  function renderCheck(c, priority) {
-    var stateKey = c.aplica === false ? 'NA' : c.estado;
-    var stateLabel = c.aplica === false ? 'No aplica' : (i18n.estados[c.estado] || c.estado);
-    var summary = el('summary', {}, [
-      el('span', { class: 'badge badge--' + stateKey, text: stateLabel }),
-      el('span', { class: 'finding__name', text: c.nombre || c.id }),
-      el('span', { class: 'finding__meta', text: c.id + (c.severidad ? ' · Gravedad ' + lower(i18n.severidades, c.severidad) : '') }),
-      c.detalle ? el('span', { class: 'finding__summary', text: c.detalle }) : null
+  /** Un punto: estado, gravedad, otras áreas afectadas, qué se ha encontrado, cómo arreglarlo y, plegada, la evidencia. */
+  function renderPoint(c, area) {
+    var na = c.aplica === false;
+    var stateKey = na ? 'NA' : c.estado;
+    var stateLabel = na ? 'No aplica' : (i18n.estados[c.estado] || c.estado);
+    var others = AREAS.filter(function (a) { return a !== area && c.pilares && c.pilares[a] > 0; });
+    var tags = [];
+    others.forEach(function (a, i) {
+      if (i) tags.push(' ');
+      tags.push(el('span', { class: 'tag', text: i18n.areas[a] }));
+    });
+    var actionable = !na && (c.estado === 'NO_CUMPLE' || c.estado === 'AVISO');
+    return el('li', { class: 'point', id: 'hallazgo-' + c.id, tabindex: '-1' }, [
+      el('p', { class: 'point__head' }, [
+        el('span', { class: 'badge badge--' + stateKey, text: stateLabel }), ' ',
+        el('span', { class: 'point__name', text: c.nombre || c.id }),
+        el('span', { class: 'finding__meta', text: ' ' + c.id + (c.severidad ? ' · Gravedad ' + lower(i18n.severidades, c.severidad) : '') })
+      ]),
+      others.length ? el('p', { class: 'point__tags' }, ['También afecta a: '].concat(tags)) : null,
+      c.detalle ? el('p', {}, [el('strong', { text: 'Qué se ha encontrado: ' }), c.detalle]) : null,
+      actionable && c.recomendacion ? el('p', {}, [el('strong', { text: 'Cómo arreglarlo: ' }), c.recomendacion]) : null,
+      c.requiere_revision_manual ? el('p', { class: 'manual', text: 'Esta comprobación requiere además revisión manual.' }) : null,
+      evidenceFold(c)
     ]);
+  }
 
+  function evidenceFold(c) {
     var rows = [
       ['Valor medido', fmtValue(c.valor_medido)],
       c.umbral ? ['Umbral', String(c.umbral)] : null,
@@ -842,20 +968,24 @@
       }
       rows.push(['Evidencia', evidence]);
     }
-    if (c.requiere_revision_manual) {
-      rows.push(['Revisión manual', el('span', { class: 'manual', text: 'Esta comprobación requiere además revisión manual.' })]);
-    }
-    if (priority) {
-      rows.push(['Recomendación', el('a', { href: '#rec-' + c.id, text: 'Ver la recomendación n.º ' + priority.orden })]);
-    }
-
-    return el('details', { class: 'finding', id: 'hallazgo-' + c.id, 'data-check': c.id }, [
-      summary,
-      el('div', { class: 'finding__body' }, [defList('', rows)])
+    var fix = c.correccion ? renderFix(c.id, c.correccion, false) : null;
+    if (fix) fix.setAttribute('data-key', 'fix-' + c.id);
+    return el('details', { class: 'fold fold--inner', 'data-key': 'ev-' + c.id }, [
+      el('summary', { text: 'Evidencia y datos medidos' }),
+      el('div', { class: 'fold__body' }, [defList('', rows), fix])
     ]);
   }
 
-  // 5. Recomendaciones priorizadas (lo recomendado: no penaliza)
+  // Revisiones manuales RM-01…RM-10 (lista unificada): no se miden ni puntúan
+  function renderManualReviews(host) {
+    var rm = i18n.revisiones_manuales || {};
+    host.appendChild(el('p', { class: 'help', text: 'La herramienta no puede valorar estos aspectos de forma automática. Conviene que los compruebe una persona; no afectan a la nota.' }));
+    host.appendChild(el('ul', { class: 'manual-list' }, Object.keys(rm).map(function (id) {
+      return el('li', {}, [el('strong', { text: id + ' · ' + rm[id][0] + '. ' }), rm[id][1]]);
+    })));
+  }
+
+  // Recomendaciones priorizadas (lo recomendado: no penaliza)
   function updateRecommendations(run) {
     var host = run.view.recs;
     var items = run.data.informe.prioridades || [];
@@ -916,7 +1046,7 @@
     return details;
   }
 
-  // 6. Plan de acción: matriz impacto × esfuerzo
+  // Plan de acción: matriz impacto × esfuerzo
   function updatePlan(run) {
     var host = run.view.plan;
     var matrix = run.data.informe.matriz || {};
@@ -942,7 +1072,57 @@
     })));
   }
 
-  // 7. Glosario (fijo)
+  // Simulador de mejora: estimación «antes / después» si se corrigen los N fallos que más restan
+  function updateSimulation(run) {
+    var host = run.view.sim;
+    var s = run.data.informe.simulacion;
+    host.textContent = '';
+    if (!s) {
+      host.appendChild(el('p', { text: 'No disponible: sin notas no hay nada que simular.' }));
+      return;
+    }
+    if (!s.corregidos.length) {
+      host.appendChild(el('p', { text: 'No hay fallos que simular: ninguna comprobación resta puntos.' }));
+      return;
+    }
+    var names = s.corregidos.map(function (c) { return c.nombre; });
+    var lead = s.corregidos.length === 1
+      ? 'Si se corrigiera el fallo que más puntos resta (' + names[0] + ')'
+      : 'Si se corrigieran los ' + s.corregidos.length + ' fallos que más puntos restan (' + joinList(names) + ')';
+    if (s.fallos_totales > s.corregidos.length) lead += ', de ' + s.fallos_totales + ' fallos detectados';
+    host.appendChild(el('p', { text: lead + ', las notas quedarían así:' }));
+
+    var rows = [['seo', i18n.areas.seo], ['ia', i18n.areas.ia], ['accesibilidad', i18n.areas.accesibilidad], ['global', 'Nota global']];
+    host.appendChild(el('div', { class: 'table-wrap' }, [el('table', { class: 'data-table' }, [
+      el('caption', { class: 'visually-hidden', text: 'Notas antes y después de la corrección simulada' }),
+      el('thead', {}, [el('tr', {}, [
+        el('th', { scope: 'col', text: 'Área' }),
+        el('th', { scope: 'col', class: 'num', text: 'Antes' }),
+        el('th', { scope: 'col', class: 'num', text: 'Después' }),
+        el('th', { scope: 'col', class: 'num', text: 'Diferencia' })
+      ])]),
+      el('tbody', {}, rows.map(function (r) {
+        var n = s.notas[r[0]];
+        return el('tr', { class: r[0] === 'global' ? 'is-total' : null }, [
+          el('th', { scope: 'row', text: r[1] }),
+          el('td', { class: 'num', text: fmtNumber(n.antes, 1) }),
+          el('td', { class: 'num', text: fmtNumber(n.despues, 1) }),
+          el('td', { class: 'num', text: (n.mejora > 0 ? '+' : '') + fmtNumber(n.mejora, 1) })
+        ]);
+      }))
+    ])]));
+    if (s.riesgo_alto.antes && !s.riesgo_alto.despues) {
+      host.appendChild(el('p', { text: 'Con esas correcciones desaparecería el aviso de riesgo alto.' }));
+    }
+    host.appendChild(el('p', { class: 'help', text: 'Es una estimación, no una medición: supone que cada fallo se corrige por completo y que no aparecen otros. Los avisos y las comprobaciones sin datos no cambian.' }));
+  }
+
+  /** «a, b y c» */
+  function joinList(items) {
+    if (items.length <= 1) return items.join('');
+    return items.slice(0, -1).join(', ') + ' y ' + items[items.length - 1];
+  }
+
   // 7. Análisis complementario (no puntúa)
   function renderComplementary(host, c) {
     host.appendChild(el('p', { class: 'help', text: 'Vistas informativas calculadas con la misma descarga. No asignan estados ni restan puntos.' }));
@@ -1268,12 +1448,13 @@
     return sec;
   }
 
+  /** Glosario: no se muestra en el informe actual; se conserva para recuperarlo si se decide. */
   function renderGlossary() {
     var terms = i18n.glosario || {};
     return defList('glossary', Object.keys(terms).map(function (t) { return [t, terms[t]]; }));
   }
 
-  // 9. Evidencias del análisis (fuera de #results, después de las limitaciones)
+  // Evidencias del análisis (fuera de #results, después de las limitaciones; plegado)
   function updateEvidence(run) {
     var d = run.data;
     var f = d.fetch || {};
@@ -1286,10 +1467,20 @@
     }
     var robots = d.robots || {};
 
+    var prev = evidenceEl.querySelector('details');
+    var wasOpen = !!(prev && prev.open);
+    var hadFocus = !!(prev && prev.contains(document.activeElement));
+    var body = el('div', { class: 'fold__body' }, [
+      el('p', { class: 'help', text: 'Datos de la descarga y de las consultas en los que se basa el informe. Las evidencias de cada comprobación (selector, extracto y línea) figuran en cada punto de los bloques por área. No se guarda ninguno de estos datos.' })
+    ]);
+    var fold = el('details', { class: 'fold', 'data-key': 'evidencias' }, [
+      el('summary', {}, [el('h2', { id: 'evidence-title', class: 'fold__title', text: 'Evidencias del análisis' })]),
+      body
+    ]);
+    if (wasOpen) fold.open = true;
     evidenceEl.textContent = '';
-    evidenceEl.appendChild(el('h2', { id: 'evidence-title', text: 'Evidencias del análisis' }));
-    evidenceEl.appendChild(el('p', { class: 'help', text: 'Datos de la descarga y de las consultas en los que se basa el informe. Las evidencias de cada comprobación (selector, extracto y línea) figuran en los hallazgos detallados. No se guarda ninguno de estos datos.' }));
-    evidenceEl.appendChild(defList('facts', [
+    evidenceEl.appendChild(fold);
+    body.appendChild(defList('facts', [
       ['Fecha del análisis', fmtDate(d.fecha)],
       ['URL solicitada', f.requested_url || '—'],
       ['URL final', f.final_url || d.url],
@@ -1306,6 +1497,7 @@
       ['PageSpeed Insights', psiText(run)]
     ]));
     evidenceEl.hidden = false;
+    if (hadFocus) fold.querySelector('summary').focus();
   }
 
   function psiText(run) {
@@ -1519,27 +1711,33 @@
 
   // ---------- Navegación e impresión ----------
 
-  // Los enlaces a un hallazgo abren su desplegable y llevan el foco a él
+  // Los enlaces internos del informe abren los desplegables que contienen el destino y llevan el foco a él
   results.addEventListener('click', function (ev) {
-    var a = ev.target.closest ? ev.target.closest('a[data-finding]') : null;
+    var a = ev.target.closest ? ev.target.closest('a[href^="#"]') : null;
     if (!a) return;
-    var d = document.getElementById('hallazgo-' + a.getAttribute('data-finding'));
-    if (!d) return;
+    var target = document.getElementById(a.getAttribute('href').slice(1));
+    if (!target || !results.contains(target)) return;
     ev.preventDefault();
-    d.open = true;
-    d.querySelector('summary').focus();
+    for (var n = target; n && n !== results; n = n.parentElement) {
+      if (n.tagName === 'DETAILS') n.open = true;
+    }
+    var focusable = target.tagName === 'DETAILS' ? target.querySelector('summary') : target;
+    if (!focusable.hasAttribute('tabindex') && focusable.tagName !== 'SUMMARY') focusable.setAttribute('tabindex', '-1');
+    focusable.focus();
   });
 
   // Al imprimir se abren todos los desplegables (si no, su contenido no sale) y después se restauran
   var openedForPrint = [];
   window.addEventListener('beforeprint', function () {
-    openedForPrint = Array.prototype.filter.call(results.querySelectorAll('details'), function (d) {
+    if (document.body.classList.contains('print-roadmap')) return;   // la hoja de ruta no usa los desplegables
+    openedForPrint = Array.prototype.filter.call(document.querySelectorAll('main details'), function (d) {
       if (d.open) return false;
       d.open = true;
       return true;
     });
   });
   window.addEventListener('afterprint', function () {
+    endRoadmap();
     openedForPrint.forEach(function (d) { d.open = false; });
     openedForPrint = [];
   });
