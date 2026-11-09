@@ -90,7 +90,7 @@ $e = fn(string $s): string => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
     </div>
     <div class="field" id="keyword-field">
       <label for="keyword">Palabra clave objetivo (opcional)</label>
-      <p id="keyword-help" class="help">Por ejemplo: software de gestión. Se comprueba si aparece en el title, el H1, la meta description, la URL y las primeras 100 palabras. No puntúa.</p>
+      <p id="keyword-help" class="help">Por ejemplo: software de gestión. Se comprueba si aparece en el <span lang="en">title</span>, el H1, la <span lang="en">meta description</span>, la URL y las primeras 100 palabras. No puntúa.</p>
       <input id="keyword" name="palabra_clave" type="text" maxlength="100" autocomplete="off" aria-describedby="keyword-help">
     </div>
     <div class="field field--check">

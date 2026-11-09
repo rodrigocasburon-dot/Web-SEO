@@ -29,7 +29,8 @@ Estado: **fase 9** (identidad visual de Proconsi). Las fases están descritas en
 - **07 Redirecciones y peso**: con los datos que ya da el `Fetcher`, cadena de peticiones (URL, código, tiempo), tiempo
   total, tamaño del HTML (descomprimido) y `Content-Encoding`; aviso informativo con más de 2 redirecciones.
 - **08 Exportar CSV y JSON** (`assets/js/export.js`): botones «Descargar CSV / JSON» generados en el navegador (Blob),
-  sin guardar nada en el servidor. CSV con «;», UTF-8 con BOM y protección frente a fórmulas (apóstrofo ante `=`, `+`,
+  sin guardar nada en el servidor. Columnas: id, comprobación, área, estado, detalle (en español), severidad, valor
+  medido, umbral, criterio, evidencia, recomendación, impacto y esfuerzo. CSV con «;», UTF-8 con BOM y protección frente a fórmulas (apóstrofo ante `=`, `+`,
   `-`, `@`, tabulador o retorno). Se prueba en Edge/Chrome sin interfaz (`tests/js/`); sin navegador queda OMITIDA.
 - **09 Fragmento de corrección** (`src/FixSnippets.php`, plantillas en `lang/es.php` → `correcciones`): en las
   recomendaciones, «antes / después» para C04, C06, C07, C09, C10, C12, C15 y C20 (máx. 3 casos). «Antes» es la
@@ -37,6 +38,24 @@ Estado: **fase 9** (identidad visual de Proconsi). Las fases están descritas en
 - **10 Comparar dos URLs** (`assets/js/compare.js`, modo «Comparar dos URLs» del formulario): el navegador lanza un
   análisis independiente por URL (una URL por petición; cuenta como dos en el límite de uso) con PageSpeed para ambas
   y muestra notas por área y global con su diferencia, recuento de estados y C01–C20 lado a lado (distintas / iguales).
+
+## Entradas que no son la web del negocio
+
+`InputUrlPolicy::check()` (`src/InputUrlPolicy.php`) se ejecuta en `api/analyze.php` y `api/psi.php` antes de
+`UrlGuard` (que se sigue aplicando igual) y, por tanto, antes de descargar nada o consultar PageSpeed: Google Maps y
+acortadores (`g.page`, `goo.gl`, `maps.app.goo.gl`, `bit.ly`, `tinyurl.com`, `t.co`…) → 400 `NOT_BUSINESS_SITE`;
+credenciales, localhost, dominios internos e IP no públicas → el código de siempre con la indicación «Introduce la
+dirección de la web del negocio.». Solo se aplica a lo que escribe el usuario, no a redirecciones ni enlaces. La
+lista de acortadores es provisional.
+
+## Normalización de URL para comparar (no conectada)
+
+`UrlNormalizer::comparisonKey($url)` (`src/UrlNormalizer.php`) devuelve una clave para saber si dos URL son la misma
+página: parte de `UrlGuard::normalize()` (esquema y host en minúsculas, sin fragmento ni puerto por defecto, sin DNS),
+quita «www.» si queda un dominio, los parámetros de seguimiento (`utm_*`, `gclid`, `gbraid`, `wbraid`, `fbclid`,
+`msclkid`, `dclid`, `yclid`, `mc_cid`, `mc_eid`, `igshid`) y la barra de la raíz; la barra final de otras rutas se
+conserva. Solo sirve para comparar: la descarga sigue usando la URL de `UrlGuard::validate()`. Aún no la usa ninguna
+pantalla; la lista de parámetros es provisional.
 
 ## Identidad visual (fase 9)
 
@@ -109,6 +128,9 @@ robots.txt, agente de usuario y datos de PageSpeed).
 - **Campos pedidos**: `fields` no admite seleccionar una auditoría suelta (`lighthouseResult/audits/color-contrast`
   devuelve HTTP 400), así que se piden todas las auditorías. En una prueba con proconsi.com (una sola medición)
   la respuesta ocupó unos 420 KB y tardó unos 23 s.
+- **Errores**: cuota (429), clave (400/403), consulta rechazada (4xx), fallo de Lighthouse (5xx), JSON no válido,
+  tiempo agotado, red y respuesta de más de 5 MB dejan C08 y C14 en «Sin datos» con el motivo en español; el
+  mensaje original de Google se añade entre comillas y la clave se sustituye por «[clave]» si apareciera.
 - **Clave obligatoria**: sin `psi_api_key` en `config/config.php` la API responde 429 (cuota 0) y C08 y C14
   quedan siempre en «Sin datos». La clave se crea en Google Cloud (API «PageSpeed Insights API»).
 - **Tiempo de espera**: Lighthouse tarda entre 15 y 60 s. `psi_timeout` (75 s) debe caber en los límites del
@@ -154,6 +176,8 @@ tests/               run.php y *_test.php, fixtures/ (HTML y JSON de ejemplo), s
 ## Pruebas
 
 - `php tests/run.php`: todas las pruebas, sin internet (incluye un servidor local de PHP en 127.0.0.1 para probar cURL).
+  Los endpoints se prueban con `WEBSEO_CONFIG_DIR` apuntando a un directorio temporal que solo tiene
+  `config.example.php`: ninguna prueba carga `config/config.php` ni llama a Google.
 - `php tests/analyze_cli.php <url> [--json] [--noindex-intencionado]`: análisis completo de una URL real (requiere internet).
 - `php tests/live_fetch.php [url ...]`: prueba manual del Fetcher contra sitios reales (requiere internet).
 - `php tests/check_env.php`: diagnóstico del entorno.
