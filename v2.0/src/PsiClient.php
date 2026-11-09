@@ -1,7 +1,9 @@
 <?php
 /**
- * Cliente de la API de PageSpeed Insights v5. Pide solo los campos necesarios (parámetro
- * "fields") para no descargar capturas ni el informe completo de Lighthouse.
+ * Cliente de la API de PageSpeed Insights v5. El parámetro "fields" limita la respuesta a los campos que se
+ * usan, pero no admite seleccionar claves dentro de lighthouseResult/audits: pedir solo
+ * "lighthouseResult/audits/color-contrast" devuelve HTTP 400 («Request contains an invalid argument»).
+ * Por eso se piden todas las auditorías, capturas de pantalla incluidas (unos 420 KB en una prueba real).
  * La clave nunca aparece en los mensajes de error.
  */
 class PsiClient
@@ -9,7 +11,7 @@ class PsiClient
     private const ENDPOINT = 'https://www.googleapis.com/pagespeedonline/v5/runPagespeed';
     private const FIELDS = 'id,loadingExperience,originLoadingExperience,analysisUTCTimestamp,'
         . 'lighthouseResult/lighthouseVersion,lighthouseResult/finalDisplayedUrl,lighthouseResult/runtimeError,'
-        . 'lighthouseResult/runWarnings,lighthouseResult/audits/color-contrast';
+        . 'lighthouseResult/runWarnings,lighthouseResult/audits';
 
     private string $apiKey;
     private int $timeout;
