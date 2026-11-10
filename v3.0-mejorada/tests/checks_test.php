@@ -84,7 +84,7 @@ $cases = [
     ['C04AccessibleNames', 'c04_bad', null, [], 'NO_CUMPLE', 5],
 
     ['C05Headings', 'c05_ok', null, [], 'CUMPLE', null],
-    ['C05Headings', 'c05_bad', null, [], 'NO_CUMPLE', 2],
+    ['C05Headings', 'c05_bad', null, [], 'AVISO', null],          // dos h1: permitido, se avisa
     ['C05Headings', 'c05_bad_sin_h1', null, [], 'NO_CUMPLE', 1],
     ['C05Headings', 'c05_aviso', null, [], 'AVISO', null],
 
@@ -116,8 +116,8 @@ $cases = [
     ['C11Semantics', 'c11_main_hidden', null, [], 'CUMPLE', null],
 
     ['C12Canonical', 'c12_ok', null, [], 'CUMPLE', null],
-    ['C12Canonical', 'c12_bad', null, [], 'NO_CUMPLE', 1],
-    ['C12Canonical', 'c12_bad_sin', null, [], 'NO_CUMPLE', 1],
+    ['C12Canonical', 'c12_bad', null, [], 'AVISO', null],         // a otra página: puede ser intencionado
+    ['C12Canonical', 'c12_bad_sin', null, [], 'AVISO', null],     // sin canonical: es opcional
     ['C12Canonical', 'c12_bad_varios', null, [], 'NO_CUMPLE', 1],
     ['C12Canonical', 'c12_aviso', null, [], 'AVISO', null],
     ['C12Canonical', 'c12_bad_sin', 'c12_header', [], 'CUMPLE', null],
@@ -125,7 +125,7 @@ $cases = [
     ['C13StructuredData', 'c13_ok', null, [], 'CUMPLE', null],
     ['C13StructuredData', 'c13_bad', null, [], 'NO_CUMPLE', 1],
     ['C13StructuredData', 'c13_bad_tipo', null, [], 'NO_CUMPLE', 1],
-    ['C13StructuredData', 'c13_bad_sin', null, [], 'NO_CUMPLE', 1],
+    ['C13StructuredData', 'c13_bad_sin', null, [], 'AVISO', null], // sin JSON-LD: es opcional
 
     ['C15MetaDescription', 'c15_ok', null, [], 'CUMPLE', null],
     ['C15MetaDescription', 'c15_bad', null, [], 'NO_CUMPLE', 1],
@@ -190,8 +190,8 @@ test('Página completa defectuosa: fallan las comprobaciones esperadas', functio
         $states[$r['id']] = $r['estado'];
     }
     $expected = ['C02' => 'NO_CUMPLE', 'C03' => 'AVISO', 'C04' => 'NO_CUMPLE', 'C05' => 'NO_CUMPLE', 'C06' => 'NO_CUMPLE',
-        'C07' => 'NO_CUMPLE', 'C09' => 'NO_CUMPLE', 'C10' => 'NO_CUMPLE', 'C11' => 'NO_CUMPLE', 'C12' => 'NO_CUMPLE',
-        'C13' => 'NO_CUMPLE', 'C15' => 'NO_CUMPLE'];
+        'C07' => 'NO_CUMPLE', 'C09' => 'NO_CUMPLE', 'C10' => 'NO_CUMPLE', 'C11' => 'NO_CUMPLE', 'C12' => 'AVISO',
+        'C13' => 'AVISO', 'C15' => 'NO_CUMPLE'];
     foreach ($expected as $id => $estado) {
         assertSame($estado, $states[$id], $id);
     }

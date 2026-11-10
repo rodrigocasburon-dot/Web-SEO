@@ -192,11 +192,11 @@ test('Scorer + comprobaciones: página correcta 100 en todo; defectuosa con ries
     // Accesibilidad: C04 crítico k=2 → 15·(1+ln2) = 25,40; C05 4·0,4; C06 8·0,6; C07 8·0,6; C09 8·0,5; C10 8·0,2; C11 4·0,4
     $acc = 100 - (15 * (1 + log(2)) + 1.6 + 4.8 + 4.8 + 4.0 + 1.6 + 1.6);
     assertNear($acc, $bad['areas']['accesibilidad']['puntuacion'], '', 1e-9);
-    // SEO: C02 6 + C05 1,2 + C06 1,6 + C07 3,2 + C09 4 + C10 6,4 + C11 1,2 + C12 4 + C13 4 + C15 1 = 32,6
-    assertNear(67.4, $bad['areas']['seo']['puntuacion'], '', 1e-9);
+    // SEO: C02 6 + C05 1,2 + C06 1,6 + C07 3,2 + C09 4 + C10 6,4 + C11 1,2 + C15 1 = 24,6 (C12 y C13 sin canonical ni JSON-LD: AVISO, no restan)
+    assertNear(75.4, $bad['areas']['seo']['puntuacion'], '', 1e-9);
     // IA: C02 9 + C05 1,2 + C06 1,6 + C11 1,2 = 13
     assertNear(87.0, $bad['areas']['ia']['puntuacion'], '', 1e-9);
-    assertSame(69.4, $bad['global']['redondeada']);
+    assertSame(72.2, $bad['global']['redondeada']);
     // Riesgo por dos críticos (C02 y C04), no por áreas < 50
     assertSame(true, $bad['riesgo_alto']);
     assertSame(['C02', 'C04'], $bad['fallos_criticos']);

@@ -118,3 +118,19 @@ Existía a medias: una lista por comprobación con 5 ejemplos, ordenada por porc
 3. Aceptar el mayor tiempo de las pruebas con Chrome a cambio de que no resuelva DNS por su cuenta.
 4. Restringir el acceso a la herramienta en el servidor (hallazgo 7) y cumplir `docs/SEGURIDAD.md` antes de activar Chrome.
 5. Pesos y gravedades: no se han modificado. Están aprobados por el grupo y el encargo los excluye. No he encontrado ningún dato objetivo nuevo que justifique proponer otros valores; cualquier cambio sería una opinión, no una medición.
+
+## Cambio de criterios posterior (C05, C12 y C13)
+
+Aprobado por el usuario tras la revisión del motor. Pasan de «no cumple» a «aviso» (no restan) las situaciones
+que no son un error, sino una práctica opcional o posiblemente intencionada:
+
+| Comprobación | Antes | Ahora | Motivo |
+|---|---|---|---|
+| C05 | Varios h1 → NO_CUMPLE (k = nº de h1) | AVISO | HTML permite varios h1 y Google no lo trata como error. Sin h1 sigue siendo NO_CUMPLE. |
+| C12 | Sin canonical → NO_CUMPLE | AVISO | El canonical es opcional; sin él, el buscador elige la URL canónica. |
+| C12 | Canonical a otra página → NO_CUMPLE | AVISO | Puede ser intencionado (contenido duplicado o sindicado); requiere confirmación. |
+| C13 | Sin JSON-LD → NO_CUMPLE | AVISO | Los datos estructurados son opcionales. JSON-LD presente pero erróneo sigue siendo NO_CUMPLE. |
+
+Siguen siendo NO_CUMPLE: canonical vacío, no http(s) o varios contradictorios; JSON-LD con sintaxis no válida
+o sin @type. No cambian pesos, gravedades ni la fórmula. Efecto medido en la página defectuosa de prueba
+(`full_bad`): SEO de 67,4 a 75,4 y nota global de 69,4 a 72,2. Batería: 305 correctas, 0 fallidas (PHP 8.0.30 y 8.4.15).

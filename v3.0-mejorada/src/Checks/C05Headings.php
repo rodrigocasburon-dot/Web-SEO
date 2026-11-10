@@ -1,5 +1,5 @@
 <?php
-/** C05 Encabezados: exactamente un h1 (NO_CUMPLE si no); saltos de nivel → AVISO. */
+/** C05 Encabezados: sin h1 visible → NO_CUMPLE; varios h1 o saltos de nivel → AVISO (HTML permite varios h1). */
 class C05Headings extends BaseCheck
 {
     protected string $id = 'C05';
@@ -30,15 +30,16 @@ class C05Headings extends BaseCheck
 
         $outline = array_map(fn($h) => strtolower($h->tagName), array_slice($headings, 0, 50));
         $valor = ['h1' => count($h1), 'saltos' => count($skips), 'esquema' => $outline];
-        $umbral = 'Un único h1 y sin saltos de nivel';
+        $umbral = 'Al menos un h1 (idealmente uno) y sin saltos de nivel';
         $skipText = $skips ? ' Hay ' . count($skips) . ' salto(s) de nivel.' : '';
 
-        if (count($h1) !== 1) {
-            $ev = count($h1) === 0
-                ? [DomHelper::note('(no hay ningún h1 visible)', 'h1')]
-                : array_map([DomHelper::class, 'evidence'], $h1);
-            $msg = count($h1) === 0 ? 'La página no tiene h1.' : 'La página tiene ' . count($h1) . ' elementos h1.';
-            return $this->result(self::FAIL, $valor, $umbral, $ev, $msg . $skipText, max(1, count($h1)));
+        if (count($h1) === 0) {
+            return $this->result(self::FAIL, $valor, $umbral, [DomHelper::note('(no hay ningún h1 visible)', 'h1')], 'La página no tiene h1.' . $skipText, 1);
+        }
+        // Varios h1: HTML los permite y Google no los trata como error; se avisa, no se penaliza
+        if (count($h1) > 1) {
+            return $this->result(self::WARN, $valor, $umbral, array_map([DomHelper::class, 'evidence'], $h1),
+                'La página tiene ' . count($h1) . ' elementos h1 visibles (permitido; conviene revisar que el primero describa la página).' . $skipText);
         }
         if ($skips) {
             $ev = array_map(function ($s) {

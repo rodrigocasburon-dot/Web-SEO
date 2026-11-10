@@ -3,7 +3,7 @@
  * C13 Datos estructurados: al menos un JSON-LD, todos con sintaxis válida y @type en cada nodo
  * (nivel superior o elementos de @graph). No valida el vocabulario schema.org ni la elegibilidad
  * para resultados enriquecidos.
- * Supuesto: la ausencia total de JSON-LD es NO_CUMPLE.
+ * Sin JSON-LD → AVISO: los datos estructurados son opcionales. JSON-LD presente pero erróneo → NO_CUMPLE.
  */
 class C13StructuredData extends BaseCheck
 {
@@ -21,9 +21,9 @@ class C13StructuredData extends BaseCheck
                 $scripts[] = $s;
             }
         }
-        $umbral = 'Al menos un JSON-LD válido con @type definido';
+        $umbral = 'Si hay JSON-LD: sintaxis válida y @type definido; recomendado tener al menos uno';
         if (!$scripts) {
-            return $this->result(self::FAIL, ['bloques' => 0], $umbral, [DomHelper::note('(no hay script type="application/ld+json")', 'script[type="application/ld+json"]')], 'La página no contiene datos estructurados JSON-LD.', 1);
+            return $this->result(self::WARN, ['bloques' => 0], $umbral, [DomHelper::note('(no hay script type="application/ld+json")', 'script[type="application/ld+json"]')], 'La página no contiene datos estructurados JSON-LD (son opcionales).');
         }
 
         $types = [];
