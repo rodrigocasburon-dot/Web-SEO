@@ -67,7 +67,7 @@ $e = fn(string $s): string => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
 
 <main id="contenido" class="container" tabindex="-1">
   <div class="hero hero--compact">
-    <p class="eyebrow"><span aria-hidden="true"></span>Sitio completo, en minutos</p>
+    <p class="eyebrow">Sitio completo, en minutos</p>
     <h1>Analiza un sitio completo</h1>
     <p class="lead">Se analiza la portada entera y una muestra de hasta <?= $maxPages ?> páginas del mismo sitio, elegidas de sus enlaces y de su sitemap repartiendo entre secciones. Las páginas se analizan a la vez, de <?= max(1, min(10, (int) ($config['site_parallel'] ?? 6))) ?> en <?= max(1, min(10, (int) ($config['site_parallel'] ?? 6))) ?>.</p>
 
