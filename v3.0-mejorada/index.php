@@ -74,7 +74,6 @@ $e = fn(string $s): string => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
       <a href="#analyze-form" aria-current="page">Analizar URL</a>
       <a href="sitio.php">Analizar sitio</a>
       <a href="historial.php">Historial</a>
-      <a href="#metodo">Cómo funciona</a>
     </nav>
     <p class="site-header__tag"><span aria-hidden="true"></span>Herramienta interna</p>
   </div>
@@ -83,7 +82,7 @@ $e = fn(string $s): string => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
 <main id="contenido" class="container" tabindex="-1">
   <div class="hero">
     <div class="hero__intro">
-      <p class="eyebrow"><span aria-hidden="true"></span>Una URL. Tres perspectivas.</p>
+      <p class="eyebrow">Una URL. Tres perspectivas.</p>
       <h1>Tu web tiene <span class="nowrap">mucho que <em>decir.</em></span></h1>
       <p class="lead">Descubre cómo la encuentran los buscadores, cómo la interpreta la IA y cómo la usan las personas.</p>
 
@@ -145,36 +144,12 @@ $e = fn(string $s): string => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
     </details>
   </form>
     </div>
-    <div class="hero__art" aria-hidden="true">
-      <img class="hero__characters" src="<?= $asset('assets/img/personajes.webp') ?>" alt="" width="1536" height="1024">
-      <p class="float float--1"><span class="float__icon">↗</span><span>Más visible.<small>Para los buscadores.</small></span></p>
-      <p class="float float--2"><span class="float__icon float__icon--dark">✳</span><span>Más comprensible.<small>Para la inteligencia artificial.</small></span></p>
-      <p class="float float--3"><span class="float__icon">☺</span><span>Más accesible.<small>Para todas las personas.</small></span></p>
-    </div>
   </div>
-
-  <section class="pillars" aria-label="Áreas del análisis">
-    <article><span class="pillar__icon" aria-hidden="true">↗</span><div><p class="pillar__kicker">01 / Visibilidad</p><h2>SEO</h2><p>Los detalles que ayudan a encontrar tu página.</p></div></article>
-    <article><span class="pillar__icon" aria-hidden="true">✳</span><div><p class="pillar__kicker">02 / Comprensión</p><h2>Preparación para IA</h2><p>Contenido que las máquinas pueden interpretar.</p></div></article>
-    <article><span class="pillar__icon" aria-hidden="true">◎</span><div><p class="pillar__kicker">03 / Experiencia</p><h2>Accesibilidad</h2><p>Una página más fácil de usar para las personas.</p></div></article>
-  </section>
 
   <div id="status" class="status" role="status" aria-live="polite"></div>
   <div id="error" class="notice notice--fail" role="alert" tabindex="-1" hidden></div>
 
   <section id="results" class="results rw" aria-labelledby="results-title" hidden></section>
-
-  <section id="metodo" class="method" aria-labelledby="method-title">
-    <div>
-      <p class="eyebrow">De la URL al siguiente paso</p>
-      <h2 id="method-title">Menos dudas. Más acción.</h2>
-    </div>
-    <ol>
-      <li><span class="method__n" aria-hidden="true">01</span><div><h3>Comparte una URL</h3><p>La página concreta que quieres revisar.</p></div></li>
-      <li><span class="method__n" aria-hidden="true">02</span><div><h3>Conectamos las señales</h3><p>Comprobaciones técnicas en tres áreas.</p></div></li>
-      <li><span class="method__n" aria-hidden="true">03</span><div><h3>Prioriza las mejoras</h3><p>Evidencias y recomendaciones claras.</p></div></li>
-    </ol>
-  </section>
 
   <!-- Texto fijo, plegado al final de la pantalla (también al final del informe) -->
   <section id="limitaciones" class="limitations" aria-labelledby="limitations-title">

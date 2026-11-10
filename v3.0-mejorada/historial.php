@@ -76,7 +76,7 @@ $link = fn(int $p): string => 'historial.php?' . http_build_query(array_filter([
 
 <main id="contenido" class="container" tabindex="-1">
   <div class="hero hero--compact">
-    <p class="eyebrow"><span aria-hidden="true"></span>Lo que ya se ha analizado</p>
+    <p class="eyebrow">Lo que ya se ha analizado</p>
     <h1>Historial de análisis</h1>
     <p class="lead">Direcciones analizadas, con su fecha, sus notas y el informe completo de ese día. Se guardan <?= $enabled ? History::months($config) : 12 ?> meses y luego se borran.</p>
   </div>
@@ -99,7 +99,7 @@ $link = fn(int $p): string => 'historial.php?' . http_build_query(array_filter([
         <option value="sitio"<?= $type === 'sitio' ? ' selected' : '' ?>>Sitio completo</option>
       </select>
     </div>
-    <button type="submit" class="button">Filtrar</button>
+    <button type="submit" class="button button--secondary">Filtrar</button>
   </form>
 
   <?php if (!$rows): ?>
