@@ -214,6 +214,18 @@ return [
             'recomendacion' => 'Haz que el teléfono y la dirección del JSON-LD coincidan con los que se muestran en la página (o muéstralos en el texto): Google pide que los datos estructurados describan el contenido visible.',
             'recomendacion_aviso' => 'Si la web corresponde a un negocio con sede, añade JSON-LD de LocalBusiness (con el subtipo más específico) con el mismo nombre, dirección y teléfono que aparecen en la página. Si el nombre del marcado es el legal y el visible el comercial, no hace falta cambiarlo.',
         ],
+        'C29' => [
+            'nombre' => 'Datos y fuentes en el texto',
+            'descripcion' => 'En textos largos, cuenta cifras con unidad, citas entre comillas y enlaces a fuentes externas. No se aplica a páginas de contacto ni a textos legales.',
+            'recomendacion' => 'Apoya las afirmaciones del texto con datos concretos (cifras con su unidad), citas atribuidas y enlaces a las fuentes originales.',
+            'recomendacion_aviso' => 'Apoya las afirmaciones del texto con datos concretos (cifras con su unidad), citas atribuidas y enlaces a las fuentes originales. Es una recomendación basada en un experimento, no un requisito de los buscadores.',
+        ],
+        'C31' => [
+            'nombre' => 'Reseñas autoservidas',
+            'descripcion' => 'Busca aggregateRating o review en el JSON-LD de la propia organización o negocio, que Google no admite para mostrar estrellas.',
+            'recomendacion' => 'Quita aggregateRating y review del marcado de tu propia organización o negocio, o no cuentes con que muestren estrellas. Muestra en la página reseñas reales y verificables de clientes.',
+            'recomendacion_aviso' => 'Quita aggregateRating y review del marcado de tu propia organización o negocio, o no cuentes con que muestren estrellas. Muestra en la página reseñas reales y verificables de clientes.',
+        ],
     ],
 
     // Función 09: fragmentos de corrección (antes / después). Se rellenan con el código real de la evidencia

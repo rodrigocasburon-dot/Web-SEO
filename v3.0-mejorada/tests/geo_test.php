@@ -180,3 +180,55 @@ test('GEO: ningún texto nuevo habla de «visibilidad en IA» ni de «posición 
         }
     }
 });
+
+// ---------- Fase B: C29 (GEO-29) y C31 (GEO-31) ----------
+
+function geoLongText(string $extra = ''): string
+{
+    return '<html><body><main><h1>Guía</h1><p>' . str_repeat('Texto de ejemplo sobre la gestión de una empresa con varias palabras. ', 40) . $extra . '</p></main></body></html>';
+}
+
+test('GEO: C29 avisa en un texto largo sin cifras, citas ni fuentes; cumple si las hay; nunca no cumple', function () {
+    $bare = runCheck('C29DataAndSources', htmlCtx(geoLongText()));
+    assertSame('AVISO', $bare['estado']);
+    assertSame('experimento', $bare['respaldo']);
+    $num = runCheck('C29DataAndSources', htmlCtx(geoLongText('Ahorra un 30 % y 2.500 € al año.')));
+    assertSame('CUMPLE', $num['estado']);
+    assertSame(2, $num['valor_medido']['cifras_con_unidad']);
+    $quote = runCheck('C29DataAndSources', htmlCtx(geoLongText('Según el informe, «la digitalización reduce los errores de gestión» en pymes.')));
+    assertSame([1, 'CUMPLE'], [$quote['valor_medido']['citas'], $quote['estado']]);
+    $link = runCheck('C29DataAndSources', htmlCtx(geoLongText('<a href="https://www.ine.es/dato">INE</a> <a href="/interno">interno</a> <a href="https://blog.example.com/x">sub</a>')));
+    assertSame([1, 'CUMPLE'], [$link['valor_medido']['enlaces_externos'], $link['estado']]);
+});
+
+test('GEO: C29 no aplica en textos cortos ni en contacto o textos legales', function () {
+    $short = runCheck('C29DataAndSources', htmlCtx('<html><body><main><p>Poco texto.</p></main></body></html>'));
+    assertSame(['CUMPLE', false], [$short['estado'], $short['aplica']]);
+    foreach (['https://example.com/contacto/', 'https://example.com/aviso-legal', 'https://example.com/politica-de-privacidad.html'] as $url) {
+        assertSame(false, runCheck('C29DataAndSources', htmlCtx(geoLongText(), $url))['aplica'], $url);
+    }
+});
+
+test('GEO caso 10: LocalBusiness con aggregateRating propio → C31 aviso; de otro negocio o sin valoraciones → no aplica', function () {
+    $own = runCheck('C31SelfServedReviews', geoBusiness(['@type' => 'LocalBusiness', 'name' => 'Ejemplo', 'url' => 'https://www.example.com/',
+        'aggregateRating' => ['@type' => 'AggregateRating', 'ratingValue' => '4.9', 'reviewCount' => '120']], '<p>Ejemplo</p>'));
+    assertSame('AVISO', $own['estado']);
+    assertSame('oficial', $own['respaldo']);
+    assertSame('AVISO', runCheck('C31SelfServedReviews', geoBusiness(['@type' => 'Organization', 'review' => ['@type' => 'Review']], '<p>x</p>'))['estado'], 'Sin url: se supone propio');
+    $other = runCheck('C31SelfServedReviews', geoBusiness(['@type' => 'Restaurant', 'url' => 'https://otro-restaurante.es/', 'aggregateRating' => ['ratingValue' => '4']], '<p>x</p>'));
+    assertSame(['CUMPLE', false], [$other['estado'], $other['aplica']]);
+    $product = runCheck('C31SelfServedReviews', geoBusiness(['@type' => 'Product', 'aggregateRating' => ['ratingValue' => '4']], '<p>x</p>'));
+    assertSame(false, $product['aplica'], 'Las valoraciones de productos no son autoservidas');
+});
+
+test('GEO: C29 y C31 solo avisan (nunca restan) y están registradas con textos', function () {
+    $weights = require __DIR__ . '/../config/weights.php';
+    $catalog = CheckRunner::catalog();
+    foreach (['C29', 'C31'] as $id) {
+        assertTrue(isset($catalog[$id]), $id . ' en CheckRunner');
+        assertTrue(Lang::check($id, 'nombre') !== '' && Lang::check($id, 'recomendacion_aviso') !== '', $id . ' con textos');
+        assertSame('ia', Report::primaryArea(array_combine(Scorer::AREAS, $weights[$id])));
+        $src = (string) file_get_contents(__DIR__ . '/../src/Checks/' . get_class($catalog[$id]) . '.php');
+        assertTrue(strpos($src, 'self::FAIL') === false, $id . ' no devuelve NO_CUMPLE');
+    }
+});

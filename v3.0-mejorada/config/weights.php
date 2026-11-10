@@ -28,4 +28,7 @@ return [
     // Revisión GEO (propuesta pendiente de validar por el grupo)
     'C25' => [0.4, 0.6, 0.0],
     'C30' => [0.4, 0.6, 0.0],
+    // Fase B: solo avisan (nunca restan); el reparto decide en qué bloque se muestran
+    'C29' => [0.4, 0.6, 0.0],
+    'C31' => [0.4, 0.6, 0.0],
 ];
