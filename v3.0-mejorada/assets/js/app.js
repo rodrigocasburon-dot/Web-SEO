@@ -658,6 +658,12 @@
     var extra = foldSection('sec-complementario', 'Análisis complementario (no puntúa)');
     renderComplementary(extra.body, data.complementario);
     results.appendChild(extra.node);
+    // Identidad detectada (DESIGN.md §7): informativa, no puntúa
+    if (data.complementario && data.complementario.identidad) {
+      var ident = foldSection('sec-identidad', 'Identidad detectada de la web (no puntúa)');
+      renderIdentity(ident.body, data.complementario.identidad);
+      results.appendChild(ident.node);
+    }
     // Historial (Fase 4): solo si está activado en el servidor
     if (data.historial && (data.historial.activo || data.historial.error)) {
       var hist = foldSection('sec-historial', 'Análisis anteriores de esta URL');
@@ -1473,6 +1479,107 @@
   }
 
   // 7. Análisis complementario (no puntúa)
+  // Identidad detectada de la web (DESIGN.md §7). Los colores de las muestras son datos reales de la web
+  // analizada, no de la interfaz; se aplican por CSSOM (la CSP no admite estilos en línea).
+  var CONFIDENCE = { alta: 'Confianza alta', media: 'Confianza media', baja: 'Confianza baja' };
+
+  function identityMeta(origen, confianza) {
+    return el('p', { class: 'identity__meta' }, [
+      el('span', { text: 'Origen: ' + origen }),
+      ' · ',
+      el('span', { class: 'identity__conf identity__conf--' + confianza, text: CONFIDENCE[confianza] || confianza })
+    ]);
+  }
+
+  function identitySwatch(c, label) {
+    var chip = el('span', { class: 'identity__chip', 'aria-hidden': 'true' });
+    chip.style.backgroundColor = c.hex;
+    var ratio = Number(c.contraste_blanco);
+    return el('li', { class: 'identity__swatch' }, [
+      chip,
+      el('div', { class: 'identity__swatch-text' }, [
+        el('p', { class: 'identity__hex' }, [label ? label + ' ' : '', el('code', { text: c.hex })]),
+        el('p', { class: 'identity__contrast', text: 'Contraste sobre blanco: ' + fmtNumber(ratio, 2) + ':1' +
+          (ratio >= 4.5 ? ' (apto para texto normal)' : ratio >= 3 ? ' (solo texto grande o elementos gráficos)' : ' (insuficiente para texto)') }),
+        identityMeta(c.origen, c.confianza)
+      ])
+    ]);
+  }
+
+  function identityImage(img, alt) {
+    var wrap = el('div', { class: 'identity__image' });
+    if (/^https:\/\//i.test(img.url)) {
+      wrap.appendChild(el('img', { src: img.url, alt: alt, loading: 'lazy', referrerpolicy: 'no-referrer', decoding: 'async' }));
+    }
+    return el('div', { class: 'identity__asset' }, [
+      wrap,
+      el('p', { class: 'identity__url' }, [el('code', { text: img.url })]),
+      identityMeta(img.origen, img.confianza)
+    ]);
+  }
+
+  function renderIdentity(host, d) {
+    host.appendChild(el('p', { class: 'help', text: 'Datos extraídos de la página analizada, cada uno con su origen y una confianza. No puntúan. Los colores de las muestras son los de la web analizada.' }));
+
+    var colors = el('section', { class: 'subsection', 'aria-labelledby': 'identity-colors' }, [
+      el('h4', { id: 'identity-colors', text: 'Colores principales' })
+    ]);
+    if (d.colores && d.colores.length) {
+      colors.appendChild(el('ul', { class: 'identity__swatches' }, d.colores.map(function (c) { return identitySwatch(c); })));
+    } else {
+      colors.appendChild(el('p', { class: 'is-missing', text: 'No se han encontrado colores en el CSS analizado.' }));
+    }
+    host.appendChild(colors);
+
+    var theme = el('section', { class: 'subsection', 'aria-labelledby': 'identity-theme' }, [
+      el('h4', { id: 'identity-theme', text: 'theme-color' })
+    ]);
+    theme.appendChild(d.theme_color
+      ? el('ul', { class: 'identity__swatches' }, [identitySwatch(d.theme_color)])
+      : el('p', { class: 'is-missing', text: 'La página no declara <meta name="theme-color">.' }));
+    host.appendChild(theme);
+
+    var fonts = el('section', { class: 'subsection', 'aria-labelledby': 'identity-fonts' }, [
+      el('h4', { id: 'identity-fonts', text: 'Tipografías' })
+    ]);
+    if (d.tipografias && d.tipografias.length) {
+      fonts.appendChild(el('ul', { class: 'identity__fonts' }, d.tipografias.map(function (f) {
+        return el('li', {}, [el('p', { class: 'identity__font', text: f.nombre }), identityMeta(f.origen, f.confianza)]);
+      })));
+      fonts.appendChild(el('p', { class: 'help', text: 'Los nombres se muestran con la tipografía de esta herramienta: no se cargan las fuentes de la web analizada.' }));
+    } else {
+      fonts.appendChild(el('p', { class: 'is-missing', text: 'No se han encontrado tipografías propias (solo genéricas o del sistema).' }));
+    }
+    host.appendChild(fonts);
+
+    var assets = el('section', { class: 'subsection', 'aria-labelledby': 'identity-assets' }, [
+      el('h4', { id: 'identity-assets', text: 'Logotipo y favicon' })
+    ]);
+    var grid = el('div', { class: 'identity__assets' });
+    grid.appendChild(el('div', {}, [
+      el('p', { class: 'identity__label', text: 'Logotipo' }),
+      d.logotipo ? identityImage(d.logotipo, 'Logotipo detectado' + (d.logotipo.alt ? ': ' + d.logotipo.alt : ''))
+        : el('p', { class: 'is-missing', text: 'No se ha identificado el logotipo en el HTML.' })
+    ]));
+    grid.appendChild(el('div', {}, [
+      el('p', { class: 'identity__label', text: 'Favicon' }),
+      d.favicon ? identityImage(d.favicon, 'Favicon detectado') : el('p', { class: 'is-missing', text: 'Sin favicon.' })
+    ]));
+    assets.appendChild(grid);
+    host.appendChild(assets);
+
+    if (d.hojas_analizadas && d.hojas_analizadas.length) {
+      var labels = { analizada: 'analizada', no_descargada: 'no descargada', omitida: 'omitida' };
+      host.appendChild(el('section', { class: 'subsection', 'aria-labelledby': 'identity-sheets' }, [
+        el('h4', { id: 'identity-sheets', text: 'Hojas de estilo enlazadas' }),
+        el('ul', { class: 'identity__sheets' }, d.hojas_analizadas.map(function (h) {
+          return el('li', {}, [el('code', { text: h.url }), ' — ' + (labels[h.estado] || h.estado) + (h.nota ? ' (' + h.nota + ')' : '')]);
+        }))
+      ]));
+    }
+    host.appendChild(el('div', { class: 'notice' }, [el('p', { text: 'Limitación: ' + d.limitacion })]));
+  }
+
   function renderComplementary(host, c) {
     host.appendChild(el('p', { class: 'help', text: 'Vistas informativas calculadas con la misma descarga. No asignan estados ni restan puntos.' }));
     if (!c) {
