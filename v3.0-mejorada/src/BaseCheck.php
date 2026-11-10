@@ -20,6 +20,12 @@ abstract class BaseCheck
     protected string $impacto = 'MEDIO';
     protected string $esfuerzo = 'MEDIO';
     protected bool $manual = false;
+    /**
+     * Respaldo del criterio (sobre todo en Preparación para IA): oficial (lo documenta Google o el proveedor
+     * del bot), experimento (hay un estudio controlado) o hipotesis (práctica habitual sin estudio abierto).
+     * Vacío si no se ha clasificado. Es distinto de «evidencia», que son los extractos de la página.
+     */
+    protected string $respaldo = '';
     /** Si es true, sin HTML fiable (bloqueo, no HTML) devuelve SIN_DATOS sin evaluar. */
     protected bool $needsHtml = true;
 
@@ -101,6 +107,7 @@ abstract class BaseCheck
             'impacto' => $this->impacto,
             'esfuerzo' => $this->esfuerzo,
             'requiere_revision_manual' => $this->manual,
+            'respaldo' => $this->respaldo !== '' ? $this->respaldo : null,
             // Campos adicionales: k para la puntuación, "no aplica" y explicación de lo medido
             'ocurrencias' => $estado === self::FAIL ? max(1, $ocurrencias) : $ocurrencias,
             'aplica' => $aplica,

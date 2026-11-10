@@ -56,10 +56,9 @@ test('RobotsTxt: el user-agent se compara por su token (se ignoran versión y co
 
 // ---------- Función 04: tabla de bots de IA (RobotsAnalyzer) ----------
 
-function botsTable(?array $robots, string $url = 'https://example.com/blog/post?id=7', array $config = []): array
+function botsTable(?array $robots, string $url = 'https://example.com/blog/post?id=7', ?array $catalog = null): array
 {
-    $config = array_merge(require __DIR__ . '/../config/config.example.php', $config);
-    $t = RobotsAnalyzer::table($url, $robots, $config);
+    $t = RobotsAnalyzer::table($url, $robots, $catalog);
     $by = [];
     foreach ($t['bots'] as $row) {
         $by[$row['bot']] = $row;
@@ -68,15 +67,17 @@ function botsTable(?array $robots, string $url = 'https://example.com/blog/post?
     return $t;
 }
 
-test('Bots IA: bots desde la configuración, separados en búsqueda y entrenamiento', function () {
+test('Bots IA: bots de config/ai_bots.php, en tres categorías (entrenamiento, búsqueda, usuario)', function () {
     $t = botsTable(['status' => 404, 'body' => '', 'error' => null]);
-    $search = array_column(array_filter($t['bots'], fn($b) => $b['tipo'] === 'busqueda'), 'bot');
-    $train = array_column(array_filter($t['bots'], fn($b) => $b['tipo'] === 'entrenamiento'), 'bot');
-    assertSame(['Googlebot', 'OAI-SearchBot', 'PerplexityBot'], array_values($search));
-    assertSame(['GPTBot', 'ClaudeBot', 'Google-Extended'], array_values($train));
-    $custom = RobotsAnalyzer::bots(['search_engine_bots' => ['Googlebot', 'Bingbot'], 'ai_search_bots' => ['Bingbot', ' '], 'ai_training_bots' => ['CCBot']]);
-    assertSame(['Googlebot', 'Bingbot'], $custom['busqueda'], 'Sin duplicados ni vacíos');
-    assertSame(['CCBot'], $custom['entrenamiento']);
+    $col = fn($type) => array_values(array_column(array_filter($t['bots'], fn($b) => $b['tipo'] === $type), 'bot'));
+    assertSame(['OAI-SearchBot', 'Claude-SearchBot', 'PerplexityBot', 'Googlebot', 'Bingbot', 'Applebot'], $col('busqueda'));
+    assertSame(['GPTBot', 'ClaudeBot', 'Google-Extended', 'Applebot-Extended', 'CCBot'], $col('entrenamiento'));
+    assertSame(['ChatGPT-User', 'Claude-User', 'Perplexity-User', 'Google-Agent'], $col('usuario'));
+    $custom = RobotsAnalyzer::bots(['busqueda' => [['bot' => 'Bingbot', 'penaliza' => true], ['bot' => 'bingbot'], ['bot' => ' ']],
+        'entrenamiento' => [['bot' => 'CCBot', 'penaliza' => true]]]);
+    assertSame(['Bingbot'], array_column($custom['busqueda'], 'bot'), 'Sin duplicados ni vacíos');
+    assertSame(false, $custom['entrenamiento'][0]['penaliza'], 'Solo penalizan bots de búsqueda');
+    assertSame([], $custom['usuario']);
 });
 
 test('Bots IA: bloquea solo el entrenamiento; grupo propio y regla aplicada', function () {

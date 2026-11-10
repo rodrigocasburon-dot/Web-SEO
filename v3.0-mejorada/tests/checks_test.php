@@ -72,7 +72,8 @@ $cases = [
     ['C02BotsIndexing', 'c02_bad_noindex', null, ['noindex_intentional' => true], 'AVISO', null],
     ['C02BotsIndexing', 'c02_ok', 'c02_bad_header', [], 'NO_CUMPLE', 1],
     ['C02BotsIndexing', 'c02_ok', 'c02_header_otherbot', [], 'CUMPLE', null],
-    ['C02BotsIndexing', 'c02_ok', 'c02_aviso', [], 'AVISO', null],
+    // Revisión GEO: bloquear solo bots de entrenamiento ya no es aviso (decisión de no entrenar)
+    ['C02BotsIndexing', 'c02_ok', 'c02_aviso', [], 'CUMPLE', null],
     ['C02BotsIndexing', 'c02_ok', 'c02_nodata', [], 'SIN_DATOS', null],
     ['C02BotsIndexing', 'c02_ok', 'c02_robots_html', [], 'CUMPLE', null],
 

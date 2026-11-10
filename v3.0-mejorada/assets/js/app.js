@@ -553,6 +553,8 @@
   // vez, en el bloque del área con más peso (informe.bloque), con etiquetas de las otras áreas.
 
   var AREAS = ['seo', 'ia', 'accesibilidad'];
+  // Componentes visuales del informe (assets/js/rw-componentes.js, docs/COMPONENTES.md)
+  var RW = window.RadarComponents;
 
   function reportSection(id, title) {
     var body = el('div');
@@ -603,13 +605,22 @@
   function renderResults(run) {
     var data = run.data;
     var title = el('h2', { id: 'results-title', tabindex: '-1', text: 'Informe' });
-    results.appendChild(el('div', { class: 'report-head' }, [
+    run.view = {};
+    run.view.state = el('strong');
+    var openLink = /^https?:\/\//i.test(data.url)
+      ? el('a', { class: 'rw-btn', href: data.url, rel: 'noopener noreferrer', target: '_blank' }, [
+        'Abrir', el('span', { class: 'visually-hidden', text: ' la página analizada (en otra pestaña)' })])
+      : null;
+    // 1. Contexto: la URL va como texto (no enlace) y «Abrir» la abre aparte
+    results.appendChild(el('div', { class: 'report-head rw-context' }, [
       title,
-      el('ul', { class: 'meta-list' }, [
-        el('li', {}, ['URL analizada: ', el('strong', { text: data.url })]),
-        el('li', { text: 'Fecha del análisis: ' + fmtDate(data.fecha) }),
+      el('p', { class: 'rw-context__url' }, [el('span', { class: 'visually-hidden', text: 'URL analizada: ' }), data.url]),
+      el('ul', { class: 'rw-context__meta' }, [
+        el('li', {}, ['Fecha: ', el('strong', { text: fmtDate(data.fecha) })]),
+        el('li', {}, ['Estado del análisis: ', run.view.state]),
         run.localBusiness ? el('li', { text: 'Negocio local: sí (indicado al analizar; no cambia ninguna comprobación ni la nota)' }) : null
-      ])
+      ]),
+      el('p', { class: 'rw-context__actions' }, [openLink, el('a', { class: 'rw-btn', href: '#analyze-form', text: 'Nuevo análisis' })])
     ]));
 
     if (data.blocked) {
@@ -619,7 +630,6 @@
       ]));
     }
 
-    run.view = {};
     var scores = reportSection('sec-puntuaciones', 'Puntuaciones');
     run.view.scores = scores.body;
     results.appendChild(scores.node);
@@ -665,22 +675,22 @@
   /** Barra de descargas: se generan en el navegador con los datos actuales (tras PageSpeed, ya actualizados). */
   function downloadBar(run) {
     var X = window.AnalyzerExport;
-    var csvButton = el('button', { type: 'button', class: 'button button--secondary', text: 'Descargar CSV' });
+    var csvButton = el('button', { type: 'button', class: 'rw-btn', text: 'Descargar CSV' });
     csvButton.addEventListener('click', function () {
       X.download(X.fileName(run.data.url, new Date(), 'csv'), 'text/csv;charset=utf-8', X.toCsv(X.buildRows(run.data.checks, i18n)));
     });
-    var jsonButton = el('button', { type: 'button', class: 'button button--secondary', text: 'Descargar JSON' });
+    var jsonButton = el('button', { type: 'button', class: 'rw-btn', text: 'Descargar JSON' });
     jsonButton.addEventListener('click', function () {
       X.download(X.fileName(run.data.url, new Date(), 'json'), 'application/json;charset=utf-8',
         X.buildJson(run.data, { provisional: psiPending(run) && !run.data.blocked }));
     });
-    var roadmapButton = el('button', { type: 'button', class: 'button button--secondary', text: 'Hoja de ruta (PDF)' });
+    var roadmapButton = el('button', { type: 'button', class: 'rw-btn', text: 'Hoja de ruta (PDF)' });
     roadmapButton.addEventListener('click', function () { printRoadmap(run); });
-    var printButton = el('button', { type: 'button', class: 'button button--secondary', text: 'Informe completo (PDF)' });
+    var printButton = el('button', { type: 'button', class: 'rw-btn', text: 'Informe completo (PDF)' });
     printButton.addEventListener('click', function () { window.print(); });
     return el('section', { class: 'downloads no-print', 'aria-labelledby': 'downloads-title' }, [
       el('h3', { id: 'downloads-title', text: 'Descargas' }),
-      el('div', { class: 'report-actions' }, [csvButton, jsonButton, roadmapButton, printButton]),
+      el('div', { class: 'report-actions rw-context__actions' }, [jsonButton, csvButton, roadmapButton, printButton]),
       el('p', { class: 'help', text: 'CSV y JSON llevan todos los datos para hojas de cálculo u otras herramientas; la hoja de ruta resume, para repartir el trabajo, qué corregir y en qué orden y qué debe revisar una persona.' }),
       el('p', { class: 'help', text: 'Los PDF se crean con el diálogo de impresión: elige «Guardar como PDF». Los archivos se generan en tu navegador; no pasan por el servidor. El CSV usa «;» y UTF-8 para abrirlo en Excel en español.' })
     ]);
@@ -796,13 +806,15 @@
     return el('a', { href: '#hallazgo-' + id, text: name || id });
   }
 
-  // Puntuaciones: las tres áreas en grande y la global debajo, con la cobertura de cada una
+  // Puntuaciones (DESIGN.md §4.2): las tres notas en tarjetas iguales, sin colores por valor, con su cobertura,
+  // la diferencia con el análisis anterior y su evolución si hay historial. La global, en una línea de texto.
   function updateScores(run) {
     var p = run.data.puntuacion;
     var blocked = !!run.data.blocked;
     var host = run.view.scores;
     var cov = run.data.informe.cobertura || {};
     var pending = pendingIds(run);
+    var prev = previousScores(run);
     host.textContent = '';
     var note = psiScoreNote(run);
     if (note) host.appendChild(el('p', { class: 'help', text: note }));
@@ -810,15 +822,16 @@
     var areaPending = function (a) {
       return pending.filter(function (id) { return ((i18n.psi_bloque || {})[id] || '') === a; }).length;
     };
-    host.appendChild(el('ul', { class: 'scores' }, AREAS.map(function (a) {
-      var c = cov[a] || { evaluados: 0, total: 0 };
-      return scoreCard(i18n.areas[a], p.areas[a], false, blocked, coverageText(c.evaluados, c.total + areaPending(a), areaPending(a)));
+    host.appendChild(el('ul', { class: 'rw-scores' }, AREAS.map(function (a) {
+      return areaScoreCard(a, p.areas[a], blocked, areaCoverage(run, a, areaPending(a)), prev);
     })));
+    if (!blocked && prev.length) {
+      host.appendChild(el('p', { class: 'rw-help', text: 'La diferencia se calcula con el análisis anterior guardado de esta URL. Puede deberse a cambios en la página, en los datos de PageSpeed o en las comprobaciones: tómala con cautela.' }));
+    }
     var all = (run.data.checks || []).filter(function (c) { return c.aplica !== false; });
     var done = all.filter(function (c) { return c.estado !== 'SIN_DATOS'; }).length;
-    host.appendChild(el('ul', { class: 'scores scores--global' }, [
-      scoreCard('Nota global', p.global, true, blocked, coverageText(done, all.length + pending.length, pending.length))
-    ]));
+    host.appendChild(globalLine(p.global, blocked, coverageText(done, all.length + pending.length, pending.length)));
+    updateContextState(run);
     var incomplete = !blocked && AREAS.some(function (a) { return p.areas[a].incompleta; });
     if (incomplete) host.appendChild(el('p', { class: 'help', text: i18n.nota_incompleta }));
     var rel = reliabilityText(run.data.informe.fiabilidad);
@@ -845,25 +858,71 @@
     return 'Evaluados ' + done + ' de ' + total + ' puntos' + (pending ? ' (' + plural(pending, 'pendiente', 'pendientes') + ' de PageSpeed)' : '');
   }
 
-  function scoreCard(label, score, isGlobal, blocked, coverage) {
-    var cls = 'score' + (isGlobal ? ' score--global' : '');
+  /** Cobertura de un área («Evaluados X de Y puntos»), con las comprobaciones de PageSpeed aún pendientes. */
+  function areaCoverage(run, area, pendingCount) {
+    var c = (run.data.informe.cobertura || {})[area] || { evaluados: 0, total: 0 };
+    return coverageText(c.evaluados, c.total + (pendingCount || 0), pendingCount || 0);
+  }
+
+  /** Análisis anteriores de la misma URL (historial), del más reciente al más antiguo; [] sin historial. */
+  function previousScores(run) {
+    var h = run.data.historial;
+    return h && h.activo && h.anteriores ? h.anteriores : [];
+  }
+
+  /** Estado del análisis en el contexto (Reliability: completo, parcial o bloqueado). */
+  function updateContextState(run) {
+    if (!run.view.state) return;
+    var f = run.data.informe.fiabilidad;
+    var names = { completo: 'Completo', parcial: 'Parcial', bloqueado: 'Bloqueado' };
+    var text = run.data.blocked ? 'Bloqueado' : (f && names[f.estado]) || '—';
+    if (!run.data.blocked && pendingIds(run).length) text += ' (falta PageSpeed Insights)';
+    run.view.state.textContent = text;
+  }
+
+  /**
+   * Tarjeta de una nota: etiqueta, cifra grande sobre 100, medidor 0–100 (sin colores por valor), cobertura,
+   * diferencia con el análisis anterior y minigráfico con 3 análisis o más.
+   */
+  function areaScoreCard(area, score, blocked, coverage, prev) {
+    var label = i18n.areas[area];
+    var sub = area === 'ia' ? 'Preparación técnica: no mide si los motores de IA citan la web.' : null;
     // Con acceso bloqueado no se ha evaluado el contenido: no se muestra una cifra que parezca un resultado
     if (blocked) {
-      return el('li', { class: cls }, [
-        el('p', { class: 'score__label', text: label }),
-        el('p', { class: 'score__value' }, ['—', el('span', { class: 'score__max', text: ' sin datos' })]),
-        el('p', { class: 'tag', text: 'No calculable: acceso bloqueado' })
+      return el('li', { class: 'rw-card rw-score' }, [
+        el('p', { class: 'rw-score__label', text: label }),
+        sub ? el('p', { class: 'rw-score__sub', text: sub }) : null,
+        el('p', { class: 'rw-score__value' }, ['—', el('span', { class: 'rw-score__max', text: ' sin datos' })]),
+        el('p', { class: 'rw-tag', text: 'No calculable: acceso bloqueado' })
       ]);
     }
     var value = score.redondeada;
-    var meter = el('div', { class: 'meter ' + (value >= 90 ? 'is-good' : value >= 50 ? 'is-mid' : 'is-low'), 'aria-hidden': 'true' }, [el('span')]);
-    meter.firstChild.style.width = Math.max(0, Math.min(100, value)) + '%';   // CSSOM: compatible con la CSP
-    return el('li', { class: cls }, [
-      el('p', { class: 'score__label', text: label }),
-      el('p', { class: 'score__value' }, [fmtNumber(value, 1), el('span', { class: 'score__max', text: ' / 100' })]),
-      meter,
-      coverage ? el('p', { class: 'score__coverage', text: coverage }) : null,
-      score.incompleta ? el('p', { class: 'tag', text: 'Nota incompleta', title: i18n.nota_incompleta }) : null
+    var key = 'nota_' + area;
+    var diff = prev.length ? RW.delta(value, prev[0][key]) : null;
+    var series = prev.slice(0, 9).reverse().map(function (r) { return r[key]; }).concat([value])
+      .filter(function (v) { return v !== null && v !== undefined; });
+    var spark = RW.sparkline(series, { etiqueta: 'Evolución de ' + label + ' en los últimos ' + series.length + ' análisis: '
+      + series.map(function (v) { return fmtNumber(v, 1); }).join(', ') });
+    // El subtítulo de IA va debajo de la cifra (DESIGN.md §4.2) para que las tres cifras queden alineadas
+    return el('li', { class: 'rw-card rw-score' }, [
+      el('p', { class: 'rw-score__label', text: label }),
+      el('p', { class: 'rw-score__value' }, [fmtNumber(value, 1), el('span', { class: 'rw-score__max', text: ' / 100' })]),
+      RW.meter(value),
+      coverage ? el('p', { class: 'rw-score__coverage', text: coverage }) : null,
+      sub ? el('p', { class: 'rw-score__sub', text: sub }) : null,
+      diff || spark ? el('div', { class: 'rw-score__extra' }, [diff, spark]) : null,
+      score.incompleta ? el('p', {}, [el('span', { class: 'rw-tag', text: 'Nota incompleta', title: i18n.nota_incompleta })]) : null
+    ]);
+  }
+
+  /** Nota global (CLAUDE.md): una línea de texto, no una cuarta tarjeta. */
+  function globalLine(global, blocked, coverage) {
+    var w = i18n.pesos_globales || {};
+    var pct = function (a) { return Math.round((w[a] || 0) * 100) + ' % ' + i18n.areas[a]; };
+    return el('p', { class: 'rw-global' }, [
+      'Nota global: ',
+      el('strong', { text: blocked ? 'no calculable (acceso bloqueado)' : fmtNumber(global.redondeada, 1) + ' / 100' }),
+      ' · media ponderada de las tres notas (' + AREAS.map(pct).join(', ') + '). ' + coverage + '.'
     ]);
   }
 
@@ -879,12 +938,39 @@
       ]));
     }
     var note = psiScoreNote(run);
-    host.appendChild(el('ul', { class: 'brief' }, (run.data.informe.resumen_breve || []).map(function (item) {
+    var brief = el('ul', { class: 'brief' }, (run.data.informe.resumen_breve || []).map(function (item) {
       // Mientras falta PageSpeed, la línea de cobertura se sustituye por la nota de puntuación provisional
       if (item.tipo === 'cobertura' && note) return el('li', { text: note });
       var c = item.id ? checkById(run, item.id) : null;
       return el('li', {}, [item.texto, c ? ' ' : null, c ? findingLink(item.id, 'Ver «' + (c.nombre || c.id) + '»') : null]);
-    })));
+    }));
+    var fixFirst = fixFirstFigure(run);
+    host.appendChild(fixFirst ? el('div', { class: 'rw-summary' }, [el('div', {}, [brief]), el('div', { class: 'rw-card' }, [fixFirst])]) : brief);
+  }
+
+  /**
+   * «Qué arreglar primero» (DESIGN.md §5): los fallos que más restan, con los puntos que calcula el servidor
+   * (Report::priorities, con las constantes del Scorer). No se recalcula nada aquí. Sin fallos, no hay gráfico.
+   */
+  function fixFirstFigure(run) {
+    if (run.data.blocked) return null;
+    var fails = (run.data.informe.prioridades || []).filter(function (r) { return r.estado === 'NO_CUMPLE' && r.penalizacion > 0; });
+    if (!fails.length) return null;
+    var top = fails.slice().sort(function (a, b) { return b.penalizacion - a.penalizacion || String(a.id).localeCompare(String(b.id)); }).slice(0, 5);
+    var zero = AREAS.some(function (a) { return run.data.puntuacion.areas[a].puntuacion <= 0; });
+    var pts = function (v) { return fmtNumber(v, 1) + ' pts'; };
+    return RW.figure({
+      clave: 'arreglar',
+      titulo: 'Qué arreglar primero: «' + top[0].nombre + '» es el fallo que más resta (' + fmtNumber(top[0].penalizacion, 1) + ' puntos)',
+      resumen: 'Puntos que resta cada fallo, sumados en las tres notas según la fórmula de puntuación (gravedad y repeticiones). '
+        + 'Corregirlo los recupera' + (zero ? ', salvo en una nota que ya esté en 0, que sube menos.' : '.')
+        + (fails.length > top.length ? ' Se muestran los ' + top.length + ' que más restan de ' + fails.length + ' fallos.' : ''),
+      visual: RW.rankedBars(top.map(function (r) { return { texto: r.nombre + ' (' + r.id + ')', valor: r.penalizacion, valorTexto: pts(r.penalizacion) }; })),
+      tabla: {
+        columnas: [{ texto: 'Fallo' }, { texto: 'ID' }, { texto: 'Gravedad' }, { texto: 'Puntos que resta', num: true }],
+        filas: top.map(function (r) { return [r.nombre, r.id, (i18n.severidades || {})[r.severidad] || r.severidad, fmtNumber(r.penalizacion, 1)]; })
+      }
+    });
   }
 
   // Bloques por área
@@ -944,27 +1030,41 @@
     AREAS.forEach(function (a) {
       groups[a].fail.sort(bySeverity);
       groups[a].warn.sort(bySeverity);
-      host.appendChild(renderAreaBlock(a, groups[a], open === a));
+      host.appendChild(renderAreaBlock(a, groups[a], open === a, run));
     });
     restoreState(host, state);
     run.blocksRendered = true;
   }
 
-  function renderAreaBlock(area, g, isOpen) {
+  function renderAreaBlock(area, g, isOpen, run) {
     var counts = [];
     if (g.fail.length) counts.push(plural(g.fail.length, 'fallo', 'fallos'));
     if (g.warn.length) counts.push(plural(g.warn.length, 'aviso', 'avisos'));
     if (g.nodata.length) counts.push(g.nodata.length + ' sin datos');
     if (g.pending.length) counts.push(plural(g.pending.length, 'pendiente', 'pendientes'));
+    var blocked = !!run.data.blocked;
+    var score = run.data.puntuacion.areas[area];
     var body = el('div', { class: 'fold__body' });
     var block = el('details', { class: 'fold area-block', id: 'bloque-' + area, 'data-key': 'area-' + area }, [
       el('summary', {}, [el('span', { class: 'fold__title' }, [
         i18n.areas[area],
-        el('span', { class: 'fold__count', text: ' · ' + (counts.length ? counts.join(', ') : 'sin errores detectables automáticamente') })
+        el('span', { class: 'fold__count', text: ' · ' + (blocked ? 'sin nota' : fmtNumber(score.redondeada, 1) + ' / 100') + ' · '
+          + (counts.length ? counts.join(', ') : 'sin errores detectables automáticamente') })
       ])]),
       body
     ]);
     if (isOpen) block.open = true;
+
+    // Cabecera del bloque: nota y cobertura
+    body.appendChild(el('div', { class: 'rw-block-head' }, [
+      el('p', { class: 'rw-block-head__score' }, ['Nota: ', el('strong', { text: blocked ? 'no calculable' : fmtNumber(score.redondeada, 1) + ' / 100' })]),
+      blocked ? null : RW.meter(score.redondeada),
+      el('p', { class: 'rw-score__coverage', text: areaCoverage(run, area, g.pending.length) + ' que cuentan en esta nota (algunos se muestran en otros bloques).' }),
+      area === 'ia' ? el('p', { class: 'rw-help', text: IA_NOTICE }) : null
+    ]));
+    // Barra de estados y visuales propios del bloque (máximo tres gráficos en total)
+    var visuals = [statusFigure(area, g)].concat(blockVisuals(area, g, run));
+    body.appendChild(el('div', { class: 'rw-block-visuals' }, visuals.map(function (v) { return el('div', { class: 'rw-card' }, [v]); })));
 
     if (!g.fail.length && !g.warn.length && !g.nodata.length && !g.pending.length) {
       body.appendChild(el('p', { text: 'No hay fallos, avisos ni comprobaciones sin datos en esta área.' }));
@@ -992,7 +1092,136 @@
     return el('div', { class: 'fold-wrap' }, [foldHeading('h3', i18n.areas[area]), block]);
   }
 
-  /** Un punto: estado, gravedad, otras áreas afectadas, qué se ha encontrado, cómo arreglarlo y, plegada, la evidencia. */
+  /**
+   * Barra de estados del bloque (DESIGN.md §5): cuántos puntos fallan, avisan, no tienen errores detectables,
+   * no tienen datos (o esperan a PageSpeed) o no aplican. Solo cuenta lo que ya hay en los grupos.
+   */
+  function statusFigure(area, g) {
+    var na = g.ok.filter(function (c) { return c.aplica === false; }).length;
+    var ok = g.ok.length - na;
+    var nodata = g.nodata.length + g.pending.length;
+    var total = g.fail.length + g.warn.length + ok + nodata + na;
+    var segs = [
+      { clave: 'fail', texto: i18n.estados.NO_CUMPLE, valor: g.fail.length },
+      { clave: 'warn', texto: i18n.estados.AVISO, valor: g.warn.length },
+      { clave: 'ok', texto: i18n.estados.CUMPLE, valor: ok },
+      { clave: 'nodata', texto: g.pending.length ? i18n.estados.SIN_DATOS + ' o pendientes' : i18n.estados.SIN_DATOS, valor: nodata },
+      { clave: 'na', texto: 'No aplica', valor: na }
+    ];
+    var shown = segs.filter(function (s) { return s.valor > 0; });
+    var title = g.fail.length
+      ? g.fail.length + ' de los ' + total + ' puntos de este bloque ' + (g.fail.length === 1 ? 'tiene fallo' : 'tienen fallo')
+      : g.warn.length
+        ? 'Ningún fallo en los ' + total + ' puntos de este bloque; ' + plural(g.warn.length, 'aviso', 'avisos')
+        : nodata === total ? 'Ningún punto de este bloque evaluado: ' + total + ' sin datos'
+          : 'Sin errores detectables automáticamente en ' + (total - nodata - na) + ' de los ' + total + ' puntos de este bloque';
+    return RW.figure({
+      clave: 'estados-' + area,
+      titulo: title,
+      resumen: 'Estado de los ' + total + ' puntos de ' + i18n.areas[area] + ': '
+        + shown.map(function (s) { return s.texto.toLowerCase() + ' ' + s.valor; }).join('; ') + '. «Sin datos» y «No aplica» no restan.',
+      resumenOculto: true,
+      visual: RW.segmentedBar(segs).node,
+      tabla: { columnas: [{ texto: 'Estado' }, { texto: 'Puntos', num: true }], filas: shown.map(function (s) { return [s.texto, s.valor]; }) }
+    });
+  }
+
+  /**
+   * Visuales propios de cada bloque, además de la barra de estados (máximo tres gráficos por bloque).
+   * SEO: Core Web Vitals y fallos por gravedad. La matriz páginas × puntos va en el informe de sitio
+   * (site.js), porque necesita 5 páginas o más y aquí se analiza una sola URL.
+   */
+  function blockVisuals(area, g, run) {
+    if (area !== 'seo') return [];
+    var out = [cwvFigure(run)];
+    var sev = severityFigure(area, g);
+    if (sev) out.push(sev);
+    return out;
+  }
+
+  // Core Web Vitals: umbrales publicados por Google (los mismos que C14CoreWebVitals::METRICS)
+  var CWV = [
+    { nombre: 'LCP', clave: 'LCP (p75)', texto: 'carga del contenido principal', bueno: 2500, deficiente: 4000, maximo: 6000, buenoTexto: '2,5 s', deficienteTexto: '4 s' },
+    { nombre: 'INP', clave: 'INP (p75)', texto: 'respuesta a la interacción', bueno: 200, deficiente: 500, maximo: 800, buenoTexto: '200 ms', deficienteTexto: '500 ms' },
+    { nombre: 'CLS', clave: 'CLS (p75)', texto: 'estabilidad visual', bueno: 0.1, deficiente: 0.25, maximo: 0.4, buenoTexto: '0,1', deficienteTexto: '0,25' }
+  ];
+
+  /**
+   * Lee una métrica del valor medido de C14, que la escribe como «2,1 s (bueno)», «180 ms (bueno)» o
+   * «0,05 (bueno)» (C14CoreWebVitals::format). Si el formato no es el esperado, null: no se inventa el dato.
+   */
+  function parseCwv(name, text) {
+    var m = /^(\d{1,3}(?:\.\d{3})*(?:,\d+)?)\s*(s|ms)?\s*\((bueno|mejorable|deficiente)\)$/.exec(String(text || '').trim());
+    if (!m) return null;
+    var n = parseFloat(m[1].replace(/\./g, '').replace(',', '.'));
+    if (isNaN(n)) return null;
+    if (name === 'LCP') {
+      if (m[2] !== 's') return null;
+      n = n * 1000;
+    } else if (name === 'INP') {
+      if (m[2] !== 'ms') return null;
+    } else if (m[2]) {
+      return null;
+    }
+    return { valor: n, texto: m[1] + (m[2] ? ' ' + m[2] : ''), franja: m[3] };
+  }
+
+  function cwvFigure(run) {
+    var title = 'Core Web Vitals (usuarios reales)';
+    if (pendingIds(run).indexOf('C14') !== -1) return RW.empty(title, 'pendiente de PageSpeed Insights.');
+    var c = checkById(run, 'C14');
+    var v = c && c.valor_medido;
+    if (!c || c.estado === 'SIN_DATOS' || !v || typeof v !== 'object') {
+      var why = String((c && c.detalle) || 'PageSpeed Insights no ha dado datos de esta URL.').replace(/^sin datos(?: de [^:.]+)?[:.]\s*/i, '') || 'PageSpeed Insights no ha dado datos de esta URL.';
+      return RW.empty(title, why.charAt(0).toLowerCase() + why.slice(1));
+    }
+    var rows = [];
+    CWV.forEach(function (d) {
+      var x = parseCwv(d.nombre, v[d.clave]);
+      if (x) rows.push({ d: d, x: x });
+    });
+    if (!rows.length) return RW.empty(title, 'no se han podido leer las métricas que ha devuelto PageSpeed Insights.');
+    var outside = rows.filter(function (r) { return r.x.franja !== 'bueno'; }).map(function (r) { return r.d.nombre; });
+    var missing = CWV.filter(function (d) { return !rows.some(function (r) { return r.d === d; }); }).map(function (d) { return d.nombre; });
+    var overall = String(v['Evaluación'] || '').toLowerCase();
+    return RW.figure({
+      clave: 'cwv',
+      titulo: 'Core Web Vitals de usuarios reales: ' + (overall || 'sin evaluación') + (outside.length ? ' (' + joinList(outside) + ' fuera de «bueno»)' : ''),
+      resumen: 'Percentil 75 de usuarios reales de Chrome en los últimos 28 días, según PageSpeed Insights. Franjas de Google, de claro a oscuro: bueno, mejorable y deficiente; la marca negra es el valor.'
+        + (missing.length ? ' Sin datos de ' + joinList(missing) + '.' : ''),
+      visual: el('div', { class: 'rw-bullets' }, rows.map(function (r) {
+        return RW.bullet({ nombre: r.d.nombre, valor: r.x.valor, valorTexto: r.x.texto, bueno: r.d.bueno, deficiente: r.d.deficiente, maximo: r.d.maximo, franja: r.x.franja });
+      })),
+      tabla: {
+        columnas: [{ texto: 'Métrica' }, { texto: 'Valor (p75)', num: true }, { texto: 'Franja' }, { texto: 'Bueno hasta' }, { texto: 'Deficiente si supera' }],
+        filas: rows.map(function (r) { return [r.d.nombre + ' · ' + r.d.texto, r.x.texto, r.x.franja, r.d.buenoTexto, r.d.deficienteTexto]; })
+      }
+    });
+  }
+
+  /** Fallos del bloque por gravedad (rampa del rojo, de crítica a baja). Sin fallos, no hay gráfico. */
+  function severityFigure(area, g) {
+    if (!g.fail.length) return null;
+    var order = [['CRITICO', 'sev-critica'], ['ALTO', 'sev-alta'], ['MEDIO', 'sev-media'], ['BAJO', 'sev-baja']];
+    var segs = order.map(function (s) {
+      return { clave: s[1], texto: (i18n.severidades || {})[s[0]] || s[0], valor: g.fail.filter(function (c) { return c.severidad === s[0]; }).length };
+    });
+    var shown = segs.filter(function (s) { return s.valor > 0; });
+    return RW.figure({
+      clave: 'gravedad-' + area,
+      titulo: plural(g.fail.length, 'fallo', 'fallos') + ' de ' + i18n.areas[area] + ': '
+        + joinList(shown.map(function (s) { return s.valor + ' de gravedad ' + s.texto.toLowerCase(); })),
+      resumen: 'Fallos del bloque según su gravedad, de crítica a baja. Cuanto más grave, más resta de la nota.',
+      resumenOculto: true,
+      visual: RW.segmentedBar(segs, { baja: true }).node,
+      tabla: { columnas: [{ texto: 'Gravedad' }, { texto: 'Fallos', num: true }], filas: shown.map(function (s) { return [s.texto, s.valor]; }) }
+    });
+  }
+
+  /**
+   * Un punto: estado (icono y texto), ID, nombre, gravedad, otras áreas afectadas y qué se ha encontrado; al
+   * desplegar, cómo arreglarlo y la evidencia. La revisión manual se indica siempre a la vista.
+   */
   function renderPoint(c, area) {
     var na = c.aplica === false;
     var stateKey = na ? 'NA' : c.estado;
@@ -1001,24 +1230,25 @@
     var tags = [];
     others.forEach(function (a, i) {
       if (i) tags.push(' ');
-      tags.push(el('span', { class: 'tag', text: i18n.areas[a] }));
+      tags.push(el('span', { class: 'rw-tag', text: i18n.areas[a] }));
     });
     var actionable = !na && (c.estado === 'NO_CUMPLE' || c.estado === 'AVISO');
-    return el('li', { class: 'point', id: 'hallazgo-' + c.id, tabindex: '-1' }, [
-      el('p', { class: 'point__head' }, [
-        el('span', { class: 'badge badge--' + stateKey, text: stateLabel }), ' ',
-        el('span', { class: 'point__name', text: c.nombre || c.id }),
-        el('span', { class: 'finding__meta', text: ' ' + c.id + (c.severidad ? ' · Gravedad ' + lower(i18n.severidades, c.severidad) : '') })
+    return el('li', { class: 'point rw-point', id: 'hallazgo-' + c.id, tabindex: '-1' }, [
+      el('p', { class: 'point__head rw-point__head' }, [
+        RW.status(stateKey, { texto: stateLabel }), ' ',
+        el('span', { class: 'rw-point__id', text: c.id }), ' ',
+        el('span', { class: 'point__name', text: c.nombre || c.id }), ' ',
+        na ? null : RW.severityChip(c.severidad, lower(i18n.severidades, c.severidad))
       ]),
       others.length ? el('p', { class: 'point__tags' }, ['También afecta a: '].concat(tags)) : null,
-      c.detalle ? el('p', {}, [el('strong', { text: 'Qué se ha encontrado: ' }), c.detalle]) : null,
-      actionable && c.recomendacion ? el('p', {}, [el('strong', { text: 'Cómo arreglarlo: ' }), c.recomendacion]) : null,
+      c.detalle ? el('p', { class: 'rw-point__finding' }, [el('span', { class: 'visually-hidden', text: 'Qué se ha encontrado: ' }), c.detalle]) : null,
       c.requiere_revision_manual ? el('p', { class: 'manual', text: 'Esta comprobación requiere además revisión manual.' }) : null,
-      evidenceFold(c)
+      RESPALDO[c.respaldo] ? el('p', { class: 'rw-help rw-point__respaldo' }, ['Respaldo del criterio: ', el('strong', { text: RESPALDO[c.respaldo][0] }), ' (' + RESPALDO[c.respaldo][1] + ').']) : null,
+      evidenceFold(c, actionable)
     ]);
   }
 
-  function evidenceFold(c) {
+  function evidenceFold(c, actionable) {
     var rows = [
       ['Valor medido', fmtValue(c.valor_medido)],
       c.umbral ? ['Umbral', String(c.umbral)] : null,
@@ -1040,9 +1270,10 @@
     }
     var fix = c.correccion ? renderFix(c.id, c.correccion, false) : null;
     if (fix) fix.setAttribute('data-key', 'fix-' + c.id);
+    var howTo = actionable && c.recomendacion ? el('p', {}, [el('strong', { text: 'Cómo arreglarlo: ' }), c.recomendacion]) : null;
     return el('details', { class: 'fold fold--inner', 'data-key': 'ev-' + c.id }, [
-      el('summary', { text: 'Evidencia y datos medidos' }),
-      el('div', { class: 'fold__body' }, [defList('', rows), fix])
+      el('summary', { text: howTo ? 'Cómo arreglarlo y evidencia' : 'Evidencia y datos medidos' }),
+      el('div', { class: 'fold__body' }, [howTo, defList('', rows), fix])
     ]);
   }
 
@@ -1394,11 +1625,23 @@
     return sec;
   }
 
+  // Texto fijo del bloque de Preparación para IA y etiquetas de respaldo de cada criterio
+  var IA_NOTICE = 'La nota de Preparación para IA mide preparación técnica. Cumplir los puntos no garantiza que una IA cite la página.';
+  var RESPALDO = {
+    oficial: ['oficial', 'lo documenta Google o el proveedor del bot'],
+    experimento: ['experimento', 'hay un estudio controlado que lo respalda'],
+    hipotesis: ['hipótesis', 'práctica habitual sin un estudio abierto que la respalde']
+  };
+
   // 04. Bots de IA y buscadores en robots.txt
   var ACCESS_TEXT = { permitido: 'Permitido', bloqueado: 'Bloqueado', sin_datos: 'Sin datos' };
   var BOT_TYPES = [
-    ['busqueda', 'Bots de búsqueda (buscadores y asistentes de IA)', 'bots-search'],
-    ['entrenamiento', 'Bots de entrenamiento de IA', 'bots-training']
+    ['busqueda', 'Índice de búsqueda (buscadores y búsqueda con IA)', 'bots-search',
+      'Si se bloquea a uno de OpenAI, Anthropic, Perplexity, Google o Bing, la comprobación C02 es un fallo.'],
+    ['entrenamiento', 'Entrenamiento de modelos de IA', 'bots-training',
+      'Bloquearlos es una decisión de no entrenar y no afecta a la búsqueda (Google-Extended no afecta a la Búsqueda de Google ni a AI Overviews). No resta puntos.'],
+    ['usuario', 'A petición del usuario', 'bots-user',
+      'Solo informativo, no puntúa: robots.txt puede no aplicarse a estos agentes; solo un bloqueo en cortafuegos o por IP lo garantiza.']
   ];
 
   function renderBotsTable(b) {
@@ -1411,6 +1654,7 @@
       var rows = b.bots.filter(function (r) { return r.tipo === t[0]; });
       if (!rows.length) return;
       sec.appendChild(el('h5', { id: t[2], text: t[1] }));
+      sec.appendChild(el('p', { class: 'help', text: t[3] }));
       sec.appendChild(el('div', { class: 'table-wrap' }, [
         el('table', { class: 'data-table', 'aria-labelledby': t[2] }, [
           el('thead', {}, [el('tr', {}, ['Bot', 'Acceso a esta URL', 'Grupo aplicado', 'Regla'].map(function (h) {
@@ -1419,6 +1663,7 @@
           el('tbody', {}, rows.map(function (r) {
             var access = ACCESS_TEXT[r.acceso] || r.acceso;
             var group = r.grupo === '*' ? '* (todos los bots)' : (r.grupo || (b.robots_txt === 'presente' ? 'Ninguno' : '—'));
+            if (r.heredado_de) group += ' (heredado de ' + r.heredado_de + ')';
             return el('tr', {}, [
               el('th', { scope: 'row', text: r.bot }),
               el('td', {}, [r.acceso === 'bloqueado' ? el('strong', { text: access }) : access]),
@@ -1429,7 +1674,7 @@
         ])
       ]));
     });
-    sec.appendChild(el('p', { class: 'help', text: 'Los bots de entrenamiento recopilan contenido para entrenar modelos de IA; los de búsqueda, para mostrar la página en resultados y respuestas. Bloquear solo a los primeros no impide aparecer en buscadores.' }));
+    sec.appendChild(el('p', { class: 'help', text: 'Los bots de entrenamiento recopilan contenido para entrenar modelos de IA; los de búsqueda, para mostrar la página en resultados y respuestas. Applebot sin reglas propias sigue las de Googlebot.' }));
     return sec;
   }
 

@@ -28,6 +28,12 @@ class CheckRunner
             new C22DuplicateIds(),
             new C23VideoCaptions(),
             new C24Autoplay(),
+            // Revisión GEO: elegibilidad de fragmento y coherencia del marcado
+            new C25SnippetEligibility(),
+            new C30MarkupCoherence(),
+            // Revisión GEO, fase B: datos y fuentes en el texto y reseñas autoservidas (solo avisan)
+            new C29DataAndSources(),
+            new C31SelfServedReviews(),
         ];
     }
 

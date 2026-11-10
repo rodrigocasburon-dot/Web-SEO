@@ -59,9 +59,6 @@ return [
     // User-Agent propio e identificable (ajustar con el contacto real de Proconsi)
     'user_agent' => 'ProconsiAnalyzer/0.1 (herramienta interna de analisis web)',
 
-    // Bots de IA a comprobar en robots.txt [lista por completar]
-    'ai_search_bots'   => ['OAI-SearchBot', 'PerplexityBot'],
-    'ai_training_bots' => ['GPTBot', 'ClaudeBot', 'Google-Extended'],
-    // Buscadores que se añaden a la tabla informativa de bots (no afecta a C02) [lista por completar]
-    'search_engine_bots' => ['Googlebot'],
+    // Los bots que se comprueban en robots.txt y su categoría están en config/ai_bots.php (sin secretos).
+    // Las claves antiguas ai_search_bots, ai_training_bots y search_engine_bots ya no se usan.
 ];

@@ -25,6 +25,10 @@ $i18n = [
     // Recomendaciones agrupadas: nº máximo de páginas que se listan en cada una
     'grupo_max_paginas' => max(1, min(500, (int) ($config['site_group_max_pages'] ?? 20))),
 ];
+// Bloque de cada comprobación (área a la que más resta, como en el informe de una URL): para la matriz páginas × puntos
+foreach (CheckRunner::catalog() as $checkId => $check) {
+    $i18n['bloque_checks'][$checkId] = Report::primaryArea($check->describe(BaseCheck::NO_DATA)['pilares']);
+}
 $asset = function (string $path): string {
     $file = __DIR__ . '/' . $path;
     return htmlspecialchars($path . '?v=' . (is_file($file) ? filemtime($file) : '0'), ENT_QUOTES, 'UTF-8');
@@ -38,6 +42,10 @@ $e = fn(string $s): string => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
 <title>Analizar un sitio completo · Radar web de Proconsi</title>
 <meta name="robots" content="noindex">
 <link rel="stylesheet" href="<?= $asset('assets/css/app.css') ?>">
+<link rel="stylesheet" href="<?= $asset('assets/css/tokens.css') ?>">
+<link rel="stylesheet" href="<?= $asset('assets/css/componentes.css') ?>">
+<link rel="stylesheet" href="<?= $asset('assets/css/graficos.css') ?>">
+<script src="<?= $asset('assets/js/rw-componentes.js') ?>" defer></script>
 <script src="<?= $asset('assets/js/site.js') ?>" defer></script>
 </head>
 <body>

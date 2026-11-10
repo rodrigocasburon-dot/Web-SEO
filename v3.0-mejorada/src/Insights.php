@@ -20,7 +20,7 @@ class Insights
             'vista_bot' => $reason === null ? self::botView($ctx) : null,
             'vista_previa' => $reason === null ? self::preview($ctx) : null,
             // robots.txt se descarga aparte: la tabla se muestra aunque la página esté bloqueada
-            'bots_ia' => RobotsAnalyzer::table($ctx->url, $ctx->robots, $ctx->config),
+            'bots_ia' => RobotsAnalyzer::table($ctx->url, $ctx->robots),
             'palabra_clave' => $reason === null ? self::keyword($ctx, (string) ($ctx->options['palabra_clave'] ?? '')) : null,
             'esquema' => $reason === null ? self::outline($ctx) : null,
         ];
