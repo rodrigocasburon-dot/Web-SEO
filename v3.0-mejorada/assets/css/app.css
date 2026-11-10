@@ -549,6 +549,29 @@ code, pre { font-family: var(--mono); }
 /* Impresión (A4): informe completo, sin formulario ni controles; «Guardar como PDF» desde el navegador.
    En cada página: cabecera discreta en gris, logotipo abajo a la izquierda con filete gris encima y
    número de página (cajas de margen de @page; Chrome y Edge 131+). */
+/* Identidad detectada (DESIGN.md §7). Solo la muestra de color lleva colores de la web analizada */
+.identity__swatches { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; margin: 0; padding: 0; list-style: none; }
+@media (min-width: 640px) { .identity__swatches { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1025px) { .identity__swatches { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.identity__swatch { display: flex; gap: 0.75rem; align-items: flex-start; min-width: 0; }
+.identity__chip { flex: none; width: 3.5rem; height: 3.5rem; border: 1px solid var(--border); border-radius: var(--radius); }
+.identity__swatch-text { min-width: 0; }
+.identity__swatch-text p { margin: 0; }
+.identity__hex { font-weight: 600; }
+.identity__contrast, .identity__meta, .identity__url { font-size: 0.875rem; line-height: 1.25rem; color: var(--muted); overflow-wrap: anywhere; }
+.identity__meta { margin: 0.125rem 0 0; }
+.identity__conf--alta { color: var(--text); font-weight: 600; }
+.identity__fonts { display: grid; gap: 0.75rem; margin: 0; padding: 0; list-style: none; }
+.identity__fonts p { margin: 0; }
+.identity__font { font-size: 1.25rem; line-height: 1.75rem; font-weight: 600; }
+.identity__assets { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.5rem; }
+@media (min-width: 640px) { .identity__assets { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.identity__label { margin: 0 0 0.5rem; font-weight: 600; }
+.identity__image { display: flex; align-items: center; justify-content: center; min-height: 5rem; padding: 0.75rem; background: var(--soft); border: 1px solid var(--line); }
+.identity__image img { display: block; max-width: 100%; max-height: 6rem; height: auto; }
+.identity__url { margin: 0.5rem 0 0; }
+.identity__sheets { margin: 0; padding-left: 1.25rem; font-size: 0.875rem; overflow-wrap: anywhere; }
+
 @media print {
   @page {
     size: A4;

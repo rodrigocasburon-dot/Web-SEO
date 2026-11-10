@@ -23,6 +23,7 @@ class Insights
             'bots_ia' => RobotsAnalyzer::table($ctx->url, $ctx->robots),
             'palabra_clave' => $reason === null ? self::keyword($ctx, (string) ($ctx->options['palabra_clave'] ?? '')) : null,
             'esquema' => $reason === null ? self::outline($ctx) : null,
+            'identidad' => $reason === null ? IdentityDetector::detect($ctx) : null,
         ];
     }
 
