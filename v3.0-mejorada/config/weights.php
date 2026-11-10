@@ -25,4 +25,7 @@ return [
     'C22' => [0.0, 0.0, 1.0],
     'C23' => [0.0, 0.0, 1.0],
     'C24' => [0.0, 0.0, 1.0],
+    // Revisión GEO (propuesta pendiente de validar por el grupo)
+    'C25' => [0.4, 0.6, 0.0],
+    'C30' => [0.4, 0.6, 0.0],
 ];

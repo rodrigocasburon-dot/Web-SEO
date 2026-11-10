@@ -28,6 +28,9 @@ class CheckRunner
             new C22DuplicateIds(),
             new C23VideoCaptions(),
             new C24Autoplay(),
+            // Revisión GEO: elegibilidad de fragmento y coherencia del marcado
+            new C25SnippetEligibility(),
+            new C30MarkupCoherence(),
         ];
     }
 

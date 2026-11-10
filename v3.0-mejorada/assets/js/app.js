@@ -1059,7 +1059,8 @@
     body.appendChild(el('div', { class: 'rw-block-head' }, [
       el('p', { class: 'rw-block-head__score' }, ['Nota: ', el('strong', { text: blocked ? 'no calculable' : fmtNumber(score.redondeada, 1) + ' / 100' })]),
       blocked ? null : RW.meter(score.redondeada),
-      el('p', { class: 'rw-score__coverage', text: areaCoverage(run, area, g.pending.length) + ' que cuentan en esta nota (algunos se muestran en otros bloques).' })
+      el('p', { class: 'rw-score__coverage', text: areaCoverage(run, area, g.pending.length) + ' que cuentan en esta nota (algunos se muestran en otros bloques).' }),
+      area === 'ia' ? el('p', { class: 'rw-help', text: IA_NOTICE }) : null
     ]));
     // Barra de estados y visuales propios del bloque (máximo tres gráficos en total)
     var visuals = [statusFigure(area, g)].concat(blockVisuals(area, g, run));
@@ -1242,6 +1243,7 @@
       others.length ? el('p', { class: 'point__tags' }, ['También afecta a: '].concat(tags)) : null,
       c.detalle ? el('p', { class: 'rw-point__finding' }, [el('span', { class: 'visually-hidden', text: 'Qué se ha encontrado: ' }), c.detalle]) : null,
       c.requiere_revision_manual ? el('p', { class: 'manual', text: 'Esta comprobación requiere además revisión manual.' }) : null,
+      RESPALDO[c.respaldo] ? el('p', { class: 'rw-help rw-point__respaldo' }, ['Respaldo del criterio: ', el('strong', { text: RESPALDO[c.respaldo][0] }), ' (' + RESPALDO[c.respaldo][1] + ').']) : null,
       evidenceFold(c, actionable)
     ]);
   }
@@ -1623,11 +1625,23 @@
     return sec;
   }
 
+  // Texto fijo del bloque de Preparación para IA y etiquetas de respaldo de cada criterio
+  var IA_NOTICE = 'La nota de Preparación para IA mide preparación técnica. Cumplir los puntos no garantiza que una IA cite la página.';
+  var RESPALDO = {
+    oficial: ['oficial', 'lo documenta Google o el proveedor del bot'],
+    experimento: ['experimento', 'hay un estudio controlado que lo respalda'],
+    hipotesis: ['hipótesis', 'práctica habitual sin un estudio abierto que la respalde']
+  };
+
   // 04. Bots de IA y buscadores en robots.txt
   var ACCESS_TEXT = { permitido: 'Permitido', bloqueado: 'Bloqueado', sin_datos: 'Sin datos' };
   var BOT_TYPES = [
-    ['busqueda', 'Bots de búsqueda (buscadores y asistentes de IA)', 'bots-search'],
-    ['entrenamiento', 'Bots de entrenamiento de IA', 'bots-training']
+    ['busqueda', 'Índice de búsqueda (buscadores y búsqueda con IA)', 'bots-search',
+      'Si se bloquea a uno de OpenAI, Anthropic, Perplexity, Google o Bing, la comprobación C02 es un fallo.'],
+    ['entrenamiento', 'Entrenamiento de modelos de IA', 'bots-training',
+      'Bloquearlos es una decisión de no entrenar y no afecta a la búsqueda (Google-Extended no afecta a la Búsqueda de Google ni a AI Overviews). No resta puntos.'],
+    ['usuario', 'A petición del usuario', 'bots-user',
+      'Solo informativo, no puntúa: robots.txt puede no aplicarse a estos agentes; solo un bloqueo en cortafuegos o por IP lo garantiza.']
   ];
 
   function renderBotsTable(b) {
@@ -1640,6 +1654,7 @@
       var rows = b.bots.filter(function (r) { return r.tipo === t[0]; });
       if (!rows.length) return;
       sec.appendChild(el('h5', { id: t[2], text: t[1] }));
+      sec.appendChild(el('p', { class: 'help', text: t[3] }));
       sec.appendChild(el('div', { class: 'table-wrap' }, [
         el('table', { class: 'data-table', 'aria-labelledby': t[2] }, [
           el('thead', {}, [el('tr', {}, ['Bot', 'Acceso a esta URL', 'Grupo aplicado', 'Regla'].map(function (h) {
@@ -1648,6 +1663,7 @@
           el('tbody', {}, rows.map(function (r) {
             var access = ACCESS_TEXT[r.acceso] || r.acceso;
             var group = r.grupo === '*' ? '* (todos los bots)' : (r.grupo || (b.robots_txt === 'presente' ? 'Ninguno' : '—'));
+            if (r.heredado_de) group += ' (heredado de ' + r.heredado_de + ')';
             return el('tr', {}, [
               el('th', { scope: 'row', text: r.bot }),
               el('td', {}, [r.acceso === 'bloqueado' ? el('strong', { text: access }) : access]),
@@ -1658,7 +1674,7 @@
         ])
       ]));
     });
-    sec.appendChild(el('p', { class: 'help', text: 'Los bots de entrenamiento recopilan contenido para entrenar modelos de IA; los de búsqueda, para mostrar la página en resultados y respuestas. Bloquear solo a los primeros no impide aparecer en buscadores.' }));
+    sec.appendChild(el('p', { class: 'help', text: 'Los bots de entrenamiento recopilan contenido para entrenar modelos de IA; los de búsqueda, para mostrar la página en resultados y respuestas. Applebot sin reglas propias sigue las de Googlebot.' }));
     return sec;
   }
 

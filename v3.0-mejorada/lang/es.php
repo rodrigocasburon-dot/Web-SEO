@@ -82,9 +82,9 @@ return [
         ],
         'C02' => [
             'nombre' => 'Acceso de bots e indexación',
-            'descripcion' => 'Comprueba que robots.txt permite el acceso a Googlebot y a los bots de búsqueda de IA, y que la página no declara noindex.',
+            'descripcion' => 'Comprueba que robots.txt permite el acceso a los bots de búsqueda (OpenAI, Anthropic, Perplexity, Google y Bing) y que la página no declara noindex. Bloquear solo a los bots de entrenamiento no resta.',
             'recomendacion' => 'Permite en robots.txt el acceso de Googlebot y de los rastreadores de búsqueda de IA a esta URL y elimina noindex de la etiqueta meta robots y de la cabecera X-Robots-Tag si la página debe aparecer en buscadores y asistentes de IA.',
-            'recomendacion_aviso' => 'Confirma que la configuración es intencionada. Bloquear solo a los rastreadores de entrenamiento de IA es una decisión legítima de política de contenidos y no impide aparecer en buscadores; un noindex intencionado excluye la página de los resultados.',
+            'recomendacion_aviso' => 'Confirma que la configuración es intencionada. Si robots.txt responde 401 o 403, permite que los bots lo descarguen; si bloquea a otros bots de búsqueda (como Applebot), comprueba que es lo que quieres. Un noindex intencionado excluye la página de los resultados.',
         ],
         'C03' => [
             'nombre' => 'Contenido en HTML crudo',
@@ -201,6 +201,18 @@ return [
             'descripcion' => 'Busca audio o vídeo que empiezan solos con sonido y elementos marquee o blink.',
             'recomendacion' => 'Evita que el audio empiece solo; si lo hace, que dure menos de 3 segundos o que haya un botón visible para pararlo. Sustituye marquee y blink por contenido estático.',
             'recomendacion_aviso' => 'Evita que el audio empiece solo; si lo hace, que dure menos de 3 segundos o que haya un botón visible para pararlo. Sustituye marquee y blink por contenido estático.',
+        ],
+        'C25' => [
+            'nombre' => 'Elegibilidad de fragmento',
+            'descripcion' => 'Busca nosnippet, max-snippet y data-nosnippet en la etiqueta meta robots y en la cabecera X-Robots-Tag. Google solo usa en AI Overviews y AI Mode páginas que pueden mostrar fragmento.',
+            'recomendacion' => 'Quita nosnippet (y max-snippet:0) de la etiqueta meta robots y de la cabecera X-Robots-Tag si quieres que la página pueda aparecer como fragmento y en las respuestas de IA de Google.',
+            'recomendacion_aviso' => 'Revisa si el límite de max-snippet o el uso de data-nosnippet sobre el texto principal es intencionado: un fragmento muy corto o excluido reduce las posibilidades de que se cite la página. El umbral de 50 caracteres es orientativo.',
+        ],
+        'C30' => [
+            'nombre' => 'Coherencia del marcado',
+            'descripcion' => 'Compara el nombre, la dirección y el teléfono del JSON-LD de la organización o el negocio con el texto visible de la página.',
+            'recomendacion' => 'Haz que el teléfono y la dirección del JSON-LD coincidan con los que se muestran en la página (o muéstralos en el texto): Google pide que los datos estructurados describan el contenido visible.',
+            'recomendacion_aviso' => 'Si la web corresponde a un negocio con sede, añade JSON-LD de LocalBusiness (con el subtipo más específico) con el mismo nombre, dirección y teléfono que aparecen en la página. Si el nombre del marcado es el legal y el visible el comercial, no hace falta cambiarlo.',
         ],
     ],
 

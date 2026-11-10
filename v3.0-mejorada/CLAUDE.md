@@ -33,6 +33,7 @@ conocer la versión del servidor.
   C08 0/0/1; C09 .5/0/.5; C10 .8/0/.2; C11 .3/.3/.4; C12 1/0/0; C13 1/0/0; C14 1/0/0; C15 1/0/0.
   Fase 8: C16 .7/.3/0; C18 .6/.4/0; C20 .7/.3/0.
   v3.0 (traídas de la v1.0): C21 0/0/1; C22 0/0/1; C23 0/0/1; C24 0/0/1.
+  Revisión GEO (propuesta pendiente de validar): C25 .4/.6/0; C30 .4/.6/0.
 - Nota global = 0,35 × SEO + 0,30 × IA + 0,35 × Accesibilidad.
 - Si un área baja de 50 o hay al menos dos fallos críticos: «Riesgo alto: revisar de inmediato».
 - SIN_DATOS y comprobaciones que no aplican no penalizan y se muestran aparte. Si más de la mitad de las comprobaciones de un área son SIN_DATOS, la nota se marca como incompleta.

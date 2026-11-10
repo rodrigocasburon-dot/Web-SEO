@@ -103,6 +103,18 @@ class RobotsTxt
         return preg_match('/^[a-z_\-]+/', $ua, $m) ? $m[0] : $ua;
     }
 
+    /** ¿Tiene robots.txt un grupo propio para este bot (sin contar «*»)? */
+    public function hasGroup(string $agent): bool
+    {
+        $agent = self::token($agent);
+        foreach ($this->groups as $g) {
+            if (in_array($agent, $g['agents'], true)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public function isAllowed(string $agent, string $path): bool
     {
         return $this->explain($agent, $path)['allowed'];
