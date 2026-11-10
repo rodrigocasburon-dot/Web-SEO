@@ -127,6 +127,7 @@
         || (a.ids[0] < b.ids[0] ? -1 : 1);
     });
     return {
+      paginas: scored,
       recomendaciones: recomendaciones,
       fiabilidad: fiabilidad,
       analizadas: scored.length,
@@ -343,6 +344,55 @@
     };
   }
 
+  /**
+   * Matriz páginas × puntos de un bloque (DESIGN.md §5): estado de cada punto en cada página, filas ordenadas
+   * por número de fallos. Solo con 5 páginas con nota o más; si no, null (no se dibuja). Los puntos de todo el
+   * sitio (C16, C18) no van: no son de cada página. La matriz es la propia tabla de datos.
+   */
+  var MATRIX_MIN_PAGES = 5;
+  function matrixFigure(agg, area) {
+    var C = root.RadarComponents;
+    var pages = agg.paginas || [];
+    if (!C || pages.length < MATRIX_MIN_PAGES) return null;
+    var blockOf = i18n.bloque_checks || {};
+    var names = {};
+    pages.forEach(function (p) {
+      (p.checks || []).forEach(function (c) {
+        if (blockOf[c.id] === area && c.id !== 'C16' && c.id !== 'C18') names[c.id] = c.nombre || c.id;
+      });
+    });
+    var ids = Object.keys(names).sort();
+    if (!ids.length) return null;
+    var rows = pages.map(function (p) {
+      var cells = {};
+      var fails = 0;
+      (p.checks || []).forEach(function (c) {
+        if (!names[c.id]) return;
+        cells[c.id] = c.aplica === false ? 'NA' : c.estado;
+        if (c.aplica !== false && c.estado === 'NO_CUMPLE') fails++;
+      });
+      return { texto: path(p.url), enlace: p.url, celdas: cells, fallos: fails };
+    }).sort(function (a, b) { return b.fallos - a.fallos || (a.texto < b.texto ? -1 : 1); });
+    // Conclusión: el punto que falla en más páginas. En el 80 % o más, lo probable es la plantilla
+    var failCount = function (id) { return rows.filter(function (r) { return r.celdas[id] === 'NO_CUMPLE'; }).length; };
+    var top = ids.slice().sort(function (a, b) { return failCount(b) - failCount(a) || (a < b ? -1 : 1); })[0];
+    var topFails = failCount(top);
+    var area_ = (i18n.areas && i18n.areas[area]) || area;
+    var title = !topFails
+      ? 'Ningún fallo de ' + area_ + ' en las ' + pages.length + ' páginas con nota'
+      : top + ' (' + names[top] + ') falla en ' + topFails + ' de ' + pages.length + ' páginas'
+        + (topFails >= pages.length * 0.8 ? ': probablemente está en la plantilla' : ': el fallo depende de cada página');
+    var textos = {};
+    Object.keys(i18n.estados || {}).forEach(function (k) { textos[k] = i18n.estados[k]; });
+    textos.NA = 'No aplica';
+    var capId = 'cap-matriz-' + area;
+    return el('div', { class: 'rw' }, [el('figure', { class: 'rw-figure', 'aria-labelledby': capId }, [
+      el('figcaption', { id: capId, class: 'rw-figure__title', text: title }),
+      el('p', { class: 'rw-figure__summary', text: 'Estado de cada punto de ' + area_ + ' (columnas) en cada página con nota (filas), con las páginas que más fallan arriba. Un fallo en todas las páginas suele estar en la plantilla o en un componente común.' }),
+      C.matrix({ titulo: 'Puntos de ' + area_ + ' por página', columnas: ids.map(function (id) { return { id: id, texto: names[id] }; }), filas: rows, textos: textos })
+    ])]);
+  }
+
   function render(home, pages, planned, seconds) {
     var all = [homeAsPage(home)].concat(pages);
     var agg = aggregate(all, { previstas: planned + 1, maxPaginas: i18n.grupo_max_paginas });
@@ -379,6 +429,13 @@
     results.appendChild(el('p', { class: 'help', text: 'Fiabilidad de las notas · análisis ' + rel.estado + ': ' + rel.paginas.con_nota + ' de '
       + rel.paginas.previstas + ' páginas previstas con nota; evaluados ' + rel.evaluados + ' de ' + rel.posibles + ' puntos en esas páginas'
       + (rel.sin_datos ? ' (' + rel.sin_datos + ' sin datos, que no restan).' : '.') }));
+
+    // ¿El fallo es de una página o de la plantilla? Matriz de los puntos de SEO (5 páginas o más)
+    var seoMatrix = matrixFigure(agg, 'seo');
+    if (seoMatrix) {
+      results.appendChild(el('h3', { text: 'Puntos de SEO por página' }));
+      results.appendChild(seoMatrix);
+    }
 
     // Fallos que se repiten
     results.appendChild(el('h3', { text: 'Fallos por comprobación' }));

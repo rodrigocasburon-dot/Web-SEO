@@ -28,6 +28,8 @@ $i18n = [
     'nota_incompleta' => $lang['nota_incompleta'],
     'glosario' => $lang['glosario'],
     'revisiones_manuales' => $lang['revisiones_manuales'],
+    // Pesos de la nota global (Scorer): solo para explicarla en el informe, no se recalcula nada
+    'pesos_globales' => Scorer::GLOBAL_WEIGHTS,
     // Comprobaciones que llegan después, desde PageSpeed Insights
     'psi_checks' => [
         'C08' => $lang['checks']['C08']['nombre'],
@@ -52,8 +54,12 @@ $e = fn(string $s): string => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
 <meta name="description" content="Herramienta interna de Proconsi que analiza una URL y evalúa de forma automática su SEO, su preparación para buscadores de IA y su accesibilidad.">
 <meta name="robots" content="noindex">
 <link rel="stylesheet" href="<?= $asset('assets/css/app.css') ?>">
+<link rel="stylesheet" href="<?= $asset('assets/css/tokens.css') ?>">
+<link rel="stylesheet" href="<?= $asset('assets/css/componentes.css') ?>">
+<link rel="stylesheet" href="<?= $asset('assets/css/graficos.css') ?>">
 <script src="<?= $asset('assets/js/export.js') ?>" defer></script>
 <script src="<?= $asset('assets/js/compare.js') ?>" defer></script>
+<script src="<?= $asset('assets/js/rw-componentes.js') ?>" defer></script>
 <script src="<?= $asset('assets/js/app.js') ?>" defer></script>
 </head>
 <body>
@@ -156,7 +162,7 @@ $e = fn(string $s): string => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
   <div id="status" class="status" role="status" aria-live="polite"></div>
   <div id="error" class="notice notice--fail" role="alert" tabindex="-1" hidden></div>
 
-  <section id="results" class="results" aria-labelledby="results-title" hidden></section>
+  <section id="results" class="results rw" aria-labelledby="results-title" hidden></section>
 
   <section id="metodo" class="method" aria-labelledby="method-title">
     <div>
