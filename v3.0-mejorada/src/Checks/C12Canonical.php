@@ -3,7 +3,9 @@
  * C12 Canonical: presente y coherente con la URL analizada (URL final tras redirecciones).
  * - igual (sin distinguir barra final ni mayúsculas del dominio) → CUMPLE
  * - mismo dominio (con o sin www) y ruta, pero distinto esquema, www o consulta → AVISO
- * - ausente, vacío, no http(s), varios distintos o apunta a otra página → NO_CUMPLE
+ * - ausente → AVISO (el canonical es opcional: sin él, el buscador elige la URL canónica)
+ * - apunta a otra página → AVISO (puede ser intencionado: contenido duplicado o sindicado)
+ * - vacío, no http(s) o varios distintos → NO_CUMPLE (señal errónea o contradictoria)
  * También se lee la cabecera HTTP Link rel="canonical" si no hay etiqueta.
  */
 class C12Canonical extends BaseCheck
@@ -32,7 +34,7 @@ class C12Canonical extends BaseCheck
 
         $umbral = 'Canonical presente y coherente con ' . $ctx->url;
         if (!$hrefs) {
-            return $this->result(self::FAIL, null, $umbral, [DomHelper::note('(no hay link rel="canonical")', 'link[rel="canonical"]')], 'No se declara URL canónica.', 1);
+            return $this->result(self::WARN, null, $umbral, [DomHelper::note('(no hay link rel="canonical")', 'link[rel="canonical"]')], 'No se declara URL canónica (es opcional; sin ella, el buscador elige la versión preferida).');
         }
 
         $resolved = [];
@@ -60,7 +62,7 @@ class C12Canonical extends BaseCheck
         if ($this->key($canonical, false) === $this->key($ctx->url, false)) {
             return $this->result(self::WARN, $valor, $umbral, $ev, 'El canonical apunta a una variante de la misma página (cambia el esquema, www o los parámetros): ' . $canonical);
         }
-        return $this->result(self::FAIL, $valor, $umbral, $ev, 'El canonical apunta a otra página: ' . $canonical . '. Puede ser intencionado (contenido duplicado); requiere confirmación.', 1);
+        return $this->result(self::WARN, $valor, $umbral, $ev, 'El canonical apunta a otra página: ' . $canonical . '. Puede ser intencionado (contenido duplicado); requiere confirmación.');
     }
 
     /** Clave de comparación. $strict: incluye esquema, www, puerto y consulta. */

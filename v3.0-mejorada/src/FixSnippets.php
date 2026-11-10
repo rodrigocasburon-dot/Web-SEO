@@ -98,13 +98,13 @@ class FixSnippets
                 }
                 break;
             case 'C12':
-                if (!$fail || !preg_match('#^https?://#i', $finalUrl)) {
+                if (!preg_match('#^https?://#i', $finalUrl)) {
                     break;
                 }
                 $url = htmlspecialchars($finalUrl, ENT_QUOTES | ENT_HTML5, 'UTF-8');
                 if ($absent) {
-                    $pairs[] = self::pair(null, str_replace('{url}', $url, $t['nuevo']));   // no hay canonical
-                } elseif (($r['valor_medido'] ?? null) === '') {
+                    $pairs[] = self::pair(null, str_replace('{url}', $url, $t['nuevo']));   // no hay canonical (AVISO)
+                } elseif ($fail && ($r['valor_medido'] ?? null) === '') {
                     $tag = self::openTag((string) ($ev[0]['extracto'] ?? ''));
                     if ($tag !== null && self::tagName($tag) === 'link') {
                         $pairs[] = self::pair($tag, self::setAttr($tag, 'href', $url));     // href vacío

@@ -99,9 +99,9 @@ return [
         ],
         'C05' => [
             'nombre' => 'Encabezados',
-            'descripcion' => 'Comprueba que hay un único h1 y que los niveles de encabezado no se saltan.',
-            'recomendacion' => 'Usa un único h1 que describa el contenido de la página y organiza las secciones con h2, h3… sin saltar niveles.',
-            'recomendacion_aviso' => 'Revisa la jerarquía de encabezados para que no salte niveles (por ejemplo, de h1 a h3); elige el nivel por estructura, no por el tamaño visual.',
+            'descripcion' => 'Comprueba que hay un h1 (idealmente uno) y que los niveles de encabezado no se saltan.',
+            'recomendacion' => 'Añade un h1 visible que describa el contenido de la página y organiza las secciones con h2, h3… sin saltar niveles.',
+            'recomendacion_aviso' => 'Revisa la jerarquía de encabezados: que no salte niveles (por ejemplo, de h1 a h3) y, si hay varios h1, que el primero describa la página y cada uno encabece una sección real. Elige el nivel por estructura, no por el tamaño visual.',
         ],
         'C06' => [
             'nombre' => 'Texto alternativo en imágenes',
@@ -146,12 +146,13 @@ return [
             'nombre' => 'URL canónica',
             'descripcion' => 'Comprueba que existe link rel="canonical" y que es coherente con la URL analizada.',
             'recomendacion' => 'Añade <link rel="canonical" href="..."> con la URL absoluta preferida de esta página. Si apunta a otra página a propósito, confirma que el contenido es realmente equivalente.',
-            'recomendacion_aviso' => 'Unifica el canonical con la versión de la URL que quieres indexar (esquema, www y parámetros) y redirige las demás variantes a ella.',
+            'recomendacion_aviso' => 'Revisa el canonical: si falta, añade <link rel="canonical"> con la URL preferida (sobre todo si la página se abre con parámetros o variantes); si apunta a otra página, confirma que el contenido es realmente equivalente; si apunta a una variante, unifícalo con la versión que quieres indexar (esquema, www y parámetros) y redirige las demás a ella.',
         ],
         'C13' => [
             'nombre' => 'Datos estructurados',
-            'descripcion' => 'Comprueba que hay JSON-LD con sintaxis válida y @type definido.',
-            'recomendacion' => 'Añade datos estructurados JSON-LD con sintaxis válida y @type definido (por ejemplo Organization, WebPage, Article o Product) y revísalos con un validador de datos estructurados.',
+            'descripcion' => 'Comprueba si hay JSON-LD y, si lo hay, que tenga sintaxis válida y @type definido.',
+            'recomendacion' => 'Corrige los datos estructurados JSON-LD: sintaxis válida y @type definido en cada nodo; revísalos con un validador de datos estructurados.',
+            'recomendacion_aviso' => 'Valora añadir datos estructurados JSON-LD que describan la página (por ejemplo Organization, WebPage, Article o Product) y revísalos con un validador; ayudan a buscadores y sistemas de IA a interpretar el contenido.',
         ],
         'C15' => [
             'nombre' => 'Meta description',
