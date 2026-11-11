@@ -34,14 +34,30 @@ try {
     $config['rate_limit'] = ['max_requests' => $max * 2, 'window_seconds' => (int) ($config['rate_limit']['window_seconds'] ?? 600)];
     Api::rateLimit($config, 'site_page', 'páginas analizadas');
 
-    set_time_limit(25);
+    // v4: turno en el análisis (tope de páginas, análisis detenido y ritmo de peticiones al sitio)
+    $turn = SiteRun::reserve($run);
+    if (!$turn['ok']) {
+        $status = ['RUN_UNKNOWN' => 403, 'RETRY' => 429][$turn['codigo']] ?? 409;
+        Api::respond($status, ['ok' => false, 'url' => $url, 'run' => $run,
+            'error' => ['code' => $turn['codigo'], 'message' => $turn['mensaje']], 'reintentar' => $turn['reintentar']]);
+    }
+    set_time_limit(25 + (int) ceil($turn['espera']));
+    if ($turn['espera'] > 0) {
+        usleep((int) round($turn['espera'] * 1e6));
+    }
+    $state = SiteRun::get($run);
     $started = microtime(true);
     $result = (new Analyzer($config))->analyze($url, [
         'pagina_de_sitio' => true,
-        'noindex_intentional' => false,
+        'noindex_intentional' => !empty($input['noindex_intentional']),
         'sitio_host' => (string) parse_url($url, PHP_URL_HOST),
     ]);
     $ms = (int) round((microtime(true) - $started) * 1000);
+    // El sitio pide frenar (429 Too Many Requests o 503 Service Unavailable): se detiene el análisis
+    $httpStatus = (int) ($result['fetch']['status'] ?? 0);
+    if ($httpStatus === 429 || $httpStatus === 503) {
+        SiteRun::stop($run, 'El sitio analizado ha respondido HTTP ' . $httpStatus . ' (pide reducir las peticiones): se ha detenido el análisis para no sobrecargarlo.');
+    }
     if (!$result['ok']) {
         $out = ['ok' => false, 'url' => $url, 'error' => $result['error'], 'ms' => $ms, 'run' => $run];
         $out['guardado_temporal'] = RunStore::put('page', $signature, $out);
@@ -80,10 +96,14 @@ try {
     // Resultado calculado aquí, guardado para el historial (site_record.php). Sin los enlaces: no hacen falta.
     $out['guardado_temporal'] = RunStore::put('page', $signature, $out);
     // Enlaces nuevos, firmados para este mismo análisis (el navegador descarta los que ya conoce). Solo en el profundo.
-    $out['nuevas'] = empty($input['descubrir']) ? [] : array_map(
-        fn(string $u) => ['url' => $u, 'firma' => $token->sign(SiteToken::pageScope($run, $u), $expires)],
-        array_slice((array) ($result['enlaces'] ?? []), 0, SITE_PAGE_MAX_LINKS)
-    );
+    // El servidor decide: solo en el modo profundo y sin pasar del tope (SiteRun); el navegador descarta las que ya conoce.
+    $links = ($state['modo'] ?? 'rapido') === 'profundo' ? array_slice((array) ($result['enlaces'] ?? []), 0, SITE_PAGE_MAX_LINKS) : [];
+    $links = $links ? SiteRun::allowLinks($run, $links) : [];
+    $out['nuevas'] = array_map(fn(string $u) => ['url' => $u, 'firma' => $token->sign(SiteToken::pageScope($run, $u), $expires)], $links);
+    $after = SiteRun::get($run);
+    if ($after !== null && $after['parado'] !== null) {
+        $out['parado'] = $after['parado'];
+    }
     Api::respond(200, $out);
 } catch (Throwable $e) {
     Api::internalError('site_page', $e);

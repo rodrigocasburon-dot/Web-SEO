@@ -25,7 +25,8 @@ Solo hay **dos pantallas**:
     (proconsi.com: 41 s). *Profundo*: **todas** las páginas que se encuentren (sitemaps y, después, los enlaces de cada
     página analizada), de 6 en 6, hasta el tope `site_max_pages` (5.000; máx. 20.000). proconsi.com entero: 394 páginas
     en 2 min 25 s. «Terminar ya» corta y muestra lo analizado.
-  - **Departamento** (`assets/js/focus.js`): Informe completo, Marketing y contenidos, Desarrollo web, Diseño y UX o
+  - **Departamento** (`assets/js/focus.js`). *Quitado de la pantalla el 11/11/2026 hasta decidir cómo hacerlo*; se
+    conserva el código. Así funcionaba: Informe completo, Marketing y contenidos, Desarrollo web, Diseño y UX o
     Dirección. Añade arriba «Para tu departamento»: lo que le toca a ese equipo, explicado a su medida («Por qué importa»
     en llano para Marketing, Diseño y Dirección; lo medido para Desarrollo), y a quién pasar el resto. En el sitio, la
     tabla de fallos lleva la columna «Quién lo arregla» y pone primero lo de ese equipo. **No cambia ninguna nota.** Se
@@ -50,6 +51,12 @@ Cómo se recorre el sitio sin abrir un «proxy»: `api/site.php` crea un identif
 (`SiteToken::pageScope`); `api/site_page.php` solo analiza páginas firmadas y devuelve los enlaces nuevos de esa página ya
 firmados para el mismo análisis. `api/site_record.php` solo guarda resultados de ese análisis y los añade a la fila de la
 URL buscada (`History::attachSite`). Los resultados se guardan 4 h en `storage/runs/` (`RunStore::TTL`).
+
+**Control en el servidor (`src/SiteRun.php`, 11/11/2026).** El modo y el tope de páginas se fijan al crear el análisis y
+no los puede cambiar el navegador: `api/site_page.php` cuenta las páginas analizadas y las firmadas, y no analiza ni firma
+ninguna más allá del tope (en el rápido no firma enlaces nuevos). Entre una página y la siguiente del mismo análisis pasa
+al menos `site_min_interval_ms` (250 ms) o el `Crawl-delay` de robots.txt, si es mayor (máx. 10 s). Si el sitio responde
+429 o 503, el análisis se detiene y el informe lo indica.
 
 Ojo en webs grandes: a unas 3 páginas por segundo (lo medido con proconsi.com), 5.000 páginas son unos 30 minutos y
 muchas peticiones al servidor analizado.

@@ -27,6 +27,9 @@ return [
     // (máx. 20.000), páginas a la vez, archivos de sitemap que se leen como máximo y tiempo total para leerlos (s)
     'site_max_pages'      => 5000,
     'site_parallel'       => 6,
+    // v4 · Intervalo mínimo entre páginas del mismo análisis (ms). Si robots.txt pide un Crawl-delay mayor, manda
+    // ese (hasta 10 s). Si el sitio responde 429 o 503, el análisis se detiene (src/SiteRun.php).
+    'site_min_interval_ms' => 250,
     'site_sitemap_files'  => 50,
     'site_sitemap_budget' => 30,
     // Informe de sitio · recomendaciones agrupadas: páginas afectadas que se listan como máximo en cada una

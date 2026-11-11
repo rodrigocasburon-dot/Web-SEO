@@ -26,7 +26,7 @@ class RobotsTxt
             $value = trim($m[2]);
             if ($field === 'user-agent') {
                 if ($current === null || !$lastWasAgent) {
-                    $o->groups[] = ['agents' => [], 'rules' => []];
+                    $o->groups[] = ['agents' => [], 'rules' => [], 'delay' => null];
                     $current = count($o->groups) - 1;
                 }
                 $o->groups[$current]['agents'][] = self::token($value);
@@ -36,10 +36,41 @@ class RobotsTxt
                     $o->groups[$current]['rules'][] = [$field, $value];
                 }
                 $lastWasAgent = false;
+            } elseif ($field === 'crawl-delay') {
+                // v4: no afecta al acceso, pero marca el ritmo del análisis del sitio entero (SiteRun)
+                if ($current !== null && is_numeric($value) && (float) $value >= 0) {
+                    $o->groups[$current]['delay'] = (float) $value;
+                }
+                $lastWasAgent = false;
             }
-            // Otros campos (sitemap, crawl-delay…) no afectan al acceso.
+            // Otros campos (sitemap…) no afectan al acceso.
         }
         return $o;
+    }
+
+    /**
+     * v4 · Crawl-delay (s) del grupo que se aplica al agente (el suyo propio o, si no tiene, «*»); null si no hay.
+     * No es parte de RFC 9309, pero muchos sitios lo usan para pedir un ritmo de rastreo.
+     */
+    public function crawlDelay(string $agent): ?float
+    {
+        $agent = self::token($agent);
+        foreach ([$agent, '*'] as $who) {
+            $found = false;
+            $delay = null;
+            foreach ($this->groups as $g) {
+                if (in_array($who, $g['agents'], true)) {
+                    $found = true;
+                    if ($g['delay'] !== null) {
+                        $delay = max((float) $delay, $g['delay']);
+                    }
+                }
+            }
+            if ($found) {
+                return $delay;
+            }
+        }
+        return null;
     }
 
     /**

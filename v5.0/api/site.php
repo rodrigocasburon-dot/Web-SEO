@@ -27,6 +27,7 @@ try {
 
     $url = is_string($input['url'] ?? null) ? $input['url'] : '';
     $quick = ($input['modo'] ?? 'rapido') !== 'profundo';
+    $noindexIntentional = !empty($input['noindex_intentional']);
     try {
         InputUrlPolicy::check($url);
     } catch (UrlGuardException $e) {
@@ -35,7 +36,7 @@ try {
     // Portada (como analyze.php, hasta 35 s) + sitemaps (hasta 30 s)
     set_time_limit(90);
     $started = microtime(true);
-    $options = ['noindex_intentional' => false, 'con_html' => true];
+    $options = ['noindex_intentional' => $noindexIntentional, 'con_html' => true];
     $result = (new Analyzer($config))->analyze($url, $options);
 
     $fetch = array_intersect_key($result['fetch'] ?? [], array_flip(
@@ -89,7 +90,22 @@ try {
     $run = bin2hex(random_bytes(16));
     // Historial (v3.0): token de un solo uso para guardar el análisis al terminar
     $registro = History::enabled($config) ? ['firma' => $token->sign('registro|' . (string) $result['url'], $expires)] : null;
+    $maxPages = $quick ? SitePlanner::QUICK_PAGES : SitePlanner::maxPages($config);
+    $plan['paginas'] = array_slice($plan['paginas'], 0, $maxPages);
     $paginas = array_map(fn(string $u) => ['url' => $u, 'firma' => $token->sign(SiteToken::pageScope($run, $u), $expires)], $plan['paginas']);
+    // v4: el modo, el tope y el ritmo quedan fijados en el servidor (SiteRun); el navegador no los puede cambiar
+    $crawlDelay = $result['robots_body'] !== null
+        ? RobotsTxt::parse((string) $result['robots_body'])->crawlDelay(RobotsTxt::token((string) ($config['user_agent'] ?? 'ProconsiAnalyzer')))
+        : null;
+    if ($paginas && !SiteRun::create($run, $quick ? 'rapido' : 'profundo', $maxPages, array_merge([(string) $result['url']], $plan['paginas']), $crawlDelay,
+        (int) ($config['site_min_interval_ms'] ?? SiteRun::DEFAULT_INTERVAL_MS), $expires)) {
+        $plan['notas'][] = 'No se ha podido preparar el análisis del resto del sitio (almacén temporal no disponible).';
+        $paginas = [];
+    }
+    if ($crawlDelay !== null && $crawlDelay > 0) {
+        $plan['notas'][] = 'robots.txt pide un Crawl-delay de ' . rtrim(rtrim(number_format($crawlDelay, 1, ',', ''), '0'), ',') . ' s: se respeta'
+            . ($crawlDelay > SiteRun::MAX_DELAY ? ' hasta un máximo de ' . (int) SiteRun::MAX_DELAY . ' s entre páginas' : '') . ', así que el análisis tardará más.';
+    }
 
     $payload = [
         'ok' => true,
@@ -122,7 +138,8 @@ try {
             'expira' => $expires,
             'run' => $run,
             'modo' => $quick ? 'rapido' : 'profundo',
-            'max_paginas' => $quick ? SitePlanner::QUICK_PAGES : SitePlanner::maxPages($config),
+            'max_paginas' => $maxPages,
+            'noindex_intentional' => $noindexIntentional,
             'candidatas' => $plan['candidatas'],
             'desde_enlaces' => $plan['desde_enlaces'],
             'desde_sitemap' => $plan['desde_sitemap'],
