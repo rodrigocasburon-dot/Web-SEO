@@ -46,7 +46,7 @@ return [
         'Esfuerzo' =>'Estimación orientativa del trabajo necesario para corregir el problema: alto, medio o bajo.',
         'Evidencia' => 'Dato o fragmento del HTML que justifica un resultado: selector CSS, extracto y número de línea.',
         'Fallo' => 'La comprobación no se supera. Es el único resultado que resta puntos.',
-        'Gravedad' => 'Peso de un fallo en la nota: crítica 15 puntos, alta 8, media 4 y baja 1, multiplicados por 1 + ln(k) cuando el fallo aparece k veces.',
+        'Gravedad' => 'Peso de un fallo en la nota: crítica 15 puntos, alta 8, media 4 y baja 1, multiplicados por 1 + ln(k) cuando el fallo aparece k veces y ajustados con el factor de normalización de cada área.',
         'Impacto' => 'Estimación orientativa del beneficio de corregir el problema: alto, medio o bajo.',
         'Lighthouse' => 'Herramienta de auditoría de Google que utiliza PageSpeed Insights. Aquí se usa para medir el contraste con un navegador real.',
         'No aplica' => 'La página no tiene elementos de ese tipo (por ejemplo, ninguna imagen). No resta puntos.',

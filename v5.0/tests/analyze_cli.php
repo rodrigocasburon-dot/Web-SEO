@@ -1,5 +1,9 @@
 <?php
 // Análisis manual CON internet: php tests/analyze_cli.php <url> [--json] [--noindex-intencionado]
+if (PHP_SAPI !== 'cli') {
+    http_response_code(404);
+    exit;
+}
 require __DIR__ . '/../src/bootstrap.php';
 
 $args = array_slice($argv, 1);

@@ -53,7 +53,13 @@ test('Buscador (v4): URL y tipo de análisis (rápido por defecto), etiquetados,
     // Descargas al final y página de requisitos en el menú
     assertSame(1, $xp->query('//section[@id="descargas"]')->length);
     assertSame(1, $xp->query('//nav[contains(@class,"site-nav")]//a[@href="requisitos.php"]')->length);
-    assertSame(0, $xp->query('//*[@id="mode-compare" or @id="keyword" or @id="noindex" or @id="local-business"]')->length);
+    // Recuperado (11/11/2026): comparar dos URLs, palabra clave y noindex, plegados en «Más opciones», con etiqueta
+    foreach (['mode-single', 'mode-compare', 'url2', 'keyword', 'noindex'] as $id) {
+        assertSame(1, $xp->query('//*[@id="' . $id . '"]')->length, $id);
+        assertSame(1, $xp->query('//label[@for="' . $id . '"]')->length, 'Etiqueta de ' . $id);
+    }
+    assertSame(1, $xp->query('//details[@id="more-options"]//input[@id="mode-compare" and @name="accion"]')->length);
+    assertSame(0, $xp->query('//*[@id="local-business"]')->length);
     // Contenedores del sitio entero (assets/js/site.js)
     foreach (['site-section', 'site-status', 'site-progress', 'site-stop', 'site-results'] as $id) {
         assertSame(1, $xp->query('//*[@id="' . $id . '"]')->length, $id);

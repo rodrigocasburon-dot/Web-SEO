@@ -1,0 +1,10 @@
+# Radar web · protección mínima en Apache 2.4 (SEG-03). Ver docs/CHECKLIST_DESPLIEGUE_PROCONSI.md.
+# Requiere AllowOverride con al menos AuthConfig y Options (en WAMP viene «All»).
+
+# Sin listados de carpetas
+Options -Indexes
+
+# Archivos ocultos (.gitignore, .htaccess), documentación, SQL, certificados y copias: sin acceso web
+<FilesMatch "(^\.|\.(md|sql|pem|log|bak|orig|swp|dist)$|~$)">
+    Require all denied
+</FilesMatch>

@@ -226,6 +226,13 @@
     return m < 60 ? m + ' min ' + (s % 60) + ' s' : Math.floor(m / 60) + ' h ' + (m % 60) + ' min';
   }
 
+  /** Estimación redondeada: «menos de 1 min», «aprox. 3 min», «aprox. 1 h 20 min». */
+  function roughDuration(s) {
+    if (s < 60) return 'menos de 1 min';
+    var m = Math.round(s / 60);
+    return 'aprox. ' + (m < 60 ? m + ' min' : Math.floor(m / 60) + ' h' + (m % 60 ? ' ' + m % 60 + ' min' : ''));
+  }
+
   function post(url, body) {
     return fetch(url, {
       method: 'POST',
@@ -275,7 +282,7 @@
       ? 'Análisis profundo: buscando todas las páginas del sitio (enlaces y sitemap)…'
       : 'Análisis rápido: eligiendo las ' + 49 + ' páginas principales del sitio…';
 
-    post('api/site.php', { url: url, modo: deep ? 'profundo' : 'rapido' }).then(function (home) {
+    post('api/site.php', { url: url, modo: deep ? 'profundo' : 'rapido', noindex_intentional: !!opts.noindexIntencionado }).then(function (home) {
       if (runId !== currentRun) return;
       if (!home.ok) {
         statusBox.textContent = '';
@@ -301,18 +308,39 @@
         lastAnnounce = Date.now();
         var elapsed = (Date.now() - started) / 1000;
         var left = list.length - done;
-        var eta = done > 5 && left > 0 ? ' Quedan unos ' + duration(elapsed / done * left) + (deep ? ' (pueden aparecer más páginas).' : '.') : '';
+        var eta = done > 5 && left > 0 ? ' Queda ' + roughDuration(elapsed / done * left) + (deep ? ' (pueden aparecer más páginas).' : '.') : '';
         statusBox.textContent = (deep ? 'Análisis profundo: ' + done + ' de ' + list.length + ' páginas encontradas analizadas.' : 'Análisis rápido: ' + done + ' de ' + list.length + ' páginas analizadas.')
           + ' Tiempo: ' + duration(elapsed) + '.' + eta;
       };
       announce(true);
       var launched = [];   // firmas de las páginas lanzadas (el servidor guarda sus resultados para el historial)
-      var shouldStop = function () { return stopRequested || runId !== currentRun; };
+      // v4: el servidor puede detener el análisis (tope alcanzado o el sitio pide frenar con 429/503)
+      var serverStop = null;
+      var shouldStop = function () { return stopRequested || serverStop !== null || runId !== currentRun; };
       var pagesDone = pool(list, home.sitio.paralelas || 6, function (item) {
         launched.push(item.firma);
         var t0 = Date.now();
-        return post('api/site_page.php', { url: item.url, run: home.sitio.run, firma: item.firma, expira: home.sitio.expira, descubrir: deep })
+        var body = { url: item.url, run: home.sitio.run, firma: item.firma, expira: home.sitio.expira, noindex_intentional: !!home.sitio.noindex_intentional };
+        // RETRY: el servidor reparte el ritmo de peticiones al sitio (Crawl-delay); se espera y se repite
+        var attempt = function (tries) {
+          return post('api/site_page.php', body).then(function (r) {
+            if (r && !r.ok && r.error && r.error.code === 'RETRY' && tries < 20 && !shouldStop()) {
+              return new Promise(function (res) { setTimeout(res, Math.min(30, Math.max(1, Number(r.reintentar) || 1)) * 1000); })
+                .then(function () { return attempt(tries + 1); });
+            }
+            return r;
+          });
+        };
+        return attempt(0)
           .then(function (r) {
+            var code = r && !r.ok && r.error ? r.error.code : null;
+            if (code === 'SITE_STOPPED' || code === 'LIMIT_REACHED' || code === 'RETRY' || code === 'RUN_UNKNOWN') {
+              // No se ha analizado: fuera de la lista de guardado y del informe
+              launched.splice(launched.indexOf(item.firma), 1);
+              if (code !== 'RETRY' && serverStop === null) serverStop = r.error.message;
+              return;
+            }
+            if (r && r.parado && serverStop === null) serverStop = r.parado;
             // Páginas nuevas enlazadas desde esta: a la cola, sin repetir y hasta el máximo
             (r.nuevas || []).forEach(function (n) {
               var k = pageKey(n.url);
@@ -335,8 +363,8 @@
         if (runId !== currentRun) return;
         progressWrap.hidden = true;
         var seconds = Math.round((Date.now() - started) / 1000);
-        var info = { encontradas: list.length, descubiertas: discovered, tope: capped ? maxPages : 0, cortado: stopRequested && done < list.length };
-        statusBox.textContent = (deep ? 'Análisis profundo' : 'Análisis rápido') + ' del sitio terminado en ' + duration(seconds) + ': ' + (done + 1) + ' páginas.';
+        var info = { encontradas: list.length, descubiertas: discovered, tope: capped ? maxPages : 0, cortado: (stopRequested || serverStop !== null) && pages.length < list.length, parado: serverStop };
+        statusBox.textContent = (deep ? 'Análisis profundo' : 'Análisis rápido') + ' del sitio terminado en ' + duration(seconds) + '. El resultado está debajo.';
         render(home, pages, info, seconds);
         saveHistory(home, launched, opts);
       });
@@ -390,25 +418,34 @@
     lastModel = null;
     var agg = aggregate(all, { names: names, previstas: (info.encontradas || pages.length) + 1, maxPaginas: i18n.grupo_max_paginas });
     results.textContent = '';
+    // El sitio ya ha terminado: el texto de la primera nota deja de decir que se sigue analizando
+    var firstHelp = doc.querySelector('#sec-primera-nota .help');
+    if (firstHelp) firstHelp.textContent = 'Nota rápida de esta página (su HTML y PageSpeed). La nota de todo el sitio y lo que falla o falta están debajo.';
+    // Páginas revisadas frente a páginas con nota: la diferencia se explica siempre (bloqueos, errores, redirecciones…)
+    var sinNota = all.length - agg.analizadas;
+    var otras = sinNota - (agg.bloqueadas || 0) - (agg.errores || 0);
 
     var modo = home.sitio.modo === 'rapido' ? 'Análisis rápido (portada y páginas principales)'
       : home.sitio.modo === 'profundo' ? 'Análisis profundo (todas las páginas encontradas)' : 'Análisis del sitio';
     results.appendChild(el('div', { class: 'report-head' }, [
       el('h2', { id: 'site-results-title', tabindex: '-1', text: 'Resultado del sitio' }),
       el('ul', { class: 'meta-list' }, [
-        el('li', { text: modo + ': ' + agg.analizadas + ' páginas con nota en ' + duration(seconds) + '.' }),
+        el('li', { text: modo + ': ' + all.length + (all.length === 1 ? ' página revisada en ' : ' páginas revisadas en ') + duration(seconds) + (sinNota > 0 ? '; ' + agg.analizadas + ' con nota.' : (all.length === 1 ? ', con nota.' : ', todas con nota.')) }),
         info.cortado ? el('li', { text: 'Se ha terminado antes de tiempo: quedaron ' + (info.encontradas - pages.length) + ' páginas sin analizar.' }) : null,
         info.tope ? el('li', { text: 'Se ha llegado al máximo de ' + info.tope + ' páginas por análisis: el sitio tiene más.' }) : null,
-        agg.bloqueadas || agg.errores ? el('li', { text: 'Sin nota: ' + [agg.bloqueadas ? agg.bloqueadas + ' con acceso bloqueado' : '', agg.errores ? agg.errores + ' que no se han podido descargar' : ''].filter(Boolean).join(' y ') + ' (están en el CSV).' }) : null
+        info.parado ? el('li', { text: 'Detenido por el servidor: ' + info.parado }) : null,
+        sinNota > 0 ? el('li', { text: 'Sin nota: ' + [agg.bloqueadas ? agg.bloqueadas + ' con acceso bloqueado' : '', agg.errores ? agg.errores + ' que no se han podido descargar' : '', otras > 0 ? otras + ' que no son una página HTML analizable (redirecciones, archivos u otras respuestas)' : ''].filter(Boolean).join(', ') + '. Están en el CSV.' }) : null
       ])
     ]));
 
-    var metaLines = [modo + ': ' + agg.analizadas + ' páginas con nota en ' + duration(seconds) + '.'];
+    var metaLines = [modo + ': ' + all.length + (all.length === 1 ? ' página revisada en ' : ' páginas revisadas en ') + duration(seconds) + (sinNota > 0 ? '; ' + agg.analizadas + ' con nota (las demás, en el CSV).' : (all.length === 1 ? ', con nota.' : ', todas con nota.'))];
     if (info.cortado) metaLines.push('Se ha terminado antes de tiempo: quedaron ' + (info.encontradas - pages.length) + ' páginas sin analizar.');
     if (info.tope) metaLines.push('Se ha llegado al máximo de ' + info.tope + ' páginas por análisis: el sitio tiene más.');
+    if (info.parado) metaLines.push('Detenido por el servidor: ' + info.parado);
 
     if (home.blocked || agg.analizadas === 0) {
       lastModel = { url: home.url, bloqueado: true, meta: metaLines, mensaje: 'No calculable: el sitio ha bloqueado el acceso automático.' };
+      if (root.RadarDashboard) root.RadarDashboard.setSite(lastModel);
       results.appendChild(el('p', { class: 'notice notice--warn', text: 'No calculable: el sitio ha bloqueado el acceso automático. ' + ((home.blocked && home.blocked.message) || '') }));
       addCsv(all);
       results.hidden = false;
@@ -441,19 +478,18 @@
       byArea[EXTRA_AREA.error404].push(siteItem('Página de error 404', c404.estado, c404.detalle || '', null));
     }
 
-    // Nota global y tarjetas
+    // Media del sitio (dato secundario: las notas del informe son las de la URL analizada). Sin nota global.
+    // Lo que falla o falta, con cuántas páginas afecta, se pinta en el informe por bloques (assets/js/dashboard.js).
     var rel = agg.fiabilidad;
-    results.appendChild(el('p', { class: 'rw-global' }, [
-      'Nota global del sitio: ', el('strong', { text: fmt(agg.media.global) + ' / 100' }),
-      ' · media de las ' + agg.analizadas + ' páginas con nota (peor página: ' + fmt(agg.minima.global) + ').'
-    ]));
+    var relText = reliabilityText(rel, all.length);
     AREAS.forEach(function (a) { sortItems(byArea[a]); });
+    // Tres tarjetas (SEO, GEO, UX) con la nota media del sitio; al abrir una, lo que falla o falta en esa área
     var cards = el('ul', { class: 'site-cards' }, AREAS.map(function (a) {
       return el('li', {}, [areaCard(a, agg, byArea[a])]);
     }));
     accordion(cards);
     results.appendChild(cards);
-    results.appendChild(el('p', { class: 'help', text: 'Abre cada tarjeta para ver lo que falla o falta en esa área, de más a menos páginas afectadas.' }));
+    results.appendChild(el('p', { class: 'help', text: 'Nota media de las ' + agg.analizadas + ' páginas con nota. Abre cada tarjeta para ver lo que falla o falta en esa área, de más a menos páginas afectadas.' }));
 
     // Revisión manual (CLAUDE.md: señalar siempre qué requiere revisión manual)
     var pi = agg.pistas;
@@ -464,8 +500,7 @@
       + 'Una persona debe revisar además la calidad de los textos alternativos, el orden real del teclado, el contraste sobre imágenes y la calidad de los subtítulos.';
     // Panel de notas: fiabilidad y revisión manual, cada una en su línea
     results.appendChild(el('div', { class: 'site-notes' }, [
-      el('p', {}, [el('strong', { text: 'Fiabilidad: ' }), 'análisis ' + rel.estado + ', evaluados ' + rel.evaluados + ' de ' + rel.posibles + ' puntos'
-        + (rel.sin_datos ? ' (' + rel.sin_datos + ' sin datos, que no restan)' : '') + '. Contraste y Core Web Vitals (PageSpeed) solo se miden en la primera página.']),
+      el('p', {}, [el('strong', { text: 'Fiabilidad de la nota del sitio: ' }), relText]),
       el('p', {}, [el('strong', { text: 'Revisión manual (no puntúa): ' }), (manual.length ? manual.join('; ') + '. ' : '')
         + 'Una persona debe revisar además la calidad de los textos alternativos, el orden real del teclado, el contraste sobre imágenes y la calidad de los subtítulos.'])
     ]));
@@ -476,13 +511,34 @@
       areas: AREAS.map(function (a) {
         return { id: a, nombre: areaName(a), nota: agg.media[a], peor: agg.minima[a], puntos: byArea[a].map(function (x) { return x.datos; }) };
       }),
-      fiabilidad: 'Fiabilidad: análisis ' + rel.estado + ', evaluados ' + rel.evaluados + ' de ' + rel.posibles + ' puntos'
-        + (rel.sin_datos ? ' (' + rel.sin_datos + ' sin datos, que no restan)' : '') + '. Contraste y Core Web Vitals (PageSpeed) solo se miden en la primera página.',
-      manual: manualText
+      fiabilidad: 'Fiabilidad de la nota del sitio: ' + relText,
+      manual: manualText,
+      // Datos del sitio para el informe por bloques y el resumen (assets/js/perfiles.js)
+      checks: agg.checks,
+      titulos_repetidos: agg.titulos_repetidos,
+      con_titulo: agg.con_titulo,
+      pagina_404: home.sitio.pagina_404 || null,
+      media: agg.media,
+      minima: agg.minima
     };
+    if (root.RadarDashboard) root.RadarDashboard.setSite(lastModel);
 
     addCsv(all);
     results.hidden = false;
+  }
+
+  /**
+   * Texto de fiabilidad del sitio que explica el porqué: «parcial» puede deberse a páginas sin nota (no se pudieron
+   * descargar, redirecciones…) aunque todas las comprobaciones de las páginas con nota se hayan hecho.
+   */
+  function reliabilityText(rel, revisadas) {
+    var pg = rel.paginas || {};
+    var why = [];
+    if (pg.previstas > pg.con_nota) why.push((pg.previstas - pg.con_nota) + ' de ' + pg.previstas + ' páginas previstas no tienen nota (están en el CSV)');
+    if (rel.sin_datos) why.push(rel.sin_datos + ' puntos sin datos, que no restan');
+    var base = 'análisis ' + rel.estado + (why.length ? ' porque ' + why.join(' y ') : '') + '. '
+      + 'En las ' + (pg.con_nota || 0) + ' páginas con nota se han evaluado ' + rel.evaluados + ' de ' + rel.posibles + ' puntos.';
+    return base + ' Contraste y Core Web Vitals (PageSpeed) solo se miden en la primera página.';
   }
 
   /** Elemento de la lista de una tarjeta para una comprobación de las páginas. */
@@ -571,6 +627,11 @@
         }
         items.forEach(function (x) { x.classList.toggle('is-open', x.firstChild.open); });
         list.classList.toggle('has-open', items.some(function (x) { return x.firstChild.open; }));
+        // La tarjeta abierta pasa debajo de las otras dos: se lleva la vista a ella (el foco sigue en su título)
+        if (d.open && li.scrollIntoView) {
+          var reduce = root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)').matches;
+          li.scrollIntoView({ block: 'nearest', behavior: reduce ? 'auto' : 'smooth' });
+        }
       });
     });
   }
@@ -580,7 +641,7 @@
     var host = doc.getElementById('descargas-sitio');
     var box = doc.getElementById('descargas');
     if (!host) return;
-    var csvButton = el('button', { type: 'button', class: 'rw-btn', text: 'Todas las páginas (CSV)' });
+    var csvButton = el('button', { type: 'button', class: 'rw-btn', text: 'CSV · Todo el sitio' });
     csvButton.addEventListener('click', function () { downloadCsv(all); });
     host.textContent = '';
     host.appendChild(el('h3', { text: 'El sitio' }));
@@ -649,9 +710,10 @@
     });
     var text = '\ufeff' + rows.map(function (r) { return r.map(csvCell).join(';'); }).join('\r\n') + '\r\n';
     var href = URL.createObjectURL(new Blob([text], { type: 'text/csv;charset=utf-8' }));
-    var host = '';
-    try { host = new URL(site).hostname.replace(/^www\./, ''); } catch (e) { host = 'sitio'; }
-    var a = el('a', { href: href, download: 'proconsi-radar-sitio-' + host.replace(/[^a-z0-9.\-]/gi, '') + '-' + new Date().toISOString().slice(0, 10) + '.csv' });
+    // Mismo formato de nombre que el resto de descargas: proconsi-radar-sitio-<dominio>-<AAAAMMDD-HHMM>.csv
+    var X = root.AnalyzerExport;
+    var name = X ? X.fileName(site, new Date(), 'csv').replace(/^analisis-/, 'sitio-') : 'sitio.csv';
+    var a = el('a', { href: href, download: 'proconsi-radar-' + name });
     doc.body.appendChild(a);
     a.click();
     a.remove();

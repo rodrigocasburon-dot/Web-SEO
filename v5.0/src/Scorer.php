@@ -5,7 +5,9 @@
  * - Cada área (seo, ia, accesibilidad) parte de 100.
  * - Solo NO_CUMPLE penaliza: w × P, con P según severidad y w = 1 + ln(k) (k = ocurrencias).
  * - Un fallo resta una sola vez; su penalización se reparte entre áreas según 'pilares' (config/weights.php).
- * - Área = máx(0, 100 − Σ). Global = 0,35 SEO + 0,30 IA + 0,35 Accesibilidad.
+ * - Normalización por área (config/normalizacion.php): Σ se multiplica por referencia / resta_maxima del área,
+ *   para que las tres áreas tengan la misma escala. Área = máx(0, 100 − Σ × factor).
+ *   Global = 0,35 SEO + 0,30 IA + 0,35 Accesibilidad (se calcula, pero la interfaz no la muestra).
  * - Riesgo alto: algún área < 50 o al menos dos fallos críticos.
  * - SIN_DATOS y "no aplica" no penalizan y se listan aparte. Si más de la mitad de las
  *   comprobaciones que aplican a un área son SIN_DATOS, la nota del área es incompleta.
@@ -19,11 +21,40 @@ class Scorer
     public const RISK_CRITICAL_FAILURES = 2;
 
     private array $matrix;
+    /** Factor de normalización por área (referencia / resta máxima) */
+    private array $factors;
+    private string $normVersion;
 
-    /** @param array|null $matrix matriz de reparto (por defecto config/weights.php); se usa si un registro no trae 'pilares' */
-    public function __construct(?array $matrix = null)
+    /**
+     * @param array|null $matrix        matriz de reparto (por defecto config/weights.php); se usa si un registro no trae 'pilares'
+     * @param array|null $normalization ['version', 'referencia' => [área => x], 'resta_maxima' => [área => x]]
+     *                                  (por defecto config/normalizacion.php); ['version' => 'sin'] desactiva la normalización
+     */
+    public function __construct(?array $matrix = null, ?array $normalization = null)
     {
         $this->matrix = $matrix ?? (array) require __DIR__ . '/../config/weights.php';
+        $norm = $normalization ?? (array) require __DIR__ . '/../config/normalizacion.php';
+        $this->normVersion = (string) ($norm['version'] ?? 'sin');
+        foreach (self::AREAS as $a) {
+            $ref = (float) ($norm['referencia'][$a] ?? 0);
+            $max = (float) ($norm['resta_maxima'][$a] ?? 0);
+            if (($ref > 0) !== ($max > 0)) {
+                throw new InvalidArgumentException("Normalización incompleta para el área $a");
+            }
+            $this->factors[$a] = $ref > 0 ? $ref / $max : 1.0;
+        }
+    }
+
+    /** Factores de normalización por área (1 = sin normalizar). */
+    public function factors(): array
+    {
+        return $this->factors;
+    }
+
+    /** Sin normalizar: escala original (100 − Σ). Para comparar y para las pruebas del cálculo base. */
+    public static function raw(?array $matrix = null): self
+    {
+        return new self($matrix, ['version' => 'sin']);
     }
 
     /** Peso por repetición: w = 1 + ln(k), con k ≥ 1. */
@@ -91,11 +122,11 @@ class Scorer
                 if ($shares[$a] <= 0) {
                     continue;
                 }
-                $d = $w * $p * $shares[$a];
+                $d = $w * $p * $shares[$a] * $this->factors[$a];
                 $areas[$a]['penalizacion'] += $d;
                 $areas[$a]['descuentos'][] = [
                     'id' => $id, 'severidad' => $severity, 'k' => $k, 'w' => $w, 'p' => $p,
-                    'reparto' => $shares[$a], 'descuento' => $d,
+                    'reparto' => $shares[$a], 'factor' => $this->factors[$a], 'descuento' => $d,
                 ];
             }
         }
@@ -126,6 +157,7 @@ class Scorer
         }
 
         return [
+            'normalizacion' => ['version' => $this->normVersion, 'factores' => $this->factors],
             'areas' => $areas,
             'global' => [
                 'puntuacion' => $global,

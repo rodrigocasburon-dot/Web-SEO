@@ -16,7 +16,7 @@ test('Requisitos: aparece cada comprobación del catálogo, una vez, con su nomb
     $xp = new DOMXPath($doc);
     $lang = Lang::all();
     $catalog = CheckRunner::catalog();
-    assertSame(count($catalog), $xp->query('//details[@class="fold"]')->length);
+    assertSame(count($catalog), $xp->query('//section[contains(@class,"requisitos-area")]/details[@class="fold"]')->length);
     foreach ($catalog as $id => $check) {
         $node = $xp->query('//details[@id="' . $id . '"]')->item(0);
         assertTrue($node !== null, 'Falta ' . $id);

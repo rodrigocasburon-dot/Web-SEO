@@ -21,7 +21,7 @@ conocer la versión del servidor.
   (Fase 4, aprobado por el grupo): URL, fecha, notas y fallos por gravedad. v3.0 (decisión del grupo del 9/11/2026):
   también el informe completo, con evidencias y extractos de la web, para volver a verlo desde el historial; lo guarda
   siempre el servidor con datos que ha calculado él. Todo se borra a los 12 meses. Desactivado si no hay `historial.dsn`.
-- Una sola URL por petición. v4 (decisiones del 10/11/2026): solo dos pantallas, el buscador (`index.php`) y el historial (`historial.php`). En el buscador se escribe la URL y se elige el tipo de análisis y el departamento. Cada búsqueda analiza a fondo la URL y después el sitio: **rápido** (portada + 49 páginas principales repartidas por secciones, por defecto) o **profundo** (TODAS las páginas que se encuentren: sitemaps y enlaces de cada página, hasta el tope `site_max_pages`, 5.000). Cada página va en su propia petición firmada y ligada a su análisis. El **departamento** (Marketing y contenidos, Desarrollo web, Diseño y UX, Dirección) solo cambia qué se enseña primero y cómo se explica (`lang/es.php` 'enfoque'); nunca cambia notas ni estados. Desde el historial se pueden **comparar dos auditorías**. No analizar backlinks, duplicados ni la cita real por motores de IA.
+- Una sola URL por petición. v4 (decisiones del 10/11/2026): solo dos pantallas, el buscador (`index.php`) y el historial (`historial.php`). En el buscador se escribe la URL y se elige el tipo de análisis y el departamento. Cada búsqueda analiza a fondo la URL y después el sitio: **rápido** (portada + 49 páginas principales repartidas por secciones, por defecto) o **profundo** (TODAS las páginas que se encuentren: sitemaps y enlaces de cada página, hasta el tope `site_max_pages`, 5.000). Cada página va en su propia petición firmada y ligada a su análisis; el servidor (`src/SiteRun.php`) fija el modo y el tope, no firma ni analiza páginas de más, respeta `Crawl-delay` (máx. 10 s) con un intervalo mínimo de `site_min_interval_ms` y detiene el análisis si el sitio responde 429 o 503. El **departamento** (Marketing y contenidos, Desarrollo web, Diseño y UX, Dirección) solo cambia qué se enseña primero y cómo se explica (`lang/es.php` 'enfoque'); nunca cambia notas ni estados. Desde el historial se pueden **comparar dos auditorías**. No analizar backlinks, duplicados ni la cita real por motores de IA.
 - Señalar siempre qué requiere revisión manual: calidad del ALT, orden real del teclado, contraste sobre imágenes y calidad de subtítulos.
 
 ## PUNTUACIÓN
@@ -29,7 +29,8 @@ conocer la versión del servidor.
 - Estados permitidos: CUMPLE, NO_CUMPLE, AVISO, SIN_DATOS. Solo NO_CUMPLE penaliza. Cada comprobación se evalúa una sola vez.
 - Cada área (SEO, GEO, UX) parte de 100. Internamente siguen siendo `seo`, `ia` y `accesibilidad`.
 - Penalización por gravedad (P): Crítico 15, Alto 8, Medio 4, Bajo 1.
-- Puntuación del área = máx(0, 100 − Σ(w × P)), con w = 1 + ln(k), donde k = número de veces que aparece el mismo fallo en la URL.
+- Puntuación del área = máx(0, 100 − Σ(w × P) × factor), con w = 1 + ln(k), donde k = número de veces que aparece el mismo fallo en la URL.
+- Normalización (aprobada por el grupo el 11/11/2026): factor del área = referencia / resta máxima (`config/normalizacion.php`), para que SEO, GEO y UX tengan la misma escala. `Scorer::raw()` calcula sin normalizar. Calibración en `docs/CALIBRACION.md`.
 - Un fallo resta una sola vez; su penalización se reparte entre áreas con la matriz de `config/weights.php`.
 - Matriz (SEO / IA / Accesibilidad), aprobada por el grupo el 9/11/2026:
   C01 .7/.3/0; C02 .4/.6/0; C03 .4/.6/0; C04 0/0/1; C05 .3/.3/.4; C06 .2/.2/.6; C07 .4/0/.6;
@@ -41,7 +42,7 @@ conocer la versión del servidor.
 - Si un área baja de 50 o hay al menos dos fallos críticos: «Riesgo alto: revisar de inmediato».
 - SIN_DATOS y comprobaciones que no aplican no penalizan y se muestran aparte. Si más de la mitad de las comprobaciones de un área son SIN_DATOS, la nota se marca como incompleta.
 - v4 (decisión del 10/11/2026): las áreas se llaman SEO, GEO (antes «Preparación para IA») y UX (antes «Accesibilidad»). Solo cambia el nombre: mismas comprobaciones, pesos y fórmula.
-- Prueba obligatoria: 2 fallos críticos distintos + 1 fallo alto repetido 5 veces ⇒ área de 49,1.
+- Prueba obligatoria: 2 fallos críticos distintos + 1 fallo alto repetido 5 veces ⇒ área de 49,1 en la escala original (`Scorer::raw()`); con la normalización n1, SEO 58,2, GEO 32,9 y UX 50,3.
 
 ## REGLAS DE CALIDAD
 

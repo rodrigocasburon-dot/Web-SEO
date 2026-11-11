@@ -1,0 +1,2 @@
+# Las pruebas solo se ejecutan por consola (php tests/run.php): sin acceso web (Apache 2.4)
+Require all denied

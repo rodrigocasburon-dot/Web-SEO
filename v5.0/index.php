@@ -47,6 +47,16 @@ $i18n = [
 ];
 // Informe de sitio · recomendaciones agrupadas: nº máximo de páginas que se listan en cada una
 $i18n['grupo_max_paginas'] = max(1, min(500, (int) ($appConfig['site_group_max_pages'] ?? 20)));
+// Perfiles de lectura (config/perfiles.php y lang/perfiles.php). El perfil de la dirección (?perfil=) se valida con
+// lista blanca (src/Perfil.php): un valor no válido cae al perfil por defecto y nunca se refleja en la página.
+$profile = Perfil::normalize($_GET['perfil'] ?? null);
+$i18n['perfiles'] = Perfil::forScreen();
+$i18n['perfil_inicial'] = $profile;
+// Peso de cada gravedad en la nota (Scorer): para ordenar los puntos, no se recalcula nada
+$i18n['penalizaciones'] = Scorer::PENALTIES;
+$i18n['descripciones'] = array_map(fn($c) => (string) ($c['descripcion'] ?? ''), $lang['checks']);
+$i18n['recomendaciones'] = array_map(fn($c) => (string) ($c['recomendacion'] ?? ''), $lang['checks']);
+$i18n['enfoque'] = $lang['enfoque'];
 // Bloque de área de cada comprobación (al que más resta): C08 y C14 mientras se esperan y la matriz páginas × puntos
 foreach (CheckRunner::catalog() as $checkId => $check) {
     $i18n['bloque_checks'][$checkId] = Report::primaryArea($check->describe(BaseCheck::NO_DATA)['pilares']);
@@ -76,7 +86,11 @@ $e = fn(string $s): string => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
 <script src="<?= $asset('assets/js/compare.js') ?>" defer></script>
 <script src="<?= $asset('assets/js/rw-componentes.js') ?>" defer></script>
 <script src="<?= $asset('assets/js/site.js') ?>" defer></script>
+<script src="<?= $asset('assets/js/pdf-fuentes.js') ?>" defer></script>
 <script src="<?= $asset('assets/js/pdf.js') ?>" defer></script>
+<script src="<?= $asset('assets/js/perfiles.js') ?>" defer></script>
+<script src="<?= $asset('assets/js/dashboard.js') ?>" defer></script>
+<script src="<?= $asset('assets/js/informes-pdf.js') ?>" defer></script>
 <script src="<?= $asset('assets/js/app.js') ?>" defer></script>
 </head>
 <body>
@@ -99,10 +113,7 @@ $e = fn(string $s): string => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
 <main id="contenido" class="container" tabindex="-1">
   <div class="hero">
     <div class="hero__intro">
-      <p class="eyebrow"><span aria-hidden="true"></span>Una URL. La web entera. Tres perspectivas.</p>
-      <h1>Tu web tiene <span class="nowrap">mucho que <em>decir.</em></span></h1>
-      <p class="lead">Escribe la dirección y analizamos esa página y el resto del sitio: cómo la encuentran los buscadores (SEO), cómo la entiende la IA (GEO) y cómo la usan las personas (UX).</p>
-
+      <h1 class="visually-hidden">Radar web: analiza una web</h1>
   <noscript><p class="notice notice--fail">Esta herramienta necesita JavaScript activado para funcionar.</p></noscript>
 
   <form id="analyze-form" class="analyze-form" novalidate>
@@ -117,8 +128,16 @@ $e = fn(string $s): string => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
       <p id="url-error" class="field-error" hidden></p>
       <p id="url-help" class="help">Primero sale la nota de esa página y, al terminar de recorrer el sitio, la del sitio entero. Si no indicas http o https, se usará https.</p>
     </div>
+    <!-- Recuperado de la v3.0: segunda URL del modo «Comparar dos URLs» (assets/js/app.js, compareUrls) -->
+    <div class="field" id="url2-field" hidden>
+      <label for="url2">Segunda URL</label>
+      <p id="url2-help" class="help">Cada URL se analiza con su propia petición, así que una comparación cuenta como dos análisis en el límite de uso. Se comparan las dos páginas, no los sitios enteros.</p>
+      <input id="url2" name="url2" type="text" inputmode="url" autocomplete="url" spellcheck="false"
+             autocapitalize="off" aria-describedby="url2-help url2-error">
+      <p id="url2-error" class="field-error" hidden></p>
+    </div>
     <div class="search-options">
-      <fieldset class="field search-mode">
+      <fieldset class="field search-mode" id="modo-field">
         <legend>Tipo de análisis</legend>
         <div class="field--check">
           <input id="modo-rapido" name="modo" type="radio" value="rapido" checked aria-describedby="modo-rapido-help">
@@ -135,7 +154,47 @@ $e = fn(string $s): string => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
           </div>
         </div>
       </fieldset>
+      <fieldset class="field search-mode search-profile">
+        <legend>Perfil de lectura</legend>
+<?php foreach (Perfil::forScreen()['perfiles'] as $pid => $pinfo): ?>
+        <div class="field--check">
+          <input id="perfil-<?= $e($pid) ?>" name="perfil" type="radio" value="<?= $e($pid) ?>" data-perfil<?= $pid === $profile ? ' checked' : '' ?> aria-describedby="perfil-<?= $e($pid) ?>-help">
+          <div>
+            <label for="perfil-<?= $e($pid) ?>"><?= $e($pinfo['nombre']) ?></label>
+            <p id="perfil-<?= $e($pid) ?>-help" class="help"><?= $e($pinfo['descripcion']) ?></p>
+          </div>
+        </div>
+<?php endforeach; ?>
+        <p class="help">Solo cambia cómo se explica el resultado: las notas son las mismas. Se puede cambiar después en el informe sin repetir el análisis.</p>
+      </fieldset>
     </div>
+    <!-- Recuperado de la v3.0: comparar dos URLs, palabra clave objetivo y noindex intencionado -->
+    <details class="more-options" id="more-options">
+      <summary>Más opciones</summary>
+      <div class="more-options__body">
+        <fieldset class="field search-mode" id="accion-field">
+          <legend>Qué quieres hacer</legend>
+          <div class="field--check">
+            <input id="mode-single" name="accion" type="radio" value="una" checked>
+            <label for="mode-single">Analizar una web</label>
+          </div>
+          <div class="field--check">
+            <input id="mode-compare" name="accion" type="radio" value="comparar">
+            <label for="mode-compare">Comparar dos URLs</label>
+          </div>
+        </fieldset>
+        <div class="field" id="keyword-field">
+          <label for="keyword">Palabra clave objetivo (opcional)</label>
+          <p id="keyword-help" class="help">Por ejemplo: software de gestión. Se comprueba si aparece en el <span lang="en">title</span>, el H1, la <span lang="en">meta description</span>, la URL y las primeras 100 palabras. No puntúa.</p>
+          <input id="keyword" name="palabra_clave" type="text" maxlength="100" autocomplete="off" aria-describedby="keyword-help">
+        </div>
+        <div class="field field--check">
+          <input id="noindex" name="noindex_intentional" type="checkbox">
+          <label for="noindex">La página tiene <span lang="en">noindex</span> a propósito</label>
+        </div>
+        <p id="noindex-compare" class="help" hidden>En la comparación, esta casilla se aplica a las dos URLs.</p>
+      </div>
+    </details>
   </form>
     </div>
   </div>
@@ -178,7 +237,7 @@ $e = fn(string $s): string => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
       <h2 id="method-title">Menos dudas. Más acción.</h2>
     </div>
     <ol>
-      <li><span class="method__n" aria-hidden="true">01</span><div><h3>Escribe la URL</h3><p>Nada más: sin opciones ni variables.</p></div></li>
+      <li><span class="method__n" aria-hidden="true">01</span><div><h3>Escribe la URL</h3><p>Y elige el tipo de análisis: rápido o profundo. Nada más.</p></div></li>
       <li><span class="method__n" aria-hidden="true">02</span><div><h3>Analizamos la web entera</h3><p>Esa página a fondo y todas las del sitio, en SEO, GEO y UX.</p></div></li>
       <li><span class="method__n" aria-hidden="true">03</span><div><h3>Prioriza las mejoras</h3><p>Evidencias y recomendaciones claras.</p></div></li>
     </ol>
@@ -202,7 +261,7 @@ $e = fn(string $s): string => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
   <div class="site-footer__inner">
     <img class="site-footer__logo" src="<?= $asset('assets/img/logo-proconsi.png') ?>" alt="Proconsi" width="96" height="33">
     <p class="site-footer__name">Radar web</p>
-    <p>Evaluación automática y parcial. No sustituye una auditoría manual. Herramienta interna: <?= htmlspecialchars($storageNote, ENT_QUOTES, 'UTF-8') ?></p>
+    <p>Evaluación automática y parcial. No sustituye una auditoría manual. Herramienta interna sin inicio de sesión: <?= htmlspecialchars($storageNote, ENT_QUOTES, 'UTF-8') ?></p>
   </div>
 </footer>
 <script type="application/json" id="i18n"><?= json_encode($i18n, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>

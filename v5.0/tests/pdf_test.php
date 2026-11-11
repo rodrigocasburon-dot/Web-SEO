@@ -33,7 +33,16 @@ test('PDF: informe, hoja de ruta y requisitos se descargan con pdf.js (sin windo
     assertTrue($posPdf !== false && $posApp !== false && $posPdf < $posApp, 'pdf.js se carga antes que app.js');
     $req = (string) file_get_contents(__DIR__ . '/../requisitos.php');
     assertTrue(strpos($req, 'id="requisitos-pdf"') !== false && strpos($req, "\$asset('assets/js/requisitos.js')") !== false);
-    foreach (['pdf.js', 'requisitos.js'] as $f) {
+    // Poppins: la única petición de los PDF es a los TTF del propio servidor (assets/js/pdf-fuentes.js)
+    $fonts = (string) file_get_contents(__DIR__ . '/../assets/js/pdf-fuentes.js');
+    preg_match_all("~'(assets/[^']+)'~", $fonts, $mm);
+    assertSame(['assets/fonts/Poppins-Regular.ttf', 'assets/fonts/Poppins-SemiBold.ttf'], $mm[1]);
+    assertTrue(strpos($fonts, 'http') === false && substr_count($fonts, 'fetch(') === 1, 'pdf-fuentes.js solo pide los TTF locales');
+    foreach (['Poppins-Regular.ttf', 'Poppins-SemiBold.ttf'] as $ttf) {
+        assertTrue(is_file(__DIR__ . '/../assets/fonts/' . $ttf), $ttf . ' existe');
+    }
+    assertTrue(strpos($index, "\$asset('assets/js/pdf-fuentes.js')") !== false && strpos($req, "\$asset('assets/js/pdf-fuentes.js')") !== false);
+    foreach (['pdf.js', 'requisitos.js', 'informes-pdf.js'] as $f) {
         $js = (string) file_get_contents(__DIR__ . '/../assets/js/' . $f);
         assertTrue(strpos($js, 'fetch(') === false && strpos($js, 'XMLHttpRequest') === false, $f . ' no pide nada a la red');
         assertTrue(strpos($js, 'innerHTML') === false && strpos($js, 'document.write') === false, $f . ' sin innerHTML');

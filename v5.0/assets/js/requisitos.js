@@ -25,7 +25,7 @@
         doc.p(a.intro, { size: 8.5, color: window.RadarPdf.colors.gris });
         a.puntos.forEach(function (x) { doc.item(x); });
       });
-      doc.save('proconsi-radar-requisitos-' + new Date().toISOString().slice(0, 10) + '.pdf');
+      doc.save(window.RadarPdf.fileName('requisitos', ''));
       status.textContent = 'PDF descargado.';
     }).catch(function () {
       status.textContent = 'No se ha podido generar el PDF. Inténtalo de nuevo.';

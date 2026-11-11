@@ -139,8 +139,8 @@ test('CheckRunner::runPsi devuelve C08 y C14', function () {
 
 test('Puntuación con C08 (k = 3) y C14 fallidos', function () {
     $out = (new CheckRunner())->runPsi(psiCtx(psiFixture('psi_fail')));
-    $s = (new Scorer())->score($out);
-    // Accesibilidad: 100 − 8·(1 + ln 3); SEO: 100 − 4·1
+    $s = Scorer::raw()->score($out);
+    // Escala original (sin normalizar). Accesibilidad: 100 − 8·(1 + ln 3); SEO: 100 − 4·1
     assertTrue(abs($s['areas']['accesibilidad']['puntuacion'] - (100 - 8 * (1 + log(3)))) < 1e-9);
     assertTrue(abs($s['areas']['seo']['puntuacion'] - 96) < 1e-9);
     assertTrue(abs($s['areas']['ia']['puntuacion'] - 100) < 1e-9);
@@ -313,7 +313,9 @@ test('Pruebas: los endpoints cargan la configuración de WEBSEO_CONFIG_DIR, nunc
         ]]);
         assertSame(200, $r['status'], $r['body']);
         $p = json_decode($r['body'], true)['puntuacion'];
-        assertTrue(abs($p['areas']['accesibilidad']['puntuacion'] - (100 - 8 * (1 + log(3)))) < 1e-6);
+        // Nota normalizada (config/normalizacion.php): la resta se multiplica por el factor del área
+        $f = (new Scorer())->factors()['accesibilidad'];
+        assertTrue(abs($p['areas']['accesibilidad']['puntuacion'] - (100 - 8 * (1 + log(3)) * $f)) < 1e-6);
         assertTrue(abs($p['areas']['seo']['puntuacion'] - 100) < 1e-9);
         assertSame(['C14'], $p['sin_datos']);
         // Informe reconstruido con los textos del servidor

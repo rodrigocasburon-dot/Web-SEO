@@ -19,7 +19,7 @@
   --border: #8f8f8f;         /* bordes de controles: 3,2:1 sobre blanco */
   --line: #d9d9d9;           /* filetes (no transmiten información) */
   --primary: #e30613;        /* solo el botón «Analizar» va relleno de rojo */
-  --primary-hover: #8f0410;
+  --primary-hover: #000000;
   --on-primary: #ffffff;
   --focus: #000000;
   --fail: #e30613;
