@@ -12,7 +12,10 @@
   var RW = root.RadarComponents;
   var RP = root.RadarPerfil;
   var i18n = {};
-  var state = { run: null, sitio: null, perfil: 'desarrollo', host: null, body: null, listeners: [] };
+  var state = { run: null, sitio: null, perfil: 'desarrollo', host: null, body: null, listeners: [],
+    // Filtro de gravedad del detalle por bloque (vacío = todas). Solo oculta en pantalla; no cambia nada más.
+    sev: { CRITICO: true, ALTO: true, MEDIO: true, BAJO: true, NINGUNA: true } };
+  var SVGNS = 'http://www.w3.org/2000/svg';
 
   var BLOCK_NAMES = { web: 'Toda la web' };
   var SEV_TEXT = { CRITICO: 'Crítica', ALTO: 'Alta', MEDIO: 'Media', BAJO: 'Baja' };
@@ -129,7 +132,7 @@
       body = body.concat(evidence);
     }
     if (t.respaldo) body.push(el('p', { class: 'rw-point__meta', text: t.respaldo }));
-    return el('li', { class: 'rw-point rw-point--' + RW.statusKey(pt.estado), id: 'punto-' + pt.id, tabindex: '-1' }, [
+    return el('li', { class: 'rw-point rw-point--' + RW.statusKey(pt.estado), id: 'punto-' + pt.id, tabindex: '-1', 'data-sev': pt.severidad || 'NINGUNA' }, [
       el('h5', { class: 'rw-point__title' }, [el('span', { class: 'rw-point__id', text: pt.id.indexOf('WEB-') === 0 ? 'Sitio' : pt.id }), ' ', pt.nombre])
     ].concat(body));
   }
@@ -167,7 +170,8 @@
     var lvl = RP.detailLevel(perfil);
     var wrap = el('section', { class: 'rw-dash__section', id: 'detalle', 'aria-labelledby': 'detalle-t' }, [
       el('h3', { id: 'detalle-t', text: 'Detalle por bloque' }),
-      el('p', { class: 'rw-help', text: 'Dentro de cada estado, primero lo que más pesa en la nota (gravedad); a igualdad, lo más relevante para el perfil elegido.' })
+      el('p', { class: 'rw-help', text: 'Dentro de cada estado, primero lo que más pesa en la nota (gravedad); a igualdad, lo más relevante para el perfil elegido.' }),
+      severityFilter()
     ]);
     RP.BLOQUES.forEach(function (b) {
       var g = RP.groupBlock(m, b, perfil, i18n);
@@ -226,6 +230,13 @@
     var target = doc.getElementById('punto-' + id);
     if (!target) return;
     if (ev) ev.preventDefault();
+    // Si el filtro de gravedad lo ocultaba, se vuelve a mostrar esa gravedad
+    if (target.hidden) {
+      state.sev[target.getAttribute('data-sev')] = true;
+      var box = doc.getElementById('filtro-sev-' + target.getAttribute('data-sev').toLowerCase());
+      if (box) box.checked = true;
+      applyFilter();
+    }
     for (var n = target.parentNode; n && n !== doc; n = n.parentNode) { if (n.tagName === 'DETAILS') n.open = true; }
     target.focus();
     try { target.scrollIntoView({ block: 'start' }); } catch (e) { /* navegadores antiguos */ }
@@ -244,7 +255,7 @@
       el('p', { class: 'rw-exec__meta', text: s.url + ' · ' + fmtDate(s.fecha) + ' · Lectura: ' + s.perfilNombre }),
       el('p', { class: 'rw-exec__headline', text: s.titular })
     ]);
-    if (!s.bloqueado) {
+    if (!s.bloqueado && !state.conTarjetas) {
       sec.appendChild(el('ul', { class: 'rw-exec__scores' }, s.notas.map(function (n) {
         return el('li', {}, [
           el('span', { class: 'rw-exec__area', text: n.nombre }),
@@ -283,6 +294,153 @@
     return sec;
   }
 
+  // ---------------------------------------------------------------- tarjetas, filtro, evolución y cobertura
+
+  /** Tres tarjetas (SEO, GEO, UX) con la nota de la URL, su rango y la variación frente al análisis anterior. Sin nota global. */
+  function renderCards(m, s) {
+    var cards = el('ul', { class: 'rw-cards' }, s.notas.map(function (n) {
+      var pts = m.puntos.filter(function (p) { return p.conNota && ((i18n.bloque_checks || {})[p.id] || p.bloque) === n.area; });
+      var ev = pts.filter(function (p) { return ['CUMPLE', 'AVISO', 'NO_CUMPLE'].indexOf(p.estado) !== -1; }).length;
+      var has = n.nota !== null && n.nota !== undefined;
+      return el('li', { class: 'rw-scorecard' + (n.rango ? ' rw-scorecard--' + n.rango.clave : '') }, [
+        el('h3', { class: 'rw-scorecard__area', text: n.nombre }),
+        el('p', { class: 'rw-scorecard__value' }, has
+          ? [el('strong', { text: RP.num(n.nota) }), el('span', { class: 'rw-scorecard__max', text: ' / 100' })]
+          : [el('strong', { text: 'Sin nota' })]),
+        has ? RW.meter(n.nota, { etiqueta: n.nombre + ': ' + RP.num(n.nota) + ' de 100' }) : null,
+        el('p', { class: 'rw-scorecard__range', text: (n.rango ? n.rango.texto : 'Sin datos suficientes') + (n.incompleta ? ' · nota incompleta' : '') }),
+        m.anterior ? RW.delta(n.nota, m.anterior[n.area]) : null,
+        el('p', { class: 'rw-scorecard__cov', text: RP.plural(ev, 'punto evaluado', 'puntos evaluados') + ' de ' + pts.length })
+      ]);
+    }));
+    var wrap = el('section', { class: 'rw-dash__section', id: 'notas', 'aria-labelledby': 'notas-t' }, [
+      el('h3', { id: 'notas-t', class: 'visually-hidden', text: 'Notas de la URL analizada' }), cards
+    ]);
+    if (m.sitio && m.sitio.media) {
+      wrap.appendChild(el('p', { class: 'rw-help', text: 'Media del sitio (' + RP.plural(m.sitio.analizadas, 'página con nota', 'páginas con nota') + '): '
+        + RP.AREAS.map(function (a) { return RP.areaName(i18n, a) + ' ' + RP.num(m.sitio.media[a]); }).join(' · ') + '. Es un dato secundario: las notas son las de la URL analizada.' }));
+    }
+    return wrap;
+  }
+
+  var SEV_FILTER = [['CRITICO', 'Crítica'], ['ALTO', 'Alta'], ['MEDIO', 'Media'], ['BAJO', 'Baja'], ['NINGUNA', 'Sin gravedad']];
+
+  /** Filtro por gravedad del detalle (casillas de 44 px). Solo oculta en pantalla; el recuento se anuncia. */
+  function severityFilter() {
+    var status = el('p', { class: 'rw-help', id: 'filtro-estado', role: 'status', 'aria-live': 'polite' });
+    var boxes = SEV_FILTER.map(function (s) {
+      var id = 'filtro-sev-' + s[0].toLowerCase();
+      var input = el('input', { type: 'checkbox', id: id, value: s[0] });
+      input.checked = !!state.sev[s[0]];
+      input.addEventListener('change', function () { state.sev[s[0]] = input.checked; applyFilter(); });
+      return el('div', { class: 'rw-filter__option' }, [input, el('label', { for: id, text: s[1] })]);
+    });
+    return el('fieldset', { class: 'rw-filter' }, [el('legend', { text: 'Filtrar por gravedad' }), el('div', { class: 'rw-filter__options' }, boxes), status]);
+  }
+
+  function applyFilter() {
+    if (!state.body) return;
+    var pts = state.body.querySelectorAll('#detalle .rw-point');
+    var shown = 0;
+    Array.prototype.forEach.call(pts, function (li) {
+      var ok = !!state.sev[li.getAttribute('data-sev')];
+      li.hidden = !ok;
+      if (ok) shown++;
+    });
+    var st = state.body.querySelector('#filtro-estado');
+    if (st) st.textContent = shown === pts.length ? 'Se muestran los ' + pts.length + ' puntos.' : 'Se muestran ' + shown + ' de ' + pts.length + ' puntos.';
+  }
+
+  function svgEl(tag, attrs, text) {
+    var n = doc.createElementNS(SVGNS, tag);
+    Object.keys(attrs || {}).forEach(function (k) { n.setAttribute(k, attrs[k]); });
+    if (text !== undefined) n.textContent = text;
+    return n;
+  }
+
+  function shortDate(iso) {
+    var d = new Date(iso);
+    return isNaN(d) ? String(iso || '') : d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+  }
+
+  /**
+   * Evolución de las tres notas de esta URL (historial). Solo con 2 puntos o más. SVG propio, sin animaciones:
+   * cada área con su trazo (continuo, discontinuo, punteado) y su marcador, leyenda con texto y tabla equivalente.
+   */
+  function renderEvolution(m) {
+    var rows = (m.evolucion || []).concat(m.bloqueado ? [] : [{ fecha: m.fecha, seo: m.notas.seo, ia: m.notas.ia, accesibilidad: m.notas.accesibilidad, actual: true }]);
+    if (rows.length < 2) return null;
+    var W = 640, H = 240, L = 36, R = 12, T = 14, B = 34;
+    var x = function (i) { return L + i * (W - L - R) / (rows.length - 1); };
+    var y = function (v) { return T + (100 - Math.max(0, Math.min(100, v))) * (H - T - B) / 100; };
+    var s = svgEl('svg', { class: 'rw-evo', viewBox: '0 0 ' + W + ' ' + H, preserveAspectRatio: 'none', focusable: 'false' });
+    [0, 50, 75, 90, 100].forEach(function (v) {
+      s.appendChild(svgEl('line', { x1: L, x2: W - R, y1: y(v), y2: y(v), class: 'rw-evo__grid' }));
+      if (v !== 90) s.appendChild(svgEl('text', { x: L - 6, y: y(v) + 4, class: 'rw-evo__tick', 'text-anchor': 'end' }, String(v)));   // 90: solo la línea (umbral de «Muy bueno»)
+    });
+    rows.forEach(function (r, i) {
+      if (rows.length <= 8 || i === 0 || i === rows.length - 1 || i % 2 === 0) {
+        s.appendChild(svgEl('text', { x: x(i), y: H - 12, class: 'rw-evo__tick', 'text-anchor': i === 0 ? 'start' : (i === rows.length - 1 ? 'end' : 'middle') }, r.actual ? 'Hoy' : shortDate(r.fecha)));
+      }
+    });
+    var series = [['seo', 'rw-evo__line--seo', 'continuo'], ['ia', 'rw-evo__line--ia', 'discontinuo'], ['accesibilidad', 'rw-evo__line--ux', 'punteado']];
+    series.forEach(function (sr) {
+      var pts = rows.map(function (r, i) { return r[sr[0]] === null || r[sr[0]] === undefined ? null : [x(i), y(r[sr[0]])]; });
+      var seg = [];
+      var flush = function () { if (seg.length > 1) s.appendChild(svgEl('polyline', { points: seg.join(' '), class: 'rw-evo__line ' + sr[1] })); seg = []; };
+      pts.forEach(function (p) { if (p) seg.push(p[0] + ',' + p[1]); else flush(); });
+      flush();
+      pts.forEach(function (p) {
+        if (!p) return;
+        if (sr[0] === 'seo') s.appendChild(svgEl('circle', { cx: p[0], cy: p[1], r: 4, class: 'rw-evo__mark' }));
+        else if (sr[0] === 'ia') s.appendChild(svgEl('rect', { x: p[0] - 4, y: p[1] - 4, width: 8, height: 8, class: 'rw-evo__mark rw-evo__mark--hollow' }));
+        else s.appendChild(svgEl('path', { d: 'M' + p[0] + ' ' + (p[1] - 5) + ' L' + (p[0] + 5) + ' ' + (p[1] + 4) + ' L' + (p[0] - 5) + ' ' + (p[1] + 4) + ' Z', class: 'rw-evo__mark rw-evo__mark--ux' }));
+      });
+    });
+    var legend = el('ul', { class: 'rw-evo__legend' }, series.map(function (sr) {
+      return el('li', {}, [el('span', { class: 'rw-evo__key ' + sr[1], 'aria-hidden': 'true' }), RP.areaName(i18n, sr[0]) + ' (trazo ' + sr[2] + ')']);
+    }));
+    var last = rows[rows.length - 1], firstR = rows[0];
+    var resumen = 'Del ' + (firstR.actual ? 'análisis actual' : shortDate(firstR.fecha)) + ' a hoy: ' + series.map(function (sr) {
+      var d = RP.deltaText(last[sr[0]], firstR[sr[0]]);
+      return RP.areaName(i18n, sr[0]) + ' ' + (d || 'sin datos');
+    }).join(', ') + '.';
+    var fig = RW.figure({
+      titulo: 'Evolución de las notas de esta URL (' + RP.plural(rows.length, 'análisis', 'análisis') + ')',
+      visual: el('div', {}, [s, legend]),
+      resumen: resumen,
+      tabla: {
+        columnas: [{ texto: 'Análisis' }, { texto: 'SEO', num: true }, { texto: 'GEO', num: true }, { texto: 'UX', num: true }],
+        filas: rows.map(function (r) { return [r.actual ? 'Este análisis' : shortDate(r.fecha), RP.num(r.seo), RP.num(r.ia), RP.num(r.accesibilidad)]; })
+      },
+      clave: 'evolucion'
+    });
+    // La leyenda debe leerse: se saca del bloque oculto a lectores (el gráfico sí se oculta; tiene resumen y tabla)
+    var vis = fig.querySelector('.rw-figure__visual');
+    if (vis) vis.parentNode.insertBefore(legend, vis.nextSibling);
+    legend.setAttribute('aria-hidden', 'true');
+    return el('section', { class: 'rw-dash__section', id: 'evolucion', 'aria-labelledby': 'evolucion-t' }, [
+      el('h3', { id: 'evolucion-t', text: 'Evolución' }), fig
+    ]);
+  }
+
+  /** Cobertura: evaluados, sin datos, pendientes y que no aplican (barra con leyenda y texto). */
+  function renderCoverage(m, s) {
+    var c = s.cobertura;
+    var sec = el('section', { class: 'rw-dash__section', id: 'cobertura', 'aria-labelledby': 'cobertura-t' }, [
+      el('h3', { id: 'cobertura-t', text: 'Cobertura' }),
+      RW.segmentedBar([
+        { clave: 'ok', texto: 'Evaluados', valor: c.evaluados },
+        { clave: 'nodata', texto: 'Sin datos', valor: c.sin_datos },
+        { clave: 'warn', texto: 'Pendientes de PageSpeed', valor: c.pendientes },
+        { clave: 'na', texto: 'No aplican', valor: c.no_aplica }
+      ], { baja: true }).node,
+      el('p', { class: 'rw-help', text: c.texto })
+    ]);
+    if (c.aviso) sec.appendChild(el('p', { class: 'notice notice--warn', text: c.aviso }));
+    return sec;
+  }
+
   // ---------------------------------------------------------------- pintado
 
   function currentModel() {
@@ -305,9 +463,16 @@
     if (m.bloqueado) {
       state.body.appendChild(el('p', { class: 'notice notice--warn', text: 'Acceso bloqueado: las comprobaciones que dependen del contenido de la página aparecen como «Sin datos».' }));
     }
-    state.body.appendChild(renderSummary(RP.summary(m, perfil, i18n)));
+    var s = RP.summary(m, perfil, i18n);
+    state.conTarjetas = !m.bloqueado;
+    if (!m.bloqueado) state.body.appendChild(renderCards(m, s));
+    state.body.appendChild(renderSummary(s));
     state.body.appendChild(renderBlocks(m, perfil));
     state.body.appendChild(renderNotEvaluated(m, perfil));
+    var evo = renderEvolution(m);
+    if (evo) state.body.appendChild(evo);
+    state.body.appendChild(renderCoverage(m, s));
+    applyFilter();
   }
 
   /**

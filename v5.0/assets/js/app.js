@@ -663,6 +663,12 @@
    */
   function renderResults(run) {
     var data = run.data;
+    // Botón de PDF de la cabecera (mismo PDF que en «Descargas», con el perfil elegido)
+    var headPdf = function (text, make) {
+      var b = el('button', { type: 'button', class: 'rw-btn', text: text });
+      b.addEventListener('click', function () { pdfButton(b, function () { return make(run); }); });
+      return b;
+    };
     var title = el('h2', { id: 'results-title', tabindex: '-1', text: 'Informe' });
     run.view = {};
     run.view.state = el('strong');
@@ -678,7 +684,8 @@
         el('li', {}, ['Fecha: ', el('strong', { text: fmtDate(data.fecha) })]),
         el('li', {}, ['Estado de la primera nota: ', run.view.state])
       ]),
-      el('p', { class: 'rw-context__actions' }, [openLink, el('a', { class: 'rw-btn', href: '#analyze-form', text: 'Nuevo análisis' })])
+      el('p', { class: 'rw-context__actions' }, [openLink, headPdf('Informe (PDF)', pdfReport), headPdf('Hoja de ruta (PDF)', pdfRoadmap),
+        el('a', { class: 'rw-btn', href: 'historial.php', text: 'Historial' }), el('a', { class: 'rw-btn', href: '#analyze-form', text: 'Nuevo análisis' })])
     ]));
 
     if (data.blocked) {
@@ -693,7 +700,8 @@
     first.body.appendChild(el('p', { class: 'help', text: 'Nota rápida de esta página (su HTML y PageSpeed). Mientras tanto se recorre el resto del sitio: la nota final y la lista de lo que falla aparecen debajo al terminar.' }));
     run.view.scores = el('div');
     first.body.appendChild(run.view.scores);
-    results.appendChild(first.node);
+    // La pantalla por capas (dashboard.js) sustituye a esta primera nota: tarjetas con rango y variación, sin nota global.
+    // updateScores sigue escribiendo en este bloque (no se muestra) para no tocar el flujo de PageSpeed.
     // Perfil de lectura y lo que falla o falta por bloque (assets/js/dashboard.js)
     run.view.dash = el('div', { class: 'rw-dash', id: 'dashboard' });
     results.appendChild(run.view.dash);
