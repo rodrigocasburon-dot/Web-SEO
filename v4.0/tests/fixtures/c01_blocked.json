@@ -1,0 +1,8 @@
+{
+    "url": "https://example.com/",
+    "status": 403,
+    "blocked": {
+        "reason": "forbidden",
+        "message": "x"
+    }
+}

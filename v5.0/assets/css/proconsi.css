@@ -1,0 +1,331 @@
+/* Radar web · capa de identidad corporativa (v4, 11/11/2026), inspirada en proconsi.com:
+   cabecera blanca con el logotipo, bandas negras a todo el ancho con texto blanco, acentos y botones en rojo
+   Proconsi con esquinas casi rectas, titulares con una barra roja corta debajo y pie negro.
+   Se carga la ÚLTIMA (después de app.css y de los componentes rw-) y solo usa colores de la paleta de
+   DESIGN.md §2: negro, rojo #e30613, blanco y los grises derivados. Sin recursos externos.
+   Contraste comprobado: blanco sobre negro 21:1; #b4b4b4 sobre negro 10,6:1; rojo sobre blanco 4,6:1.
+   El rojo sobre negro (4,0:1) solo se usa en elementos gráficos y en texto grande. */
+
+:root {
+  --pc-ink: #000000;
+  --pc-ink-2: #2e2e2e;
+  --pc-red: #e30613;
+  --pc-red-dark: #8f0410;
+  --pc-on-ink: #ffffff;
+  --pc-on-ink-muted: #b4b4b4;
+  --pc-line: #d9d9d9;
+  --pc-panel: #f4f3f2;
+  --pc-radius: 3px;
+}
+
+/* ---------- Cabecera ---------- */
+.site-header { position: relative; z-index: 2; border-bottom: 1px solid var(--pc-line); }
+.site-header__inner { min-height: 5rem; }
+.brand__logo { width: 8.5rem; }
+.brand__name { font-weight: 600; letter-spacing: 0.08em; color: var(--pc-ink); }
+.site-nav { gap: 0 2rem; }
+.site-nav a {
+  color: var(--pc-ink-2); font-size: 0.875rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 1.75rem 0 1.5rem;
+}
+.site-nav a:hover { color: var(--pc-red-dark); }
+.site-nav a[aria-current="page"] { color: var(--pc-ink); box-shadow: inset 0 -3px 0 var(--pc-red); }
+@media (max-width: 479px) { .site-nav a { padding: 0.75rem 0; } }
+/* «Herramienta interna», como el botón «Soporte» de proconsi.com */
+.site-header__tag {
+  padding: 0.35rem 0.85rem; border-radius: var(--pc-radius);
+  background: var(--pc-red); color: var(--pc-on-ink);
+  font-size: 0.75rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+}
+
+/* ---------- Bandas negras a todo el ancho (portada y pilares) ---------- */
+.hero, .pillars {
+  position: relative;
+  color: var(--pc-on-ink);
+  background-color: var(--pc-ink);
+  /* La banda ocupa todo el ancho aunque el contenido siga en el contenedor central */
+  box-shadow: 0 0 0 100vmax var(--pc-ink);
+  clip-path: inset(0 -100vmax);
+}
+.hero :focus-visible, .pillars :focus-visible { outline-color: var(--pc-on-ink); }
+
+.hero {
+  gap: 1.25rem;
+  padding: 3rem 0 2.5rem;
+  isolation: isolate;
+}
+/* Red de conexiones (assets/img) a la derecha, como la foto de la portada de proconsi.com. Va en una capa
+   propia que llega hasta el borde derecho de la VENTANA (antes se cortaba en seco al final de la columna
+   central). En móvil va pequeña en la esquina de arriba; un degradado negro la funde por la izquierda para
+   que no pase por detrás del texto. */
+.hero::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: calc((100% - 100vw) / 2);
+  pointer-events: none;
+  background-image: linear-gradient(90deg, #000000 30%, transparent 85%), url("../img/red-conexiones.svg");
+  background-repeat: no-repeat;
+  background-position: 0 0, right -4rem top -3rem;
+  background-size: 100% 100%, 20rem auto;
+}
+@media (min-width: 48rem) {
+  .hero::after {
+    background-image: linear-gradient(90deg, #000000 40%, transparent 75%), url("../img/red-conexiones.svg");
+    background-position: 0 0, right center;
+    background-size: 100% 100%, auto 115%;
+  }
+}
+/* 100vw incluye la barra de desplazamiento vertical: sin esto, la capa de la red crea scroll horizontal */
+html, body { overflow-x: clip; }
+/* Autorrelleno de Chrome: sin el fondo azul claro dentro de la tarjeta blanca */
+.url-row input:-webkit-autofill,
+.url-row input:-webkit-autofill:hover,
+.url-row input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 100px var(--blanco, #ffffff) inset;
+  -webkit-text-fill-color: var(--pc-ink);
+  caret-color: var(--pc-ink);
+}
+.hero h1 { color: var(--pc-on-ink); font-size: 2.25rem; line-height: 2.75rem; letter-spacing: -0.02em; margin: 0.5rem 0; max-width: 40rem; }
+.hero h1 em { color: var(--pc-red); }
+.hero .lead { color: var(--pc-on-ink-muted); font-size: 1.0625rem; line-height: 1.75rem; }
+/* Antetítulo: barra roja corta y texto en blanco */
+.eyebrow { display: flex; align-items: center; gap: 0.75rem; color: var(--pc-ink-2); font-weight: 600; letter-spacing: 0.08em; }
+.eyebrow::before { content: ""; flex: none; width: 2rem; height: 3px; background: var(--pc-red); }
+.hero .eyebrow, .pillars .pillar__kicker { color: var(--pc-on-ink); }
+
+/* Formulario: tarjeta blanca sobre la banda negra */
+.hero .analyze-form {
+  color: var(--pc-ink);
+  border: 0; border-radius: var(--pc-radius);
+  padding: 1.5rem;
+  max-width: 44rem;
+  box-shadow: 0 1.5rem 3rem -1.5rem var(--pc-red-dark);
+}
+.hero .analyze-form :focus-visible { outline-color: var(--pc-ink); }
+.analyze-form .field > label, .search-mode legend { font-weight: 600; }
+.url-row { border-radius: var(--pc-radius); border-color: var(--pc-ink-2); }
+.url-row__icon { color: var(--pc-red); font-weight: 700; }
+
+/* Botones: rojo Proconsi, esquinas casi rectas */
+.button { border-radius: var(--pc-radius); padding: 0.65rem 1.75rem; font-weight: 600; letter-spacing: 0.01em; }
+.button:not(.button--secondary) { background: var(--pc-red); border-color: var(--pc-red); }
+.button:not(.button--secondary):hover { background: var(--pc-red-dark); border-color: var(--pc-red-dark); }
+.button--secondary, .rw-btn { border-radius: var(--pc-radius); }
+body .rw-btn { font-weight: 600; transition: background-color 0.15s, color 0.15s; }
+body .rw-btn:hover { background: var(--pc-ink); color: var(--pc-on-ink); }
+
+/* Páginas interiores (historial y requisitos): la misma banda, más baja */
+.hero.hero--compact { padding: 2.5rem 0 2rem; }
+@media (min-width: 48rem) { .hero.hero--compact::after { background-size: 100% 100%, auto 160%; } }
+.hero--compact .lead { margin: 0.75rem 0 0; }
+
+/* Pilares SEO · GEO · UX: franja negra bajo la portada, como las cifras de proconsi.com */
+.pillars {
+  display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.5rem;
+  padding: 2rem 0 3rem;
+  border-top: 1px solid var(--pc-ink-2);
+}
+.pillars article { display: flex; gap: 1rem; align-items: flex-start; }
+.pillars h2 { margin: 0.15rem 0 0.25rem; font-size: 1.5rem; line-height: 2rem; color: var(--pc-on-ink); }
+.pillars p { margin: 0; color: var(--pc-on-ink-muted); font-size: 0.9375rem; line-height: 1.5rem; }
+.pillars .pillar__kicker { font-size: 0.75rem; line-height: 1rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+.pillar__icon {
+  flex: none; display: inline-flex; align-items: center; justify-content: center;
+  width: 3rem; height: 3rem; border-radius: 50%;
+  border: 2px solid var(--pc-red); color: var(--pc-on-ink); font-size: 1.25rem; font-weight: 700;
+}
+@media (min-width: 48rem) { .pillars { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2rem; } }
+
+/* Con un análisis en pantalla, la portada se queda en el formulario y se ocultan pilares y método */
+.has-report .pillars, .has-report .method { display: none; }
+.has-report .hero { padding-bottom: 2rem; }
+
+/* ---------- Títulos de sección con barra roja corta debajo (como el pie de proconsi.com) ---------- */
+.method h2, .report-head h2, #descargas h2, .requisitos-area > h2, #como-puntua, .site-section .report-head h2 {
+  position: relative; padding-bottom: 0.75rem; letter-spacing: -0.01em;
+}
+.method h2::after, .report-head h2::after, #descargas h2::after, .requisitos-area > h2::after, #como-puntua::after {
+  content: ""; position: absolute; left: 0; bottom: 0; width: 3rem; height: 3px; background: var(--pc-red);
+}
+
+/* ---------- Cómo funciona: tres pasos con números grandes ---------- */
+.method { margin: 4rem 0 1rem; }
+.method h2 { font-size: 1.75rem; line-height: 2.25rem; margin: 0.5rem 0 2rem; }
+.method ol { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.5rem; margin: 0; padding: 0; list-style: none; }
+.method li { display: flex; gap: 1rem; padding: 1.5rem; background: var(--pc-panel); border-radius: var(--pc-radius); border-top: 3px solid var(--pc-ink); }
+.method__n { flex: none; font-size: 2.5rem; line-height: 1; font-weight: 700; color: var(--pc-red); letter-spacing: -0.03em; }
+.method h3 { margin: 0 0 0.25rem; font-size: 1.0625rem; }
+.method p { margin: 0; color: var(--pc-ink-2); }
+@media (min-width: 48rem) { .method ol { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+/* ---------- Informe ---------- */
+/* Tarjeta de la URL: negra, como las bandas de la portada */
+.results .report-head.rw-context {
+  margin-top: 2.5rem; padding: 1.75rem; border-radius: var(--pc-radius);
+  background: var(--pc-ink); color: var(--pc-on-ink);
+  border-top: 4px solid var(--pc-red);   /* arriba: con el contenido centrado, un filete lateral queda descompensado */
+}
+.results .report-head.rw-context h2 { color: var(--pc-on-ink); margin-top: 0; font-size: 1.75rem; line-height: 2.25rem; }
+.results .rw-context .rw-context__url { color: var(--pc-on-ink); font-size: 1.375rem; }
+.results .rw-context .rw-context__meta { color: var(--pc-on-ink-muted); }
+.results .rw-context .rw-context__meta strong { color: var(--pc-on-ink); }
+.results .rw-context :focus-visible { outline-color: var(--pc-on-ink); box-shadow: none; }
+.results .rw-context .rw-btn { background: var(--pc-ink); color: var(--pc-on-ink); border-color: var(--pc-on-ink); }
+.results .rw-context .rw-btn:hover { background: var(--pc-on-ink); color: var(--pc-ink); }
+
+/* Primera nota y resultado del sitio */
+.report-section > h3, #sec-primera-nota-t { font-size: 1.375rem; line-height: 1.875rem; margin-top: 2.5rem; }
+/* Mismas tarjetas en la primera nota y en el sitio: filete rojo arriba */
+body .rw-card, .site-card { border-radius: var(--pc-radius); border-top: 3px solid var(--pc-red); }
+body .rw-score__label, .site-card__label { font-size: 0.8125rem; line-height: 1.25rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+body .rw-score__value, .site-card__value { letter-spacing: -0.03em; }
+.site-card { transition: border-color 0.15s, box-shadow 0.15s; border-top-color: var(--pc-red); }
+.site-card:hover { border-color: var(--pc-ink-2); border-top-color: var(--pc-red); box-shadow: 0 0.75rem 1.5rem -1rem var(--pc-ink-2); }
+.site-card__hint { color: var(--pc-red-dark); text-decoration: none; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.06em; }
+.site-card > summary:hover .site-card__hint { text-decoration: underline; }
+.site-item__name strong { font-size: 1.0625rem; }
+.rw-global { font-size: 1rem; }
+.rw-global strong { font-size: 1.25rem; }
+
+/* Progreso del sitio */
+.site-section { border-top: 0; margin-top: 1rem; padding-top: 0; }
+.site-section .report-head { padding-top: 0; }
+.site-section .report-head h2 { margin-top: 1.5rem; }
+/* Fiabilidad y revisión manual: panel gris con filete rojo, en lugar de párrafos largos sueltos */
+.site-notes { margin: 1.5rem 0 0; padding: 1rem 1.25rem; background: var(--pc-panel); border-left: 3px solid var(--pc-red); border-radius: var(--pc-radius); }
+.site-notes p { margin: 0.25rem 0; font-size: 0.875rem; line-height: 1.375rem; color: var(--pc-ink-2); }
+.site-notes strong { color: var(--pc-ink); }
+/* Descargas: botones del mismo ancho, en rejilla */
+/* Descargas: botones centrados, del mismo ancho mínimo y con el texto en una línea */
+#descargas .report-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; }
+#descargas .report-actions .rw-btn { min-width: 11rem; white-space: nowrap; }
+.site-progress { height: 0.5rem; border-radius: var(--pc-radius); }
+#site-status { font-weight: 500; color: var(--pc-ink-2); }
+.status.is-loading { font-weight: 500; color: var(--pc-ink-2); }
+
+/* Descargas: banda negra al final del informe */
+#descargas.downloads {
+  margin-top: 3rem; padding: 2rem; border-radius: var(--pc-radius);
+  background: var(--pc-ink); color: var(--pc-on-ink);
+}
+#descargas h2, #descargas h3 { color: var(--pc-on-ink); }
+#descargas h2 { margin-top: 0; font-size: 1.75rem; line-height: 2.25rem; }
+#descargas h3 { font-size: 0.8125rem; letter-spacing: 0.08em; text-transform: uppercase; margin: 1.5rem 0 0.75rem; }
+#descargas .help { color: var(--pc-on-ink-muted); }
+#descargas :focus-visible { outline-color: var(--pc-on-ink); box-shadow: none; }
+#descargas .rw-btn { background: var(--pc-ink); color: var(--pc-on-ink); border-color: var(--pc-on-ink); }
+#descargas .rw-btn:hover { background: var(--pc-red); border-color: var(--pc-red); }
+/* Todo centrado: título con su barra roja, cada grupo de botones y los textos. Los grupos van uno al lado
+   del otro si caben (página y sitio); si solo hay uno (requisitos), queda en el centro */
+#descargas.downloads { display: flex; flex-wrap: wrap; justify-content: center; column-gap: 3rem; text-align: center; }
+#descargas.downloads[hidden] { display: none; }
+#descargas > h2, #descargas > p { flex: 0 0 100%; }
+#descargas > div { flex: 0 1 28rem; min-width: 0; }
+#descargas > div:empty { display: none; }
+#descargas h2::after { left: 50%; transform: translateX(-50%); }
+#descargas .help { max-width: 36rem; margin-left: auto; margin-right: auto; }
+/* Tarjeta negra del informe (URL analizada): mismo criterio, centrada */
+.results .report-head.rw-context { text-align: center; justify-items: center; }
+.results .report-head.rw-context h2::after { left: 50%; transform: translateX(-50%); }
+.results .rw-context .rw-context__meta, .results .rw-context .rw-context__actions { justify-content: center; }
+
+/* ---------- Plegables (requisitos, limitaciones) ---------- */
+.fold { border-radius: var(--pc-radius); border-color: var(--pc-line); transition: border-color 0.15s; }
+.fold:hover { border-color: var(--pc-ink-2); }
+.fold[open] { border-left: 4px solid var(--pc-red); }
+.fold > summary::after { color: var(--pc-red); font-weight: 600; }
+.requisitos-indice a { display: inline-block; padding: 0.5rem 1rem; border: 1px solid var(--pc-ink); border-radius: var(--pc-radius); text-decoration: none; font-size: 0.875rem; letter-spacing: 0.04em; text-transform: uppercase; }
+.requisitos-indice a:hover { background: var(--pc-ink); color: var(--pc-on-ink); }
+
+/* ---------- Tablas (historial) ---------- */
+.data-table thead th { background: var(--pc-ink); color: var(--pc-on-ink); }
+/* Los textos ocultos para lectores de pantalla (.visually-hidden, en posición absoluta) se quedan dentro de la
+   tabla con desplazamiento: si no, se salían por la derecha y en el móvil la página entera se ensanchaba. */
+.table-wrap { position: relative; }
+
+/* ---------- Pie negro, como proconsi.com ---------- */
+.site-footer { margin-top: 5rem; background: var(--pc-ink); border-top: 4px solid var(--pc-red); }
+.site-footer__inner { padding-top: 2.5rem; padding-bottom: 2.5rem; }
+.site-footer__logo { width: 110px; filter: brightness(0) invert(1); }
+.site-footer p { color: var(--pc-on-ink-muted); }
+.site-footer .site-footer__name { color: var(--pc-on-ink); letter-spacing: 0.06em; text-transform: uppercase; font-size: 0.875rem; }
+.site-footer :focus-visible { outline-color: var(--pc-on-ink); }
+
+/* ---------- Escritorio ---------- */
+@media (min-width: 64em) {
+  .hero { padding: 4.5rem 0 3.5rem; }
+  .hero h1 { font-size: 3rem; line-height: 3.5rem; }
+  .has-report .hero { padding-top: 2.5rem; }
+}
+
+/* ---------- Impresión y alto contraste: se vuelve al aspecto sobrio de app.css ---------- */
+@media print {
+  .hero, .pillars, .method, .site-footer { display: none !important; }
+  .results .report-head.rw-context { background: none; color: #000000; border: 0; padding: 0; }
+  .results .report-head.rw-context h2, .results .rw-context .rw-context__url, .results .rw-context .rw-context__meta strong { color: #000000; }
+  .results .rw-context .rw-context__meta { color: #6c6c6c; }
+}
+@media (forced-colors: active) {
+  .hero, .pillars { box-shadow: none; clip-path: none; background-image: none; }
+  .eyebrow::before, .method h2::after, .report-head h2::after, #descargas h2::after, .requisitos-area > h2::after, #como-puntua::after { background: CanvasText; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .site-card, .fold, body .rw-btn { transition: none; }
+}
+
+/* ---------- Portada a pantalla completa y centrada (11/11/2026) ----------
+   La banda negra ocupa exactamente el alto de la ventana menos la cabecera (5 rem + 1 px de filete), así que
+   termina justo al final de la pantalla; el contenido va centrado en vertical y en horizontal. Si no cabe
+   (pantallas bajas), crece con el contenido. Con un informe en pantalla vuelve a su alto natural. */
+.hero:not(.hero--compact) {
+  min-height: calc(100vh - 5rem - 1px);
+  min-height: calc(100svh - 5rem - 1px);
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 2.5rem 0;
+}
+.hero:not(.hero--compact) .hero__intro { width: 100%; max-width: 46rem; display: flex; flex-direction: column; align-items: center; }
+.hero:not(.hero--compact) .eyebrow { justify-content: center; }
+.hero:not(.hero--compact) h1 { margin-left: auto; margin-right: auto; }
+.hero:not(.hero--compact) .lead { margin-left: auto; margin-right: auto; }
+.hero:not(.hero--compact) .analyze-form { width: 100%; margin-left: auto; margin-right: auto; text-align: left; }
+/* Con el contenido en el centro, la red queda en los laterales: un degradado radial negro la aparta del texto */
+@media (min-width: 48rem) {
+  .hero:not(.hero--compact)::after {
+    left: calc((100% - 100vw) / 2);
+    background-image: radial-gradient(ellipse 42% 60% at 50% 50%, #000000 55%, transparent 100%), url("../img/red-conexiones.svg"), url("../img/red-conexiones.svg");
+    background-position: 0 0, right -6rem center, left -6rem center;
+    background-size: 100% 100%, auto 110%, auto 110%;
+  }
+}
+/* En móvil la cabecera ocupa dos líneas: el alto se ajusta para que la banda siga acabando en el borde */
+@media (max-width: 479px) {
+  .hero:not(.hero--compact) { min-height: calc(100svh - 7.5rem); }
+}
+.has-report .hero:not(.hero--compact) { min-height: 0; padding: 2.5rem 0 2rem; }
+/* Para que quepa todo en una pantalla: titular en una línea en escritorio, menos aire y los dos tipos de
+   análisis uno al lado del otro */
+.hero:not(.hero--compact) { gap: 0.75rem; }
+.hero:not(.hero--compact) h1 { max-width: none; margin-top: 0.25rem; margin-bottom: 0.25rem; }
+.hero:not(.hero--compact) .lead { max-width: 44rem; }
+.hero:not(.hero--compact) .analyze-form { margin-top: 1.25rem; padding: 1.25rem 1.5rem; }
+.hero:not(.hero--compact) .analyze-form .field { margin-bottom: 0.75rem; }
+.hero:not(.hero--compact) .search-options { margin-top: 0.5rem; }
+@media (min-width: 48rem) {
+  .hero:not(.hero--compact) .search-options { grid-template-columns: minmax(0, 1fr); }
+  .hero:not(.hero--compact) .search-mode { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 1.5rem; }
+  .hero:not(.hero--compact) .search-mode legend { grid-column: 1 / -1; }
+  .hero:not(.hero--compact) .search-mode .field--check { margin: 0.25rem 0 0; }
+}
+@media (min-width: 64em) {
+  .hero:not(.hero--compact) h1 { font-size: 3.25rem; line-height: 3.75rem; white-space: nowrap; }
+  .hero:not(.hero--compact) h1 br { display: none; }
+}
+@media (max-width: 479px) {
+  .hero:not(.hero--compact) .eyebrow { flex-direction: column; gap: 0.5rem; text-align: center; }
+}

@@ -1,0 +1,26 @@
+{
+  "id": "https://example.com/pagina",
+  "analysisUTCTimestamp": "2026-11-05T10:00:00.000Z",
+  "loadingExperience": {
+    "id": "https://example.com/pagina",
+    "metrics": {
+      "LARGEST_CONTENTFUL_PAINT_MS": {"percentile": 2500, "category": "FAST"},
+      "INTERACTION_TO_NEXT_PAINT": {"percentile": 200, "category": "FAST"},
+      "CUMULATIVE_LAYOUT_SHIFT_SCORE": {"percentile": 10, "category": "FAST"}
+    },
+    "overall_category": "FAST",
+    "initial_url": "https://example.com/pagina"
+  },
+  "lighthouseResult": {
+    "lighthouseVersion": "12.6.0",
+    "finalDisplayedUrl": "https://example.com/pagina",
+    "audits": {
+      "color-contrast": {
+        "id": "color-contrast",
+        "score": 1,
+        "scoreDisplayMode": "binary",
+        "details": {"type": "table", "items": []}
+      }
+    }
+  }
+}
