@@ -43,7 +43,7 @@ check('PDF: cabecera, tabla xref coherente, páginas y pie con «Página X de Y�
 
 check('Nombre de archivo corporativo y seguro', function () {
   var name = P.fileName('informe', 'https://www.proconsi.com/a?b=1');
-  same(true, /^proconsi-radar-informe-proconsi\.com-\d{4}-\d{2}-\d{2}\.pdf$/.test(name), name);
+  same(true, /^proconsi-radar-informe-proconsi\.com-\d{8}-\d{4}\.pdf$/.test(name), name);
 });
 
 console.log(JSON.stringify({ ok: ok, fallos: fallos }));

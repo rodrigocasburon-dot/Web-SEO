@@ -245,7 +245,7 @@
   function fmtDate(iso) {
     if (!iso) return '';
     var d = new Date(iso);
-    return isNaN(d) ? String(iso) : d.toLocaleString('es-ES', { dateStyle: 'long', timeStyle: 'short' });
+    return isNaN(d) ? String(iso) : d.toLocaleString('es-ES', { timeZone: 'Europe/Madrid', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });   // mismo formato que el resto: 11/11/2026, 10:29
   }
 
   /** Resumen ejecutivo (RadarPerfil.summary): el mismo contenido que abre los dos PDF. */

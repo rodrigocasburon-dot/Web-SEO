@@ -10,7 +10,7 @@
   --pc-ink: #000000;
   --pc-ink-2: #2e2e2e;
   --pc-red: #e30613;
-  --pc-red-dark: #8f0410;
+  --pc-red-dark: #000000;   /* hover del botón rojo: negro (un solo rojo en toda la herramienta) */
   --pc-on-ink: #ffffff;
   --pc-on-ink-muted: #b4b4b4;
   --pc-line: #d9d9d9;
@@ -28,7 +28,7 @@
   color: var(--pc-ink-2); font-size: 0.875rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
   padding: 1.75rem 0 1.5rem;
 }
-.site-nav a:hover { color: var(--pc-red-dark); }
+.site-nav a:hover { color: var(--pc-red); }
 .site-nav a[aria-current="page"] { color: var(--pc-ink); box-shadow: inset 0 -3px 0 var(--pc-red); }
 @media (max-width: 479px) { .site-nav a { padding: 0.75rem 0; } }
 /* «Herramienta interna», como el botón «Soporte» de proconsi.com */
@@ -185,7 +185,7 @@ body .rw-score__label, .site-card__label { font-size: 0.8125rem; line-height: 1.
 body .rw-score__value, .site-card__value { letter-spacing: -0.03em; }
 .site-card { transition: border-color 0.15s, box-shadow 0.15s; border-top-color: var(--pc-red); }
 .site-card:hover { border-color: var(--pc-ink-2); border-top-color: var(--pc-red); box-shadow: 0 0.75rem 1.5rem -1rem var(--pc-ink-2); }
-.site-card__hint { color: var(--pc-red-dark); text-decoration: none; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.06em; }
+.site-card__hint { color: var(--pc-red); text-decoration: none; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.06em; }
 .site-card > summary:hover .site-card__hint { text-decoration: underline; }
 .site-item__name strong { font-size: 1.0625rem; }
 .rw-global { font-size: 1rem; }
@@ -328,4 +328,106 @@ body .rw-score__value, .site-card__value { letter-spacing: -0.03em; }
 }
 @media (max-width: 479px) {
   .hero:not(.hero--compact) .eyebrow { flex-direction: column; gap: 0.5rem; text-align: center; }
+}
+
+/* ==========================================================================
+   Revisión del 11/11/2026 (informe «Revisión Radar web v4.0»)
+   ========================================================================== */
+
+/* Dos tamaños de título de sección en toda la herramienta: grande (secciones) y pequeño (tarjetas) */
+:root { --pc-h2: 1.75rem; --pc-h2-lh: 2.25rem; --pc-h2-sm: 1.25rem; --pc-h2-sm-lh: 1.75rem; }
+h2, .rw h2, .report-head h2, .method h2, #descargas h2, .requisitos-area > h2, #como-puntua,
+.results .report-head.rw-context h2, .site-section .report-head h2, .fold__title--h2 {
+  font-size: var(--pc-h2); line-height: var(--pc-h2-lh);
+}
+.pillars h2 { font-size: var(--pc-h2-sm); line-height: var(--pc-h2-sm-lh); }
+
+/* «Herramienta interna»: etiqueta informativa, no un botón (sin fondo rojo) */
+.site-header__tag {
+  background: transparent; color: var(--pc-ink-2);
+  border: 1px solid var(--pc-line); cursor: default;
+}
+
+/* Zonas de pulsación de 44 px como mínimo */
+.search-mode .field--check { align-items: center; }
+.search-mode .field--check input[type="radio"] { width: 1.5rem; height: 1.5rem; }
+.search-mode .field--check label { display: inline-flex; align-items: center; min-height: 44px; }
+.requisitos-indice a { display: inline-flex; align-items: center; min-height: 44px; }
+
+/* Requisitos: aire bajo el subtítulo de cada área y glosario */
+.requisitos-area > .help { margin: 0.25rem 0 1rem; }
+.glosario { margin: 0; }
+.glosario dt { font-weight: 600; margin-top: 0.75rem; }
+.glosario dd { margin: 0.15rem 0 0; }
+
+/* Descargas: rejilla de botones iguales (dos columnas) */
+#descargas .report-actions {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem;
+  max-width: 24rem; margin-left: auto; margin-right: auto;
+}
+#descargas .report-actions .rw-btn { min-width: 0; width: 100%; justify-content: center; margin: 0; }
+#descargas .report-actions:has(> :only-child) { grid-template-columns: minmax(0, 1fr); max-width: 12rem; }
+
+/* Primer análisis: las tres tarjetas con el minigráfico abajo, a la misma altura */
+.rw-score__extra { margin-top: auto; }
+
+/* Comparación: margen interior en la primera columna (no pegada al borde negro) */
+.compare-table th:first-child, .compare-table td:first-child { padding-left: 0.75rem; }
+
+/* ---------- Historial ---------- */
+.history-url a { display: inline-flex; align-items: center; gap: 0.25rem; min-height: 44px; }
+.ext-icon { font-size: 0.85em; color: var(--pc-ink-2); }
+.history-open__link { display: inline-flex; align-items: center; min-height: 44px; white-space: nowrap; }
+.history-check label { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; cursor: pointer; }
+.history-check__text { display: none; }
+/* Barra de comparar: fija al pie de la pantalla solo mientras haya alguna casilla marcada */
+.history-compare { background: #ffffff; border-top: 1px solid var(--pc-line); padding: 0.75rem 0; }
+.history-compare.is-active {
+  position: sticky; bottom: 0; z-index: 3;
+  border-top: 3px solid var(--pc-red); box-shadow: 0 -0.5rem 1.5rem -1rem rgba(0, 0, 0, 0.35);
+}
+.history-compare .button[disabled] { opacity: 0.45; cursor: not-allowed; }
+
+/* En pantallas estrechas cada fila del historial pasa a ser una tarjeta con la etiqueta de cada dato */
+@media (max-width: 47.99rem) {
+  .history-table { overflow: visible; }
+  .history-table table, .history-table tbody, .history-table tr, .history-table th, .history-table td { display: block; width: auto; }
+  .history-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .history-table tr {
+    position: relative; margin: 0 0 1rem; padding: 0.75rem 1rem;
+    border: 1px solid var(--pc-line); border-top: 3px solid var(--pc-ink); border-radius: var(--pc-radius);
+  }
+  .history-table th, .history-table td { border: 0; padding: 0.15rem 0; text-align: left; white-space: normal; }
+  .history-table .history-url { padding-right: 3rem; }
+  .history-table .history-url a { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; line-height: 44px; }
+  .history-table td[data-label] { display: flex; justify-content: space-between; gap: 1rem; }
+  .history-table td[data-label]::before { content: attr(data-label); color: var(--pc-ink-2); font-weight: 400; text-align: left; }
+  .history-table td[data-label] { flex-wrap: wrap; white-space: normal; }
+  .history-table td.num { text-align: right; }
+  .history-table .history-check { position: absolute; top: 0.25rem; right: 0.25rem; padding: 0; }
+  .history-table .history-open { margin-top: 0.25rem; }
+}
+
+/* Portada en móvil: que el bloque negro quepa en la pantalla */
+@media (max-width: 479px) {
+  .hero:not(.hero--compact) { padding: 1.5rem 0 1.25rem; gap: 0.5rem; }
+  .hero:not(.hero--compact) h1 { font-size: 1.75rem; line-height: 2.25rem; }
+  .hero:not(.hero--compact) .lead { font-size: 0.9375rem; line-height: 1.375rem; }
+  .hero:not(.hero--compact) .analyze-form { margin-top: 0.75rem; padding: 1rem; }
+  .hero:not(.hero--compact) .search-mode .help { font-size: 0.8125rem; line-height: 1.125rem; margin: 0; }
+  /* La ayuda bajo la URL solo se oculta a la vista: el lector de pantalla la sigue leyendo (aria-describedby) */
+  .hero:not(.hero--compact) #url-help {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden;
+    clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+  }
+}
+
+/* Buscador: el círculo de cada opción va a la altura de su nombre (no centrado con la ayuda) y el perfil de
+   lectura ocupa tres columnas iguales, con su nota al pie a lo ancho. */
+.search-mode .field--check { align-items: flex-start; }
+.search-mode .field--check input[type="radio"] { margin-top: 10px; }
+.search-profile > .help { margin-top: 0.75rem; }
+@media (min-width: 48rem) {
+  .hero:not(.hero--compact) .search-profile { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .hero:not(.hero--compact) .search-profile > .help { grid-column: 1 / -1; margin-top: 0.75rem; }
 }

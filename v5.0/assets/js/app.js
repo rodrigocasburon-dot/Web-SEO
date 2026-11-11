@@ -95,9 +95,16 @@
     return Number(n).toLocaleString('es-ES', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
   }
 
+  /** Un solo formato de fecha en toda la herramienta (informe, historial y comparación): 11/11/2026, 10:29, hora de Madrid. */
   function fmtDate(iso) {
     var d = new Date(iso);
-    return isNaN(d.getTime()) ? '—' : d.toLocaleString('es-ES', { dateStyle: 'long', timeStyle: 'short' });
+    if (isNaN(d.getTime())) return '—';
+    var opts = { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' };
+    try {
+      return d.toLocaleString('es-ES', Object.assign({ timeZone: 'Europe/Madrid' }, opts));
+    } catch (e) {
+      return d.toLocaleString('es-ES', opts);
+    }
   }
 
   function lower(map, key) {
@@ -189,6 +196,8 @@
     var code = (err && err.code) || 'UNKNOWN';
     var message = (err && err.message) || 'No se ha podido completar el análisis.';
     if (FIELD_ERRORS.indexOf(code) !== -1) {
+      // URL rechazada antes de analizar nada: la portada vuelve a su estado inicial (sin modo informe)
+      if (results.hidden) document.body.classList.remove('has-report');
       showFieldError(message, field);
       return;
     }
@@ -242,8 +251,8 @@
       showFieldError('Escribe la URL de la web que quieres analizar.');
       return;
     }
-    // v4: solo la URL, sin opciones: se analiza a fondo la página y después el sitio entero
-    analyze(url, false, '', false);
+    // Se analiza a fondo la página y después el sitio entero. Opciones recuperadas: palabra clave y noindex
+    analyze(url, !!(noindex && noindex.checked), keywordInput ? keywordInput.value.trim() : '', false);
   });
 
   // ---------- 10. Modo «Comparar dos URLs» ----------
@@ -258,16 +267,19 @@
     var cmp = isCompareMode();
     url2Field.hidden = !cmp;
     keywordField.hidden = cmp;
-    localField.hidden = cmp;
+    if (localField) localField.hidden = cmp;
+    // Al comparar se analizan solo las dos páginas: el tipo de análisis del sitio no aplica
+    var modoField = document.getElementById('modo-field');
+    if (modoField) modoField.hidden = cmp;
     noindexCompare.hidden = !cmp;
     if (cmp) noindex.setAttribute('aria-describedby', 'noindex-compare');
     else noindex.removeAttribute('aria-describedby');
     urlLabel.textContent = cmp ? 'Primera URL' : 'Empecemos por tu URL';
     input2.required = cmp;
-    button.textContent = cmp ? 'Comparar' : 'Analizar URL';
+    button.textContent = cmp ? 'Comparar' : 'Analizar';
     clearErrors();
   }
-  Array.prototype.forEach.call(form.querySelectorAll('input[name="modo"]'), function (r) {
+  Array.prototype.forEach.call(form.querySelectorAll('input[name="accion"]'), function (r) {
     r.addEventListener('change', syncMode);
   });
   syncMode();   // el navegador puede restaurar el modo al volver a la página
@@ -674,7 +686,7 @@
     run.view.state = el('strong');
     var openLink = /^https?:\/\//i.test(data.url)
       ? el('a', { class: 'rw-btn', href: data.url, rel: 'noopener noreferrer', target: '_blank' }, [
-        'Abrir', el('span', { class: 'visually-hidden', text: ' la página analizada (en otra pestaña)' })])
+        'Abrir la web', el('span', { class: 'visually-hidden', text: ' analizada (en otra pestaña)' })])
       : null;
     // 1. Tarjeta de la URL: la URL va como texto (no enlace) y «Abrir» la abre aparte
     results.appendChild(el('div', { class: 'report-head rw-context' }, [
@@ -682,9 +694,9 @@
       el('p', { class: 'rw-context__url' }, [el('span', { class: 'visually-hidden', text: 'URL analizada: ' }), data.url]),
       el('ul', { class: 'rw-context__meta' }, [
         el('li', {}, ['Fecha: ', el('strong', { text: fmtDate(data.fecha) })]),
-        el('li', {}, ['Estado de la primera nota: ', run.view.state])
+        el('li', {}, ['Fiabilidad de la nota de esta página: ', run.view.state])
       ]),
-      el('p', { class: 'rw-context__actions' }, [openLink, headPdf('Informe (PDF)', pdfReport), headPdf('Hoja de ruta (PDF)', pdfRoadmap),
+      el('p', { class: 'rw-context__actions' }, [openLink, headPdf('PDF · Informe', pdfReport), headPdf('PDF · Hoja de ruta', pdfRoadmap),
         el('a', { class: 'rw-btn', href: 'historial.php', text: 'Historial' }), el('a', { class: 'rw-btn', href: '#analyze-form', text: 'Nuevo análisis' })])
     ]));
 
@@ -719,6 +731,24 @@
       results.appendChild(ident.node);
     }
 
+    // Recuperado de la v4.0: revisiones manuales, recomendaciones con su propuesta de corrección, plan por impacto
+    // y esfuerzo, y simulación de mejora. Las tres últimas se repintan al llegar PageSpeed (updateReport).
+    if (!data.blocked) {
+      var manual = foldSection('sec-revisiones', 'Revisiones manuales (no puntúan)');
+      renderManualReviews(manual.body, data.complementario);
+      results.appendChild(manual.node);
+      var recs = foldSection('sec-recomendaciones', 'Recomendaciones priorizadas y propuestas de corrección');
+      run.view.recs = recs.body;
+      results.appendChild(recs.node);
+      var plan = foldSection('sec-plan', 'Plan de acción por impacto y esfuerzo');
+      run.view.plan = plan.body;
+      results.appendChild(plan.node);
+      var sim = foldSection('sec-simulacion', 'Simulación de mejora (estimación)');
+      run.view.sim = sim.body;
+      results.appendChild(sim.node);
+      updateExtras(run);
+    }
+
     // Descargas de la URL, al final de la pantalla
     downloadsUrl.textContent = '';
     downloadsUrl.appendChild(downloadBar(run));
@@ -741,20 +771,20 @@
   /** Barra de descargas: se generan en el navegador con los datos actuales (tras PageSpeed, ya actualizados). */
   function downloadBar(run) {
     var X = window.AnalyzerExport;
-    var csvButton = el('button', { type: 'button', class: 'rw-btn', text: 'Descargar CSV' });
+    var csvButton = el('button', { type: 'button', class: 'rw-btn', text: 'CSV · Esta página' });
     csvButton.addEventListener('click', function () {
       var head = X.corporateHeader('Comprobaciones de la página escrita', [['URL analizada', run.data.url], ['Fecha del análisis', fmtDate(run.data.fecha)],
         ['Notas', run.data.blocked ? 'Acceso bloqueado' : AREAS.map(function (a) { return i18n.areas[a] + ' ' + fmtNumber(run.data.puntuacion.areas[a].redondeada, 1); }).concat('Global ' + fmtNumber(run.data.puntuacion.global.redondeada, 1)).join(' · ')]]);
       X.download('proconsi-radar-' + X.fileName(run.data.url, new Date(), 'csv'), 'text/csv;charset=utf-8', X.toCsv(head.concat(X.buildRows(run.data.checks, i18n))));
     });
-    var jsonButton = el('button', { type: 'button', class: 'rw-btn', text: 'Descargar JSON' });
+    var jsonButton = el('button', { type: 'button', class: 'rw-btn', text: 'JSON · Esta página' });
     jsonButton.addEventListener('click', function () {
       X.download('proconsi-radar-' + X.fileName(run.data.url, new Date(), 'json'), 'application/json;charset=utf-8',
         X.buildJson(run.data, { provisional: psiPending(run) && !run.data.blocked }));
     });
-    var reportButton = el('button', { type: 'button', class: 'rw-btn', text: 'Informe (PDF)' });
+    var reportButton = el('button', { type: 'button', class: 'rw-btn', text: 'PDF · Informe' });
     reportButton.addEventListener('click', function () { pdfButton(reportButton, function () { return pdfReport(run); }); });
-    var roadmapButton = el('button', { type: 'button', class: 'rw-btn', text: 'Hoja de ruta (PDF)' });
+    var roadmapButton = el('button', { type: 'button', class: 'rw-btn', text: 'PDF · Hoja de ruta' });
     roadmapButton.addEventListener('click', function () { pdfButton(roadmapButton, function () { return pdfRoadmap(run); }); });
     return el('div', {}, [
       el('h3', { text: 'Informe del análisis' }),
@@ -800,6 +830,15 @@
   function updateReport(run) {
     updateScores(run);
     if (window.RadarDashboard && run.view && run.view.dash) window.RadarDashboard.render(run, run.view.dash);
+    updateExtras(run);
+  }
+
+  /** Secciones recuperadas de la v4.0 (solo si ya están en pantalla). */
+  function updateExtras(run) {
+    if (!run.view || !run.view.recs || !run.data || !run.data.informe) return;
+    updateRecommendations(run);
+    updatePlan(run);
+    updateSimulation(run);
   }
 
   function psiPending(run) {
@@ -1505,7 +1544,7 @@
     if (s.fallos_totales > s.corregidos.length) lead += ', de ' + s.fallos_totales + ' fallos detectados';
     host.appendChild(el('p', { text: lead + ', las notas quedarían así:' }));
 
-    var rows = [['seo', i18n.areas.seo], ['ia', i18n.areas.ia], ['accesibilidad', i18n.areas.accesibilidad], ['global', 'Nota global']];
+    var rows = [['seo', i18n.areas.seo], ['ia', i18n.areas.ia], ['accesibilidad', i18n.areas.accesibilidad]];
     host.appendChild(el('div', { class: 'table-wrap' }, [el('table', { class: 'data-table' }, [
       el('caption', { class: 'visually-hidden', text: 'Notas antes y después de la corrección simulada' }),
       el('thead', {}, [el('tr', {}, [
@@ -2182,13 +2221,64 @@
     return el('div', { class: 'table-wrap' }, [table]);
   }
 
+  /** PDF de una comparación (dos auditorías o dos URL): notas, recuentos, lo que ha cambiado y el sitio. */
+  function pdfComparison(cmp) {
+    var X = window.AnalyzerCompare;
+    var A = cmp.runs[0].data;
+    var B = cmp.runs[1].data;
+    var N = function (i) { return cmpName(cmp, i); };
+    var n1 = function (v) { return v === null || v === undefined ? '—' : fmtNumber(v, 1); };
+    var diff = function (a, b) {
+      if (a === null || a === undefined || b === null || b === undefined) return '';
+      var d = Math.round((b - a) * 10) / 10;
+      return ' (' + (d > 0 ? '+' : '') + fmtNumber(d, 1) + ')';
+    };
+    var note = function (d, a) { return d.blocked ? null : d.puntuacion.areas[a].redondeada; };
+    return window.RadarPdf.create({
+      eyebrow: 'Radar web · ' + (cmp.audits ? 'Comparación de auditorías' : 'Comparación de dos URLs'),
+      titulo: A.url === B.url ? A.url : A.url + ' frente a ' + B.url,
+      subtitulo: [N(0) + ': ' + A.url + '.', N(1) + ': ' + B.url + '.']
+    }).then(function (doc) {
+      doc.h2('Notas de la página');
+      doc.p('Entre paréntesis, la diferencia: ' + (cmp.audits ? 'nota reciente menos nota anterior.' : 'nota de la URL 2 menos nota de la URL 1.'), { size: 8.5, color: window.RadarPdf.colors.gris });
+      doc.facts(AREAS.map(function (a) {
+        return [i18n.areas[a], n1(note(A, a)) + ' → ' + n1(note(B, a)) + diff(note(A, a), note(B, a))];
+      }));
+      var ca = X.counts(A);
+      var cb = X.counts(B);
+      doc.h2('Recuento de comprobaciones');
+      doc.facts(COUNT_ROWS.map(function (r) { return [r[1], String(ca[r[0]] || 0) + ' → ' + String(cb[r[0]] || 0)]; }));
+      var rows = X.checkRows(A, B).filter(function (r) { return r.distinto; });
+      doc.h2('Lo que ha cambiado');
+      if (!rows.length) doc.p(cmp.audits ? 'Nada ha cambiado entre las dos auditorías.' : 'Las dos URL tienen el mismo resultado en todas las comprobaciones.');
+      rows.forEach(function (r) {
+        doc.p(r.id + ' · ' + r.nombre + ': ' + X.stateText(r.a, i18n) + ' → ' + X.stateText(r.b, i18n) + '.', { size: 9.5 });
+      });
+      var sa = cmp.runs[0].sitio;
+      var sb = cmp.runs[1].sitio;
+      if (cmp.audits && sa && sb && window.RadarSite) {
+        var agg = [sa, sb].map(function (s) {
+          return window.RadarSite.aggregate([window.RadarSite.homeAsPage(s.home)].concat(s.pages || []), { names: i18n.nombres_checks || {} });
+        });
+        doc.h2('El sitio: antes y ahora');
+        doc.facts(['seo', 'ia', 'accesibilidad', 'global'].map(function (k) {
+          return [k === 'global' ? 'Nota global (media)' : i18n.areas[k] + ' (media)', n1(agg[0].media[k]) + ' → ' + n1(agg[1].media[k]) + diff(agg[0].media[k], agg[1].media[k])];
+        }).concat([['Páginas con nota', agg[0].analizadas + ' → ' + agg[1].analizadas]]));
+      }
+      doc.h2('Limitaciones');
+      doc.p('Evaluación automática y parcial: no sustituye una auditoría manual y ningún resultado significa que la web cumpla una norma o la ley.', { size: 8.5 });
+      doc.save(window.RadarPdf.fileName('comparacion', B.url));
+    });
+  }
+
   function renderComparison(cmp) {
     var A = cmp.runs[0].data;
     var B = cmp.runs[1].data;
     var N = function (i) { return cmpName(cmp, i); };
     var title = el('h2', { id: 'results-title', tabindex: '-1', text: cmp.audits ? 'Comparación de auditorías' : 'Comparación de dos URLs' });
-    var printButton = el('button', { type: 'button', class: 'button button--secondary no-print', text: 'Imprimir o guardar como PDF' });
-    printButton.addEventListener('click', function () { window.print(); });
+    // PDF de la comparación: se descarga, generado con assets/js/pdf.js como el informe y la hoja de ruta
+    var printButton = el('button', { type: 'button', class: 'rw-btn no-print', text: 'PDF · Comparación' });
+    printButton.addEventListener('click', function () { pdfButton(printButton, function () { return pdfComparison(cmp); }); });
 
     results.appendChild(el('div', { class: 'report-head' }, [
       title,
@@ -2290,6 +2380,7 @@
 
     var ca = X.counts(A);
     var cb = X.counts(B);
+    var total = function (c) { return COUNT_ROWS.reduce(function (s, r) { return s + (c[r[0]] || 0); }, 0); };
     host.appendChild(el('h4', { id: 'cmp-recuento', text: 'Recuento de comprobaciones' }));
     host.appendChild(compareTable('cmp-recuento', ['Resultado', { text: N(0), num: true }, { text: N(1), num: true }], COUNT_ROWS.map(function (s) {
       return el('tr', {}, [
@@ -2298,6 +2389,10 @@
         el('td', { class: 'num', text: String(cb[s[0]]) })
       ]);
     })));
+    if (total(ca) !== total(cb)) {
+      host.appendChild(el('p', { class: 'help', text: N(0) + ' tiene ' + total(ca) + ' comprobaciones y ' + N(1) + ', ' + total(cb)
+        + ': la herramienta ha ido incorporando comprobaciones nuevas, así que el análisis más antiguo tiene menos.' }));
+    }
 
     // Comprobaciones
     var rows = X.checkRows(A, B);
@@ -2373,7 +2468,7 @@
         return;
       }
       reps.sort(function (a, b) { return a.fecha < b.fecha ? -1 : a.fecha > b.fecha ? 1 : 0; });
-      var shortDate = function (iso) { return new Date(iso).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }); };
+      var shortDate = fmtDate;
       var runs = reps.map(function (d) {
         var inf = d.informe;
         // Informes de «Analizar sitio» de la v3.0: solo tienen la portada y el sitio
@@ -2389,6 +2484,9 @@
       input.value = runs[1].url;
       renderComparison(cmp);
       renderSiteComparison(runs[0].sitio, runs[1].sitio, cmp);
+      // La comparación sale bajo el buscador: se lleva la vista (y el foco) a su título
+      var cmpTitle = document.getElementById('results-title');
+      if (cmpTitle) { cmpTitle.focus(); cmpTitle.scrollIntoView({ block: 'start' }); }
       setStatus('Comparación de dos auditorías guardadas: ' + fmtDate(runs[0].fecha) + ' y ' + fmtDate(runs[1].fecha) + '.', false);
     }, function () {
       setLoading(false);

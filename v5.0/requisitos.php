@@ -142,6 +142,23 @@ foreach ($groups as $area => $list) {
     </ul>
   </section>
 
+  <section class="limitations" aria-labelledby="glosario-t">
+    <h2 id="glosario-t" class="visually-hidden">Términos técnicos</h2>
+    <details class="fold">
+      <summary><span class="fold__title fold__title--h2">Términos técnicos, en sencillo</span></summary>
+      <div class="fold__body">
+        <dl class="glosario">
+          <dt>Códigos C01…C31</dt><dd>Identifican cada comprobación. No son correlativos: los números que faltan no corresponden a ninguna comprobación de esta versión.</dd>
+          <dt>Fragmento (snippet)</dt><dd>El texto que Google o un asistente de IA muestran bajo el título de un resultado. «Elegibilidad de fragmento» mira si la página deja que se muestre.</dd>
+          <dt>HTML crudo</dt><dd>El código que envía el servidor antes de que se ejecute JavaScript. Es lo que leen muchos rastreadores, sobre todo los de IA.</dd>
+          <dt>Reseñas autoservidas</dt><dd>Valoraciones con estrellas que una empresa publica en su propia web sobre sí misma. Google no las muestra como estrellas en sus resultados.</dd>
+          <dt>Viewport</dt><dd>La zona visible de la pantalla. La etiqueta «viewport» hace que la web se adapte al ancho del móvil.</dd>
+          <dt>LCP, INP y CLS</dt><dd>Las métricas de velocidad de Google (Core Web Vitals): LCP, cuánto tarda en verse el contenido principal; INP, cuánto tarda en responder al pulsar; CLS, cuánto se mueven los elementos mientras carga.</dd>
+        </dl>
+      </div>
+    </details>
+  </section>
+
   <nav class="requisitos-indice" aria-label="Áreas">
     <ul>
 <?php foreach ($groups as $area => $list): ?>
@@ -204,7 +221,7 @@ foreach ($groups as $area => $list) {
   <div class="site-footer__inner">
     <img class="site-footer__logo" src="<?= $asset('assets/img/logo-proconsi.png') ?>" alt="Proconsi" width="96" height="33">
     <p class="site-footer__name">Radar web</p>
-    <p>Evaluación automática y parcial. No sustituye una auditoría manual.</p>
+    <p>Evaluación automática y parcial. No sustituye una auditoría manual. Herramienta interna sin inicio de sesión.</p>
   </div>
 </footer>
 <script type="application/json" id="requisitos-datos"><?= json_encode($pdf, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>

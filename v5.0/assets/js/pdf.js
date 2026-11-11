@@ -496,8 +496,8 @@
       this.p(d.arreglo, { size: 9, indent: 16, gap: 1 });
     }
     this.y -= 6;
-    this.need(8);
-    this.line(M, this.y, W - M, this.y, C.linea, 0.5);
+    // Separador entre puntos; si ya no cabe, no se pinta (una raya suelta abriendo página queda mal)
+    if (this.y - 8 >= BOTTOM) this.line(M, this.y, W - M, this.y, C.linea, 0.5);
     this.y -= 8;
   };
 
@@ -734,7 +734,11 @@
   function fileName(kind, url) {
     var host = '';
     try { host = new URL(url).hostname.replace(/^www\./, ''); } catch (e) { host = ''; }
-    return ['proconsi-radar', kind, host, new Date().toISOString().slice(0, 10)].filter(Boolean).join('-').replace(/[^a-z0-9.\-]/gi, '-') + '.pdf';
+    // Mismo sello de fecha que los CSV y el JSON: AAAAMMDD-HHMM (hora local)
+    var d = new Date();
+    var p = function (n) { return (n < 10 ? '0' : '') + n; };
+    var stamp = d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes());
+    return ['proconsi-radar', kind, host, stamp].filter(Boolean).join('-').replace(/[^a-z0-9.\-]/gi, '-') + '.pdf';
   }
 
   /** Logotipo y Poppins (si están): {logo, fonts}. Nunca falla: lo que no llegue se sustituye. */
