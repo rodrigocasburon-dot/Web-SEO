@@ -432,6 +432,7 @@
 
     if (home.blocked || agg.analizadas === 0) {
       lastModel = { url: home.url, bloqueado: true, meta: metaLines, mensaje: 'No calculable: el sitio ha bloqueado el acceso automático.' };
+      if (root.RadarDashboard) root.RadarDashboard.setSite(lastModel);
       results.appendChild(el('p', { class: 'notice notice--warn', text: 'No calculable: el sitio ha bloqueado el acceso automático. ' + ((home.blocked && home.blocked.message) || '') }));
       addCsv(all);
       results.hidden = false;
@@ -464,19 +465,15 @@
       byArea[EXTRA_AREA.error404].push(siteItem('Página de error 404', c404.estado, c404.detalle || '', null));
     }
 
-    // Nota global y tarjetas
+    // Media del sitio (dato secundario: las notas del informe son las de la URL analizada). Sin nota global.
+    // Lo que falla o falta, con cuántas páginas afecta, se pinta en el informe por bloques (assets/js/dashboard.js).
     var rel = agg.fiabilidad;
-    results.appendChild(el('p', { class: 'rw-global' }, [
-      'Nota global del sitio: ', el('strong', { text: fmt(agg.media.global) + ' / 100' }),
-      ' · media de las ' + agg.analizadas + ' páginas con nota (peor página: ' + fmt(agg.minima.global) + ').'
-    ]));
     AREAS.forEach(function (a) { sortItems(byArea[a]); });
-    var cards = el('ul', { class: 'site-cards' }, AREAS.map(function (a) {
-      return el('li', {}, [areaCard(a, agg, byArea[a])]);
-    }));
-    accordion(cards);
-    results.appendChild(cards);
-    results.appendChild(el('p', { class: 'help', text: 'Abre cada tarjeta para ver lo que falla o falta en esa área, de más a menos páginas afectadas.' }));
+    results.appendChild(el('p', { class: 'site-means' }, [
+      el('strong', { text: 'Media del sitio (' + agg.analizadas + ' páginas con nota): ' }),
+      AREAS.map(function (a) { return areaName(a) + ' ' + fmt(agg.media[a]) + ' (peor página: ' + fmt(agg.minima[a]) + ')'; }).join(' · ') + '.'
+    ]));
+    results.appendChild(el('p', { class: 'help', text: 'Los fallos del sitio, con las páginas afectadas, están en el informe de arriba, en «Detalle por bloque».' }));
 
     // Revisión manual (CLAUDE.md: señalar siempre qué requiere revisión manual)
     var pi = agg.pistas;
@@ -501,8 +498,16 @@
       }),
       fiabilidad: 'Fiabilidad: análisis ' + rel.estado + ', evaluados ' + rel.evaluados + ' de ' + rel.posibles + ' puntos'
         + (rel.sin_datos ? ' (' + rel.sin_datos + ' sin datos, que no restan)' : '') + '. Contraste y Core Web Vitals (PageSpeed) solo se miden en la primera página.',
-      manual: manualText
+      manual: manualText,
+      // Datos del sitio para el informe por bloques y el resumen (assets/js/perfiles.js)
+      checks: agg.checks,
+      titulos_repetidos: agg.titulos_repetidos,
+      con_titulo: agg.con_titulo,
+      pagina_404: home.sitio.pagina_404 || null,
+      media: agg.media,
+      minima: agg.minima
     };
+    if (root.RadarDashboard) root.RadarDashboard.setSite(lastModel);
 
     addCsv(all);
     results.hidden = false;

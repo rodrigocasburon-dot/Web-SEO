@@ -47,6 +47,16 @@ $i18n = [
 ];
 // Informe de sitio · recomendaciones agrupadas: nº máximo de páginas que se listan en cada una
 $i18n['grupo_max_paginas'] = max(1, min(500, (int) ($appConfig['site_group_max_pages'] ?? 20)));
+// Perfiles de lectura (config/perfiles.php y lang/perfiles.php). El perfil de la dirección (?perfil=) se valida con
+// lista blanca (src/Perfil.php): un valor no válido cae al perfil por defecto y nunca se refleja en la página.
+$profile = Perfil::normalize($_GET['perfil'] ?? null);
+$i18n['perfiles'] = Perfil::forScreen();
+$i18n['perfil_inicial'] = $profile;
+// Peso de cada gravedad en la nota (Scorer): para ordenar los puntos, no se recalcula nada
+$i18n['penalizaciones'] = Scorer::PENALTIES;
+$i18n['descripciones'] = array_map(fn($c) => (string) ($c['descripcion'] ?? ''), $lang['checks']);
+$i18n['recomendaciones'] = array_map(fn($c) => (string) ($c['recomendacion'] ?? ''), $lang['checks']);
+$i18n['enfoque'] = $lang['enfoque'];
 // Bloque de área de cada comprobación (al que más resta): C08 y C14 mientras se esperan y la matriz páginas × puntos
 foreach (CheckRunner::catalog() as $checkId => $check) {
     $i18n['bloque_checks'][$checkId] = Report::primaryArea($check->describe(BaseCheck::NO_DATA)['pilares']);
@@ -77,6 +87,8 @@ $e = fn(string $s): string => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
 <script src="<?= $asset('assets/js/rw-componentes.js') ?>" defer></script>
 <script src="<?= $asset('assets/js/site.js') ?>" defer></script>
 <script src="<?= $asset('assets/js/pdf.js') ?>" defer></script>
+<script src="<?= $asset('assets/js/perfiles.js') ?>" defer></script>
+<script src="<?= $asset('assets/js/dashboard.js') ?>" defer></script>
 <script src="<?= $asset('assets/js/app.js') ?>" defer></script>
 </head>
 <body>
@@ -134,6 +146,19 @@ $e = fn(string $s): string => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
             <p id="modo-profundo-help" class="help">Todas las páginas del sitio (hasta <?= number_format($maxPages, 0, ',', '.') ?>). En webs grandes puede tardar bastante.</p>
           </div>
         </div>
+      </fieldset>
+      <fieldset class="field search-mode search-profile">
+        <legend>Perfil de lectura</legend>
+<?php foreach (Perfil::forScreen()['perfiles'] as $pid => $pinfo): ?>
+        <div class="field--check">
+          <input id="perfil-<?= $e($pid) ?>" name="perfil" type="radio" value="<?= $e($pid) ?>" data-perfil<?= $pid === $profile ? ' checked' : '' ?> aria-describedby="perfil-<?= $e($pid) ?>-help">
+          <div>
+            <label for="perfil-<?= $e($pid) ?>"><?= $e($pinfo['nombre']) ?></label>
+            <p id="perfil-<?= $e($pid) ?>-help" class="help"><?= $e($pinfo['descripcion']) ?></p>
+          </div>
+        </div>
+<?php endforeach; ?>
+        <p class="help">Solo cambia cómo se explica el resultado: las notas son las mismas. Se puede cambiar después en el informe sin repetir el análisis.</p>
       </fieldset>
     </div>
   </form>

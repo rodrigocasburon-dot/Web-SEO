@@ -16,6 +16,8 @@
   'use strict';
 
   var i18n = JSON.parse(document.getElementById('i18n').textContent);
+  // Perfil de lectura y pantalla por capas (assets/js/perfiles.js, assets/js/dashboard.js)
+  if (window.RadarDashboard) window.RadarDashboard.init(i18n);
   var form = document.getElementById('analyze-form');
   var input = document.getElementById('url');
   var noindex = document.getElementById('noindex');
@@ -692,6 +694,9 @@
     run.view.scores = el('div');
     first.body.appendChild(run.view.scores);
     results.appendChild(first.node);
+    // Perfil de lectura y lo que falla o falta por bloque (assets/js/dashboard.js)
+    run.view.dash = el('div', { class: 'rw-dash', id: 'dashboard' });
+    results.appendChild(run.view.dash);
 
     // Descargas de la URL, al final de la pantalla
     downloadsUrl.textContent = '';
@@ -856,6 +861,7 @@
 
   function updateReport(run) {
     updateScores(run);
+    if (window.RadarDashboard && run.view && run.view.dash) window.RadarDashboard.render(run, run.view.dash);
   }
 
   function psiPending(run) {
@@ -917,7 +923,8 @@
     }
     var all = (run.data.checks || []).filter(function (c) { return c.aplica !== false; });
     var done = all.filter(function (c) { return c.estado !== 'SIN_DATOS'; }).length;
-    host.appendChild(globalLine(p.global, blocked, coverageText(done, all.length + pending.length, pending.length)));
+    // Sin nota global en pantalla (decisión del grupo, 11/11/2026): el Scorer la sigue calculando, pero no se muestra
+    host.appendChild(el('p', { class: 'rw-help', text: coverageText(done, all.length + pending.length, pending.length) + '.' }));
     updateContextState(run);
     var incomplete = !blocked && AREAS.some(function (a) { return p.areas[a].incompleta; });
     if (incomplete) host.appendChild(el('p', { class: 'help', text: i18n.nota_incompleta }));
