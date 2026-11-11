@@ -317,7 +317,171 @@
     };
   }
 
+  // ---------------------------------------------------------------- resumen ejecutivo
+
+  var SEV_WORDS = { CRITICO: ['crítico', 'críticos'], ALTO: ['alto', 'altos'], MEDIO: ['medio', 'medios'], BAJO: ['bajo', 'bajos'] };
+  var LEVEL_TEXT = { alto: 'alto', medio: 'medio', bajo: 'bajo', alta: 'alto', media: 'medio', baja: 'bajo' };
+  var ALCANCE = 'Evaluación automática de una sola URL: señala lo que se puede medir sin intervención humana y no sustituye '
+    + 'una revisión manual ni una auditoría. GEO mide la preparación técnica para buscadores con IA; no garantiza que la página aparezca citada.';
+
+  function areaName(i18n, a) { return (i18n.areas && i18n.areas[a]) || { seo: 'SEO', ia: 'GEO', accesibilidad: 'UX' }[a] || a; }
+
+  /** Primera frase de un texto (para que el resumen quepa en una página). */
+  function firstSentence(t) {
+    var s = String(t || '').trim();
+    var m = s.match(/^(.+?[.!?])(\s|$)/);
+    return m ? m[1] : s;
+  }
+
+  /** «+6», «−3,5» o «sin cambios» (diferencia de notas redondeadas a un decimal). */
+  function deltaText(now, before) {
+    if (now === null || now === undefined || before === null || before === undefined || isNaN(now) || isNaN(before)) return null;
+    var d = Math.round((Number(now) - Number(before)) * 10) / 10;
+    if (d === 0) return 'sin cambios';
+    return (d > 0 ? '+' : '−') + num(Math.abs(d));
+  }
+
+  /** Titular de una frase con plantilla: lo más sólido y lo más débil, con empates. */
+  function headline(m, i18n) {
+    if (m.bloqueado) return 'No se ha podido analizar la página: el sitio ha bloqueado el acceso automático.';
+    var av = AREAS.filter(function (a) { return m.notas[a] !== null && m.notas[a] !== undefined; });
+    if (!av.length) return 'No hay datos suficientes para calcular ninguna nota.';
+    var data = i18n.perfiles || {};
+    var r = function (a) { var x = range(data, m.notas[a]); return x ? x.texto.toLowerCase() : ''; };
+    var names = function (xs) { return joinList(xs.map(function (a) { return areaName(i18n, a); })); };
+    if (av.length === 1) return 'Solo se ha podido calcular ' + areaName(i18n, av[0]) + ': ' + num(m.notas[av[0]]) + ' (' + r(av[0]) + ').';
+    var vals = av.map(function (a) { return Math.round(m.notas[a] * 10) / 10; });
+    var max = Math.max.apply(null, vals), min = Math.min.apply(null, vals);
+    var best = av.filter(function (a, i) { return vals[i] === max; });
+    var worst = av.filter(function (a, i) { return vals[i] === min; });
+    var miss = AREAS.filter(function (a) { return av.indexOf(a) === -1; });
+    var tail = miss.length ? ' ' + names(miss) + (miss.length === 1 ? ' no tiene' : ' no tienen') + ' nota por falta de datos.' : '';
+    if (max === min) {
+      return (av.length === 3 ? 'Las tres notas están igualadas en ' : names(av) + ' están igualadas en ') + num(max) + ' (' + r(av[0]) + ').' + tail;
+    }
+    var verbBest = best.length === 1 ? ' es lo más sólido' : ' son lo más sólido';
+    var verbWorst = worst.length === 1 ? ' lo que más atención necesita' : ' lo que más atención necesitan';
+    return names(best) + verbBest + ' (' + num(max) + ') y ' + names(worst) + verbWorst + ' (' + num(min) + ', ' + r(worst[0]) + ').' + tail;
+  }
+
+  function pagesText(pt) {
+    var s = pt.sitio;
+    if (!s || !s.evaluadas) return '';
+    var n = (s.fallan || 0);
+    return n ? 'falla en ' + n + ' de ' + plural(s.evaluadas, 'página', 'páginas') : '';
+  }
+
+  /**
+   * Resumen ejecutivo (una página como máximo): la misma estructura para la pantalla y para los dos PDF.
+   * Devuelve solo datos y textos de plantilla; quien lo pinta escapa los textos (textContent o PDF).
+   */
+  function summary(m, perfil, i18n) {
+    i18n = i18n || {};
+    var data = i18n.perfiles || {};
+    perfil = normalize(perfil, data);
+    var pinfo = (data.perfiles || {})[perfil] || { nombre: perfil };
+    var tech = perfil === 'desarrollo';
+    var label = function (pt) { return (tech && pt.id.indexOf('WEB-') !== 0 ? pt.id + ' ' : '') + pt.nombre; };
+
+    var notas = AREAS.map(function (a) {
+      var v = m.notas[a];
+      return {
+        area: a, nombre: areaName(i18n, a), nota: v, rango: range(data, v),
+        variacion: m.anterior ? deltaText(v, m.anterior[a]) : null,
+        incompleta: m.incompletas.indexOf(a) !== -1
+      };
+    });
+
+    var fails = m.puntos.filter(function (p) { return p.estado === 'NO_CUMPLE'; });
+    var sorted = sortPoints(fails, perfil, i18n);
+    var graves = fails.filter(function (p) { return p.severidad === 'CRITICO' || p.severidad === 'ALTO'; });
+    var criticos = fails.filter(function (p) { return p.severidad === 'CRITICO'; });
+    var prioridades = sorted.slice(0, 3).map(function (pt) {
+      var t = pointText(pt, perfil, i18n);
+      return {
+        id: pt.id, nombre: label(pt), bloque: pt.bloque, severidad: pt.severidad,
+        texto: firstSentence(t.hacer), paginas: pagesText(pt),
+        esfuerzo: perfil === 'direccion' ? (LEVEL_TEXT[pt.esfuerzo] || null) : null,
+        impacto: perfil === 'direccion' ? (LEVEL_TEXT[pt.impacto] || null) : null
+      };
+    });
+    var notaPrioridades = null;
+    if (!fails.length) notaPrioridades = m.bloqueado ? null : 'No hay fallos detectables automáticamente.';
+    else if (!graves.length) notaPrioridades = 'No hay fallos críticos ni altos; lo siguiente es de gravedad media o baja.';
+    var criticosFuera = criticos.filter(function (p) { return !prioridades.some(function (x) { return x.id === p.id; }); }).length;
+    if (criticosFuera) notaPrioridades = 'Hay ' + plural(criticosFuera, 'fallo crítico más', 'fallos críticos más') + (criticosFuera === 1 ? ': se detalla' : ': se detallan') + ' en su bloque.';
+
+    var bien = sortPoints(m.puntos.filter(function (p) {
+      return p.estado === 'CUMPLE' && (p.severidad === 'CRITICO' || p.severidad === 'ALTO');
+    }), perfil, i18n).slice(0, 3).map(function (pt) { return { id: pt.id, nombre: label(pt) }; });
+
+    var c = m.cobertura;
+    var faltan = c.sin_datos + c.pendientes;
+    var umbral = Number(data.aviso_sin_datos || 0.25);
+    var cobTexto = plural(c.evaluados, 'punto evaluado', 'puntos evaluados') + ' de ' + c.total + ', '
+      + c.sin_datos + ' sin datos' + (c.pendientes ? ', ' + c.pendientes + ' pendientes de PageSpeed' : '')
+      + ' y ' + c.no_aplica + ' que no ' + (c.no_aplica === 1 ? 'aplica' : 'aplican') + '.';
+    var cobAviso = null;
+    if (!m.bloqueado && c.total && (faltan / c.total >= umbral || m.incompletas.length)) {
+      cobAviso = 'Atención: faltan datos en ' + plural(faltan, 'punto', 'puntos')
+        + (m.incompletas.length ? ' y la nota de ' + joinList(m.incompletas.map(function (a) { return areaName(i18n, a); }))
+          + (m.incompletas.length === 1 ? ' está incompleta' : ' están incompletas') : '')
+        + '. El resultado puede cambiar cuando se puedan medir.';
+    }
+
+    var variacion = null;
+    if (m.anterior && !m.bloqueado) {
+      var parts = notas.filter(function (n) { return n.variacion; }).map(function (n) { return n.nombre + ' ' + n.variacion; });
+      if (parts.length) variacion = 'Frente al análisis anterior: ' + joinList(parts) + '.';
+    }
+
+    var fallosBloque = [];
+    if (m.psiFallo) fallosBloque.push('PageSpeed Insights no ha respondido (' + m.psiFallo + '): el contraste (C08) y las Core Web Vitals (C14) quedan sin datos y no restan.');
+    else if (m.psiPendiente) fallosBloque.push('PageSpeed Insights aún no ha terminado: el contraste (C08) y las Core Web Vitals (C14) se añadirán al llegar.');
+    if (m.bloqueado && m.mensajeBloqueo) fallosBloque.push(m.mensajeBloqueo);
+
+    var extra = null;
+    if (perfil === 'direccion') {
+      extra = { tipo: 'decisiones', titulo: 'Decisiones', texto: m.riesgo
+        ? 'Riesgo alto: conviene revisar de inmediato las prioridades.'
+        : (graves.length ? 'Aprobar la corrección de las prioridades en el próximo ciclo de trabajo.' : 'No hace falta ninguna decisión urgente; mantener la revisión periódica.') };
+    } else if (perfil === 'marketing') {
+      var vis = ['seo', 'ia'].filter(function (a) { return m.notas[a] !== null && m.notas[a] !== undefined; });
+      extra = { tipo: 'visibilidad', titulo: 'Visibilidad', texto: vis.length
+        ? 'En buscadores y asistentes con IA cuentan sobre todo ' + joinList(vis.map(function (a) { return areaName(i18n, a) + ' (' + num(m.notas[a]) + ')'; }))
+          + '. ' + plural(fails.filter(function (p) { return p.bloque === 'seo' || p.bloque === 'ia'; }).length, 'fallo afecta', 'fallos afectan') + ' a la visibilidad.'
+        : 'No hay datos suficientes para valorar la visibilidad.' };
+    } else {
+      var counts = ['CRITICO', 'ALTO', 'MEDIO', 'BAJO'].map(function (s) {
+        var n = fails.filter(function (p) { return p.severidad === s; }).length;
+        return n + ' ' + SEV_WORDS[s][n === 1 ? 0 : 1];
+      });
+      var avisos = m.puntos.filter(function (p) { return p.estado === 'AVISO'; }).length;
+      extra = { tipo: 'gravedad', titulo: 'Fallos por gravedad', texto: joinList(counts) + '; ' + plural(avisos, 'aviso', 'avisos') + '.' };
+    }
+
+    return {
+      url: m.url, fecha: m.fecha, perfil: perfil, perfilNombre: pinfo.nombre,
+      bloqueado: m.bloqueado,
+      notas: notas,
+      titular: headline(m, i18n),
+      prioridades: prioridades,
+      notaPrioridades: notaPrioridades,
+      bien: bien,
+      cobertura: { evaluados: c.evaluados, sin_datos: c.sin_datos, pendientes: c.pendientes, no_aplica: c.no_aplica, total: c.total, texto: cobTexto, aviso: cobAviso },
+      alcance: ALCANCE,
+      variacion: variacion,
+      fallosBloque: fallosBloque,
+      riesgo: m.riesgo,
+      extra: extra
+    };
+  }
+
   root.RadarPerfil = {
+    summary: summary,
+    headline: headline,
+    deltaText: deltaText,
+    areaName: areaName,
     PERFILES: PERFILES,
     AREAS: AREAS,
     BLOQUES: BLOQUES,

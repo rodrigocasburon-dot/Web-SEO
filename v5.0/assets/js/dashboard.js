@@ -219,6 +219,69 @@
     return sec;
   }
 
+  // ---------------------------------------------------------------- resumen ejecutivo
+
+  /** Abre los desplegables que contienen un punto y lleva el foco a él (enlaces de las prioridades). */
+  function goToPoint(id, ev) {
+    var target = doc.getElementById('punto-' + id);
+    if (!target) return;
+    if (ev) ev.preventDefault();
+    for (var n = target.parentNode; n && n !== doc; n = n.parentNode) { if (n.tagName === 'DETAILS') n.open = true; }
+    target.focus();
+    try { target.scrollIntoView({ block: 'start' }); } catch (e) { /* navegadores antiguos */ }
+  }
+
+  function fmtDate(iso) {
+    if (!iso) return '';
+    var d = new Date(iso);
+    return isNaN(d) ? String(iso) : d.toLocaleString('es-ES', { dateStyle: 'long', timeStyle: 'short' });
+  }
+
+  /** Resumen ejecutivo (RadarPerfil.summary): el mismo contenido que abre los dos PDF. */
+  function renderSummary(s) {
+    var sec = el('section', { class: 'rw-dash__section rw-exec', id: 'resumen', 'aria-labelledby': 'resumen-t' }, [
+      el('h3', { id: 'resumen-t', text: 'Resumen ejecutivo' }),
+      el('p', { class: 'rw-exec__meta', text: s.url + ' · ' + fmtDate(s.fecha) + ' · Lectura: ' + s.perfilNombre }),
+      el('p', { class: 'rw-exec__headline', text: s.titular })
+    ]);
+    if (!s.bloqueado) {
+      sec.appendChild(el('ul', { class: 'rw-exec__scores' }, s.notas.map(function (n) {
+        return el('li', {}, [
+          el('span', { class: 'rw-exec__area', text: n.nombre }),
+          el('strong', { text: n.nota === null || n.nota === undefined ? 'Sin nota' : RP.num(n.nota) + ' / 100' }),
+          el('span', { class: 'rw-exec__range', text: (n.rango ? n.rango.texto : 'Sin datos suficientes') + (n.incompleta ? ' · incompleta' : '') })
+        ]);
+      })));
+    }
+    if (s.variacion) sec.appendChild(el('p', { class: 'rw-exec__line', text: s.variacion }));
+    s.fallosBloque.forEach(function (t) { sec.appendChild(el('p', { class: 'notice notice--warn', text: t })); });
+
+    if (!s.bloqueado) {
+      sec.appendChild(el('h4', { text: 'Prioridades' }));
+      if (s.prioridades.length) {
+        sec.appendChild(el('ol', { class: 'rw-exec__list' }, s.prioridades.map(function (p) {
+          var a = el('a', { href: '#punto-' + p.id, text: p.nombre });
+          a.addEventListener('click', function (ev) { goToPoint(p.id, ev); });
+          var meta = [];
+          if (p.severidad) meta.push('gravedad ' + SEV_TEXT[p.severidad].toLowerCase());
+          if (p.paginas) meta.push(p.paginas);
+          if (p.esfuerzo || p.impacto) meta.push('esfuerzo ' + (p.esfuerzo || '—') + ', impacto ' + (p.impacto || '—'));
+          return el('li', {}, [a, meta.length ? ' (' + meta.join('; ') + ')' : '', p.texto ? el('span', { class: 'rw-exec__do', text: p.texto }) : null]);
+        })));
+      }
+      if (s.notaPrioridades) sec.appendChild(el('p', { class: 'rw-exec__line', text: s.notaPrioridades }));
+      if (s.bien.length) {
+        sec.appendChild(el('h4', { text: 'Lo que está bien' }));
+        sec.appendChild(el('ul', { class: 'rw-exec__list' }, s.bien.map(function (b) { return el('li', { text: b.nombre }); })));
+      }
+      if (s.extra) sec.appendChild(el('p', { class: 'rw-exec__line' }, [el('strong', { text: s.extra.titulo + ': ' }), s.extra.texto]));
+    }
+    sec.appendChild(el('p', { class: 'rw-exec__line' }, [el('strong', { text: 'Cobertura: ' }), s.cobertura.texto]));
+    if (s.cobertura.aviso) sec.appendChild(el('p', { class: 'notice notice--warn', text: s.cobertura.aviso }));
+    sec.appendChild(el('p', { class: 'rw-help', text: s.alcance }));
+    return sec;
+  }
+
   // ---------------------------------------------------------------- pintado
 
   function currentModel() {
@@ -241,6 +304,7 @@
     if (m.bloqueado) {
       state.body.appendChild(el('p', { class: 'notice notice--warn', text: 'Acceso bloqueado: las comprobaciones que dependen del contenido de la página aparecen como «Sin datos».' }));
     }
+    state.body.appendChild(renderSummary(RP.summary(m, perfil, i18n)));
     state.body.appendChild(renderBlocks(m, perfil));
     state.body.appendChild(renderNotEvaluated(m, perfil));
   }
@@ -284,6 +348,7 @@
     setSite: setSite,
     profile: function () { return state.perfil; },
     model: currentModel,
+    summary: function () { var m = currentModel(); return m ? RP.summary(m, state.perfil, i18n) : null; },
     onProfile: function (fn) { state.listeners.push(fn); }
   };
 })(window);
