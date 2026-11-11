@@ -14,6 +14,8 @@ if (!headers_sent()) {
     header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'self'; frame-ancestors 'none'");
     header('X-Content-Type-Options: nosniff');
     header('Referrer-Policy: no-referrer');
+    // El historial cambia y contiene datos de análisis: que no lo guarden cachés intermedias ni el navegador
+    header('Cache-Control: no-store');
 }
 
 $config = Config::load();
