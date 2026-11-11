@@ -1,0 +1,2 @@
+# Carpeta interna: sin acceso web (Apache 2.4). Ver docs/SEGURIDAD.md (SEG-03)
+Require all denied
