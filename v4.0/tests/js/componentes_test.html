@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Pruebas de assets/js/rw-componentes.js</title>
+</head>
+<body>
+<!-- Lo abre tests/componentes_test.php con un navegador sin interfaz (--dump-dom) y lee #resultado. -->
+<pre id="resultado">sin ejecutar</pre>
+<div id="zona"></div>
+<script>
+  var comprobaciones = 0;
+  var assert = {
+    strictEqual: function (a, b, m) { comprobaciones++; if (a !== b) throw new Error((m || 'strictEqual') + ': ' + JSON.stringify(a) + ' !== ' + JSON.stringify(b)); },
+    ok: function (v, m) { comprobaciones++; if (!v) throw new Error(m || 'ok'); }
+  };
+  window.onerror = function (msg) { document.getElementById('resultado').textContent = JSON.stringify({ ok: comprobaciones, fallos: [String(msg)] }); };
+</script>
+<script src="../../assets/js/rw-componentes.js"></script>
+<script src="componentes_test.js"></script>
+<script>
+  if (document.getElementById('resultado').textContent === 'sin ejecutar') {
+    document.getElementById('resultado').textContent = JSON.stringify({ ok: comprobaciones, fallos: [] });
+  }
+</script>
+</body>
+</html>

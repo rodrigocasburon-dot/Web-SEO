@@ -1,0 +1,12 @@
+{
+    "url": "https://example.com/",
+    "status": 200,
+    "redirects": [
+        {
+            "from": "http://example.com/",
+            "status": 301,
+            "location": "https://example.com/",
+            "to": "https://example.com/"
+        }
+    ]
+}
