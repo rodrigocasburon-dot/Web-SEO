@@ -1,5 +1,9 @@
 <?php
 // Prueba manual CON internet (no forma parte de run.php): php tests/live_fetch.php [url ...]
+if (PHP_SAPI !== 'cli') {
+    http_response_code(404);
+    exit;
+}
 require __DIR__ . '/../src/bootstrap.php';
 
 $urls = array_slice($argv, 1) ?: [
