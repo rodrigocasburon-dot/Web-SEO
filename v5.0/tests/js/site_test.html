@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Pruebas de assets/js/site.js</title>
+</head>
+<body>
+<!-- Lo abre tests/sitejs_test.php con un navegador sin interfaz (--dump-dom) y lee #resultado.
+     site_test.js está escrito para Node (node tests/js/site_test.js); aquí se le dan «require» y «module» mínimos. -->
+<pre id="resultado">sin ejecutar</pre>
+<script>
+  var module = { exports: {} };
+  var comprobaciones = 0;
+  var assertShim = {
+    strictEqual: function (a, b, m) { comprobaciones++; if (a !== b) throw new Error((m || 'strictEqual') + ': ' + JSON.stringify(a) + ' !== ' + JSON.stringify(b)); },
+    deepStrictEqual: function (a, b, m) { comprobaciones++; if (JSON.stringify(a) !== JSON.stringify(b)) throw new Error((m || 'deepStrictEqual') + ': ' + JSON.stringify(a) + ' !== ' + JSON.stringify(b)); }
+  };
+  function require(name) { return name === 'assert' ? assertShim : module.exports; }
+  window.onerror = function (msg) { document.getElementById('resultado').textContent = JSON.stringify({ ok: comprobaciones, fallos: [String(msg)] }); };
+</script>
+<script src="../../assets/js/site.js"></script>
+<script src="site_test.js"></script>
+<script>
+  if (document.getElementById('resultado').textContent === 'sin ejecutar') {
+    document.getElementById('resultado').textContent = JSON.stringify({ ok: comprobaciones, fallos: [] });
+  }
+</script>
+</body>
+</html>

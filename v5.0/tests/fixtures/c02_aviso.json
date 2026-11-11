@@ -1,0 +1,6 @@
+{
+    "robots": {
+        "status": 200,
+        "body": "User-agent: GPTBot\nUser-agent: ClaudeBot\nDisallow: /\n\nUser-agent: Google-Extended\nDisallow: /"
+    }
+}

@@ -1,0 +1,12 @@
+/* Solo para docs/muestra-componentes.html (no se usa en la herramienta). Colores de tokens.css. */
+body.rw { margin: 0; background: var(--blanco); }
+.rw-sample { max-width: 1120px; margin: 0 auto; padding: var(--s5) var(--s3) var(--s6); }
+.rw-sample h1 { font-size: 32px; line-height: 40px; font-weight: 700; margin: 0 0 var(--s3); }
+.rw-sample h2 { margin: var(--s6) 0 var(--s3); }
+.rw-sample__warning { padding: var(--s3); border: 2px solid var(--rojo); border-radius: var(--r); }
+.rw-sample__row { display: flex; flex-wrap: wrap; gap: var(--s3); align-items: center; }
+.rw-sample__grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s3); }
+@media (min-width: 1025px) { .rw-sample__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.rw-sample__footer { margin-top: var(--s7); padding-top: var(--s3); border-top: 1px solid var(--gris-linea); }
+.rw-skip { position: absolute; left: -9999px; }
+.rw-skip:focus { left: var(--s3); top: var(--s3); background: var(--blanco); padding: var(--s2); }

@@ -1,0 +1,6 @@
+{
+    "robots": {
+        "status": 200,
+        "body": "User-agent: *\nDisallow: /privado/\n\nSitemap: https://example.com/sitemap.xml"
+    }
+}
