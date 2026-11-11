@@ -19,6 +19,26 @@ return [
     ],
 
     // Respaldo de los puntos GEO (BaseCheck::$respaldo), redactado para cada perfil
+    // Glosario de los PDF (perfiles de marketing y desarrollo web; dirección no lo incluye)
+    'glosario' => [
+        ['SEO', 'Posicionamiento en buscadores: lo que ayuda a que la página aparezca y se entienda en Google, Bing y similares.'],
+        ['GEO', 'Preparación técnica de la página para buscadores y asistentes con IA. No mide si la citan.'],
+        ['UX y accesibilidad', 'Facilidad de uso para cualquier persona, también con lector de pantalla, teclado o poca visión.'],
+        ['No cumple', 'Fallo detectado automáticamente. Es lo único que resta en la nota.'],
+        ['Aviso', 'Algo que conviene revisar. No resta.'],
+        ['Sin datos', 'No se ha podido medir (por ejemplo, porque un servicio externo no respondió). No resta.'],
+        ['No aplica', 'El punto no tiene sentido en esta página (por ejemplo, vídeos en una página sin vídeos).'],
+        ['Gravedad', 'Peso del fallo en la nota: crítica, alta, media o baja. Si se repite, pesa algo más.'],
+        ['HTTPS', 'Conexión cifrada entre el navegador y la web; los navegadores marcan como no segura la que no la usa.'],
+        ['Canonical', 'Etiqueta que indica a los buscadores cuál es la dirección principal de una página.'],
+        ['Sitemap', 'Archivo con la lista de páginas que la web quiere que los buscadores conozcan.'],
+        ['robots.txt', 'Archivo que indica a los rastreadores qué partes de la web pueden visitar.'],
+        ['Datos estructurados', 'Información en un formato estándar (schema.org) que explica a máquinas de qué trata la página.'],
+        ['Texto alternativo (ALT)', 'Descripción de una imagen para quien no puede verla.'],
+        ['Nombre accesible', 'Texto con el que un lector de pantalla anuncia un enlace, un botón o un campo.'],
+        ['Contraste', 'Diferencia de luminosidad entre el texto y su fondo; si es baja, cuesta leer.'],
+        ['Core Web Vitals', 'Métricas de Google sobre velocidad de carga, respuesta y estabilidad visual, medidas con PageSpeed Insights.'],
+    ],
     'respaldo' => [
         'oficial' => [
             'marketing' => 'Lo indica el propio buscador o asistente de IA en su documentación.',

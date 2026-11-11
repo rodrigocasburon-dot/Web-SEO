@@ -401,8 +401,8 @@
       return {
         id: pt.id, nombre: label(pt), bloque: pt.bloque, severidad: pt.severidad,
         texto: firstSentence(t.hacer), paginas: pagesText(pt),
-        esfuerzo: perfil === 'direccion' ? (LEVEL_TEXT[pt.esfuerzo] || null) : null,
-        impacto: perfil === 'direccion' ? (LEVEL_TEXT[pt.impacto] || null) : null
+        esfuerzo: perfil === 'direccion' ? (LEVEL_TEXT[String(pt.esfuerzo || '').toLowerCase()] || null) : null,
+        impacto: perfil === 'direccion' ? (LEVEL_TEXT[String(pt.impacto || '').toLowerCase()] || null) : null
       };
     });
     var notaPrioridades = null;
@@ -443,7 +443,7 @@
     var extra = null;
     if (perfil === 'direccion') {
       extra = { tipo: 'decisiones', titulo: 'Decisiones', texto: m.riesgo
-        ? 'Riesgo alto: conviene revisar de inmediato las prioridades.'
+        ? 'Dar prioridad inmediata a los fallos críticos y asignar responsable y fecha a cada uno.'
         : (graves.length ? 'Aprobar la corrección de las prioridades en el próximo ciclo de trabajo.' : 'No hace falta ninguna decisión urgente; mantener la revisión periódica.') };
     } else if (perfil === 'marketing') {
       var vis = ['seo', 'ia'].filter(function (a) { return m.notas[a] !== null && m.notas[a] !== undefined; });
@@ -473,12 +473,14 @@
       variacion: variacion,
       fallosBloque: fallosBloque,
       riesgo: m.riesgo,
+      riesgoMotivos: m.riesgoMotivos || [],
       extra: extra
     };
   }
 
   root.RadarPerfil = {
     summary: summary,
+    firstSentence: firstSentence,
     headline: headline,
     deltaText: deltaText,
     areaName: areaName,

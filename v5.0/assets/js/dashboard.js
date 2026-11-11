@@ -254,6 +254,7 @@
       })));
     }
     if (s.variacion) sec.appendChild(el('p', { class: 'rw-exec__line', text: s.variacion }));
+    if (s.riesgo) sec.appendChild(el('p', { class: 'notice notice--risk', text: 'Riesgo alto: revisar de inmediato.' + (s.riesgoMotivos.length ? ' ' + s.riesgoMotivos.join('. ') + '.' : '') }));
     s.fallosBloque.forEach(function (t) { sec.appendChild(el('p', { class: 'notice notice--warn', text: t })); });
 
     if (!s.bloqueado) {

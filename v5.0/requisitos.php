@@ -208,6 +208,7 @@ foreach ($groups as $area => $list) {
   </div>
 </footer>
 <script type="application/json" id="requisitos-datos"><?= json_encode($pdf, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>
+<script src="<?= $asset('assets/js/pdf-fuentes.js') ?>" defer></script>
 <script src="<?= $asset('assets/js/pdf.js') ?>" defer></script>
 <script src="<?= $asset('assets/js/requisitos.js') ?>" defer></script>
 </body>

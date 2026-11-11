@@ -86,9 +86,11 @@ $e = fn(string $s): string => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
 <script src="<?= $asset('assets/js/compare.js') ?>" defer></script>
 <script src="<?= $asset('assets/js/rw-componentes.js') ?>" defer></script>
 <script src="<?= $asset('assets/js/site.js') ?>" defer></script>
+<script src="<?= $asset('assets/js/pdf-fuentes.js') ?>" defer></script>
 <script src="<?= $asset('assets/js/pdf.js') ?>" defer></script>
 <script src="<?= $asset('assets/js/perfiles.js') ?>" defer></script>
 <script src="<?= $asset('assets/js/dashboard.js') ?>" defer></script>
+<script src="<?= $asset('assets/js/informes-pdf.js') ?>" defer></script>
 <script src="<?= $asset('assets/js/app.js') ?>" defer></script>
 </head>
 <body>

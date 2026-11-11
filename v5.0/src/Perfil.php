@@ -89,6 +89,7 @@ class Perfil
             'relevancia' => $rel,
             'respaldo' => (array) ($txt['respaldo'] ?? []),
             'puntos' => (array) ($txt['puntos'] ?? []),
+            'glosario' => (array) ($txt['glosario'] ?? []),
         ];
     }
 

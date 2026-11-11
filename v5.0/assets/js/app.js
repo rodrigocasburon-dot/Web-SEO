@@ -761,103 +761,20 @@
     return (run.data.informe.bloque || {})[id] || '';
   }
 
-  /** Puntos de la hoja de ruta / del informe, en datos para assets/js/pdf.js. */
-  function priorityItems(run) {
-    return (run.data.informe.prioridades || []).map(function (r) {
-      var line = [i18n.estados[r.estado] || r.estado, 'gravedad ' + lower(i18n.severidades, r.severidad),
-        'área ' + (i18n.areas[areaOf(run, r.id)] || '—'), 'impacto ' + lower(i18n.niveles, r.impacto), 'esfuerzo ' + lower(i18n.niveles, r.esfuerzo)];
-      if (r.estado === 'NO_CUMPLE') line.push('resta ' + fmtNumber(r.penalizacion, 1) + ' puntos' + (r.ocurrencias > 1 ? ' (' + r.ocurrencias + ' casos)' : ''));
-      return { titulo: r.id + ' · ' + r.nombre, estado: r.estado, linea: line.join(' · '), texto: '', arreglo: r.recomendacion };
-    });
-  }
-
-  /** v4 · Informe en PDF (se descarga): primera nota de la página y, si ha terminado, el resultado del sitio. */
-  function pdfReport(run) {
-    var data = run.data;
-    var p = data.puntuacion;
-    var site = window.RadarSite && window.RadarSite.model ? window.RadarSite.model() : null;
-    return window.RadarPdf.create({
-      eyebrow: 'Radar web · Informe de análisis',
-      titulo: data.url,
-      subtitulo: ['Fecha del análisis: ' + fmtDate(data.fecha) + '.'].concat(site ? site.meta : ['El análisis del sitio no había terminado al descargar este informe.'])
-    }).then(function (doc) {
-      doc.h2('Primer análisis: la página que has escrito');
-      var note = psiScoreNote(run);
-      if (note) doc.p(note, { size: 8.5, color: window.RadarPdf.colors.gris });
-      if (data.blocked) {
-        doc.note('Acceso bloqueado: ' + data.blocked.message + ' Las comprobaciones que dependen del contenido de la página aparecen como «Sin datos».');
-      } else {
-        doc.scores(AREAS.map(function (a) {
-          return { etiqueta: i18n.areas[a], nota: p.areas[a].redondeada, detalle: areaCoverage(run, a, pendingIds(run).filter(function (id) { return ((i18n.psi_bloque || {})[id] || '') === a; }).length), acento: 'negro' };
-        }));
-        doc.facts([['Nota global', fmtNumber(p.global.redondeada, 1) + ' / 100 · media ponderada (35 % SEO, 30 % GEO, 35 % UX)']]);
-      }
-      if (site && !site.bloqueado) {
-        doc.h2('Resultado del sitio');
-        doc.facts([['Nota global', fmtNumber(site.global, 1) + ' / 100 · media de las ' + site.analizadas + ' páginas con nota (peor página: ' + fmtNumber(site.peor_global, 1) + ')']]);
-        doc.scores(site.areas.map(function (a) {
-          var fails = a.puntos.filter(function (x) { return x.estado === 'NO_CUMPLE'; }).length;
-          var warns = a.puntos.length - fails;
-          return { etiqueta: a.nombre, nota: a.nota, detalle: (a.puntos.length ? plural(fails, 'fallo', 'fallos') + ' · ' + plural(warns, 'aviso', 'avisos') : 'Sin errores detectables automáticamente') + ' · peor página: ' + fmtNumber(a.peor, 1) };
-        }));
-        doc.p(site.fiabilidad, { size: 8, color: window.RadarPdf.colors.gris });
-        site.areas.forEach(function (a) {
-          doc.h2(a.nombre + ': lo que falla o falta');
-          if (!a.puntos.length) doc.p('Sin errores detectables automáticamente en ' + a.nombre + '.');
-          a.puntos.forEach(function (x) { doc.item(x); });
-        });
-        doc.note(site.manual);
-      } else {
-        if (site && site.bloqueado) {
-          doc.h2('Resultado del sitio');
-          doc.note(site.mensaje);
-        }
-        // Sin resultado del sitio: lo que falla o falta en la página escrita
-        var items = priorityItems(run);
-        doc.h2('Lo que falla o falta en esta página');
-        if (!items.length) doc.p('Sin errores detectables automáticamente.');
-        items.forEach(function (x) { doc.item(x); });
-        doc.note('Revisión manual (no puntúa): una persona debe revisar la calidad de los textos alternativos, el orden real del teclado, el contraste sobre imágenes y la calidad de los subtítulos.');
-      }
-      doc.h2('Limitaciones');
-      doc.p('Evaluación automática y parcial: no sustituye una auditoría manual y ningún resultado significa que la web cumpla una norma o la ley. Las recomendaciones no cambian la nota. GEO mide la preparación técnica; no si los motores de IA citan la web.', { size: 8.5 });
-      doc.save(window.RadarPdf.fileName('informe', data.url));
-    });
-  }
-
   /**
-   * Hoja de ruta en PDF (se descarga): correcciones en el orden de informe.prioridades (fallos por puntos que
-   * restan, después avisos) y revisiones manuales RM-01…RM-10.
+   * Informe y hoja de ruta en PDF (se descargan) con el perfil de lectura elegido: portada con índice, resumen
+   * ejecutivo y secciones (assets/js/informes-pdf.js). Usan el mismo modelo que la pantalla (RadarDashboard).
    */
-  function pdfRoadmap(run) {
-    var data = run.data;
-    var p = data.puntuacion;
-    var rm = i18n.revisiones_manuales || {};
-    return window.RadarPdf.create({
-      eyebrow: 'Radar web · Hoja de ruta',
-      titulo: data.url,
-      subtitulo: ['Fecha del análisis: ' + fmtDate(data.fecha) + '.',
-        data.blocked ? 'Acceso bloqueado: ' + data.blocked.message
-          : AREAS.map(function (a) { return i18n.areas[a] + ' ' + fmtNumber(p.areas[a].redondeada, 1); }).concat('Nota global ' + fmtNumber(p.global.redondeada, 1)).join(' · ') + ' (sobre 100).']
-    }).then(function (doc) {
-      var note = psiScoreNote(run);
-      if (note) doc.note(note);
-      var items = priorityItems(run);
-      doc.h2('1. Qué corregir, por orden');
-      if (items.length) {
-        doc.p('Primero los fallos, ordenados por los puntos que restan; después los avisos, que no restan puntos.', { size: 8.5, color: window.RadarPdf.colors.gris });
-        items.forEach(function (x, i) { x.titulo = (i + 1) + '. ' + x.titulo; doc.item(x); });
-      } else {
-        doc.p('Nada que corregir: no se han detectado fallos ni avisos de forma automática.');
-      }
-      doc.h2('2. Qué debe revisar una persona (no puntúa)');
-      Object.keys(rm).forEach(function (id) {
-        doc.item({ titulo: id + ' · ' + rm[id][0], estado: 'AVISO', linea: 'Revisión manual', texto: rm[id][1], arreglo: '' });
-      });
-      doc.p('Evaluación automática y parcial. No sustituye una auditoría manual.', { size: 8.5, color: window.RadarPdf.colors.gris });
-      doc.save(window.RadarPdf.fileName('hoja-de-ruta', data.url));
-    });
+  function pdfDownload(run, kind) {
+    if (!window.RadarInformesPdf || !window.RadarDashboard) return Promise.reject(new Error('Sin módulo de PDF'));
+    var m = window.RadarDashboard.model();
+    if (!m) return Promise.reject(new Error('Sin análisis'));
+    return window.RadarInformesPdf.download(kind, m, window.RadarDashboard.profile(), i18n);
   }
+
+  function pdfReport(run) { return pdfDownload(run, 'informe'); }
+
+  function pdfRoadmap(run) { return pdfDownload(run, 'hoja'); }
 
   function updateReport(run) {
     updateScores(run);
