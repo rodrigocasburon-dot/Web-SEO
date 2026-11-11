@@ -24,7 +24,7 @@ $asset = function (string $path): string {
 };
 $num = fn($v): string => $v === null ? '—' : str_replace('.', ',', (string) round((float) $v, 1));
 
-$q = trim(mb_substr((string) ($_GET['q'] ?? ''), 0, 200));
+$q = isset($_GET['q']) && is_string($_GET['q']) ? trim(mb_substr($_GET['q'], 0, 200)) : '';
 $type = '';
 $page = max(1, min(1000, (int) ($_GET['pagina'] ?? 1)));
 $perPage = 50;
