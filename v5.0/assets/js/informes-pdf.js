@@ -148,7 +148,7 @@
   function methodParagraphs(doc, i18n) {
     var pen = i18n.penalizaciones || {};
     doc.p('Cada área (SEO, GEO y UX) parte de 100. Solo restan los fallos («No cumple»), según su gravedad: crítica ' + pen.CRITICO
-      + ', alta ' + pen.ALTO + ', media ' + pen.MEDIO + ' y baja ' + pen.BAJO + ' puntos, con un peso algo mayor si el mismo fallo se repite (1 + ln k). '
+      + ', alta ' + pen.ALTO + ', media ' + pen.MEDIO + ' y baja ' + pen.BAJO + ' puntos, con un peso algo mayor si el mismo fallo se repite (1 + ln k). Después, la resta de cada área se ajusta con un factor para que las tres tengan la misma escala (normalización). '
       + 'Los avisos, los puntos sin datos y los que no aplican no restan. Un fallo resta una sola vez y se reparte entre las áreas a las que afecta.');
     doc.p('Las notas son las de la URL analizada; la media del sitio es un dato secundario. No se muestra una nota global: cada área se lee por separado.');
     doc.p('El perfil de lectura solo cambia el lenguaje, el orden a igualdad de gravedad y el nivel de detalle. Las notas, los estados y los pesos son los mismos en los tres perfiles.');

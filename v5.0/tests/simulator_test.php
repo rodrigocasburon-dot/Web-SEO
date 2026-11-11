@@ -24,7 +24,7 @@ function simExample(): array
 }
 
 test('Simulador: ejemplo de 49,1 — corregir los 3 fallos deja accesibilidad en 100', function () {
-    $s = Simulator::simulate(simExample(), 3);
+    $s = Simulator::simulate(simExample(), 3, null, Scorer::raw());
     assertSame(3, $s['n']);
     assertSame(3, $s['fallos_totales']);
     assertSame(['X3', 'X1', 'X2'], array_column($s['corregidos'], 'id'), 'Orden: primero lo que más resta (8 × (1 + ln 5) = 20,9)');
@@ -35,13 +35,13 @@ test('Simulador: ejemplo de 49,1 — corregir los 3 fallos deja accesibilidad en
 });
 
 test('Simulador: N = 1 y N = 2 en el ejemplo de 49,1 (70,0 y 85,0)', function () {
-    $one = Simulator::simulate(simExample(), 1);
+    $one = Simulator::simulate(simExample(), 1, null, Scorer::raw());
     assertSame(['X3'], array_column($one['corregidos'], 'id'));
     assertSame(20.9, $one['corregidos'][0]['penalizacion']);
     assertSame(['antes' => 49.1, 'despues' => 70.0, 'mejora' => 20.9], $one['notas']['accesibilidad']);
     assertSame(true, $one['riesgo_alto']['despues'], 'Siguen dos fallos críticos');
 
-    $two = Simulator::simulate(simExample(), 2);
+    $two = Simulator::simulate(simExample(), 2, null, Scorer::raw());
     assertSame(['X3', 'X1'], array_column($two['corregidos'], 'id'));
     assertSame(85.0, $two['notas']['accesibilidad']['despues']);
     assertSame(false, $two['riesgo_alto']['despues']);
@@ -88,7 +88,8 @@ test('Simulador: N fuera de rango se acota y Report::build lo incluye (salvo acc
     $score = (new Scorer())->score($records);
     $r = Report::build($records, $score, false, 2);
     assertSame(2, $r['simulacion']['n']);
-    assertSame(85.0, $r['simulacion']['notas']['accesibilidad']['despues']);
+    // Report::build usa la escala normalizada: el mismo resultado que el simulador con el Scorer por defecto
+    assertSame(Simulator::simulate($records, 2)['notas']['accesibilidad']['despues'], $r['simulacion']['notas']['accesibilidad']['despues']);
     assertSame(Simulator::DEFAULT_TOP, Report::build($records, $score)['simulacion']['n']);
     assertSame(null, Report::build($records, $score, true)['simulacion']);
 });

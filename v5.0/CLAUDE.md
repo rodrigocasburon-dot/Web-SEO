@@ -26,7 +26,8 @@ conocer la versión del servidor.
 - Estados permitidos: CUMPLE, NO_CUMPLE, AVISO, SIN_DATOS. Solo NO_CUMPLE penaliza. Cada comprobación se evalúa una sola vez.
 - Cada área (SEO, GEO, UX) parte de 100. Internamente siguen siendo `seo`, `ia` y `accesibilidad`.
 - Penalización por gravedad (P): Crítico 15, Alto 8, Medio 4, Bajo 1.
-- Puntuación del área = máx(0, 100 − Σ(w × P)), con w = 1 + ln(k), donde k = número de veces que aparece el mismo fallo en la URL.
+- Puntuación del área = máx(0, 100 − Σ(w × P) × factor), con w = 1 + ln(k), donde k = número de veces que aparece el mismo fallo en la URL.
+- Normalización (aprobada por el grupo el 11/11/2026): factor del área = referencia / resta máxima (`config/normalizacion.php`), para que SEO, GEO y UX tengan la misma escala. `Scorer::raw()` calcula sin normalizar. Calibración en `docs/CALIBRACION.md`.
 - Un fallo resta una sola vez; su penalización se reparte entre áreas con la matriz de `config/weights.php`.
 - Matriz (SEO / IA / Accesibilidad), aprobada por el grupo el 9/11/2026:
   C01 .7/.3/0; C02 .4/.6/0; C03 .4/.6/0; C04 0/0/1; C05 .3/.3/.4; C06 .2/.2/.6; C07 .4/0/.6;
@@ -38,7 +39,7 @@ conocer la versión del servidor.
 - Si un área baja de 50 o hay al menos dos fallos críticos: «Riesgo alto: revisar de inmediato».
 - SIN_DATOS y comprobaciones que no aplican no penalizan y se muestran aparte. Si más de la mitad de las comprobaciones de un área son SIN_DATOS, la nota se marca como incompleta.
 - v4 (decisión del 10/11/2026): las áreas se llaman SEO, GEO (antes «Preparación para IA») y UX (antes «Accesibilidad»). Solo cambia el nombre: mismas comprobaciones, pesos y fórmula.
-- Prueba obligatoria: 2 fallos críticos distintos + 1 fallo alto repetido 5 veces ⇒ área de 49,1.
+- Prueba obligatoria: 2 fallos críticos distintos + 1 fallo alto repetido 5 veces ⇒ área de 49,1 en la escala original (`Scorer::raw()`); con la normalización n1, SEO 58,2, GEO 32,9 y UX 50,3.
 
 ## REGLAS DE CALIDAD
 
