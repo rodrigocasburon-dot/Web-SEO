@@ -1,0 +1,84 @@
+/* Radar web · gráficos (docs/DESIGN.md, sección 5). Barras finas, extremos con radio 2 px, 2 px entre
+   tramos, sin bordes alrededor de las marcas, empiezan en cero. Los textos van en tinta, nunca en el color de
+   la serie. forced-color-adjust y print-color-adjust conservan rellenos y texturas con colores forzados e
+   impresos. Solo colores de tokens.css. */
+
+.rw-figure { margin: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s3); min-width: 0; }
+.rw-figure__title { margin: 0; font-size: 16px; line-height: 24px; font-weight: 500; }
+.rw-figure__summary { margin: 0; font-size: 14px; line-height: 20px; color: var(--gris); }
+.rw-figure__visual { min-width: 0; }
+
+.rw-meter, .rw-segbar, .rw-bars__track, .rw-bars__bar, .rw-bullet__track, .rw-seg, .rw-legend .rw-swatch {
+  forced-color-adjust: none; -webkit-print-color-adjust: exact; print-color-adjust: exact;
+}
+
+/* Medidor 0–100: 8 px de alto, relleno negro sobre pista gris; sin colores por valor */
+.rw-meter { display: block; position: relative; height: 8px; background: var(--gris-linea); border-radius: var(--r); overflow: hidden; }
+.rw-meter__fill { display: block; height: 100%; background: var(--negro); border-radius: var(--r); }
+
+/* Barra segmentada alta (máx. 5 tramos) */
+.rw-segbar { display: flex; gap: 2px; height: 24px; }
+.rw-segbar--low { height: 12px; }
+.rw-seg { display: block; min-width: 4px; flex-basis: 0; border-radius: var(--r); box-sizing: border-box; }
+.rw-seg.rw-st--ok { background: var(--negro); }
+.rw-seg.rw-st--fail { background: var(--rojo); }
+.rw-seg.rw-st--warn { background: repeating-linear-gradient(-45deg, var(--rojo) 0 2px, var(--blanco) 2px 4px); border: 1px solid var(--rojo); }
+.rw-seg.rw-st--nodata { background: var(--gris-linea); border: 1px solid var(--gris-marca); }
+.rw-seg.rw-st--na { background: var(--blanco); border: 1px solid var(--gris-marca); }
+.rw-sev-baja { background: var(--sev-baja); }
+.rw-sev-media { background: var(--sev-media); }
+.rw-sev-alta { background: var(--sev-alta); }
+.rw-sev-critica { background: var(--sev-critica); }
+
+.rw-legend { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s4); margin: var(--s2) 0 0; padding: 0; list-style: none; font-size: 14px; line-height: 20px; }
+.rw-legend li { display: inline-flex; align-items: center; gap: var(--s1); }
+.rw-legend .rw-swatch { width: 14px; height: 14px; }
+.rw-legend__icon { display: inline-block; min-width: 0.6em; font-weight: 700; }
+.rw-legend strong { font-weight: 600; }
+@media (max-width: 639px) { .rw-legend { flex-direction: column; } }
+
+/* Barras ordenadas: 12 px, un solo color */
+.rw-bars { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--s3); }
+.rw-bars__row { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "label value" "track track"; gap: var(--s1) var(--s3); align-items: center; }
+.rw-bars__label { grid-area: label; font-size: 14px; line-height: 20px; overflow-wrap: anywhere; }
+.rw-bars__value { grid-area: value; font-size: 14px; line-height: 20px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rw-bars__track { grid-area: track; display: block; height: 12px; }
+.rw-bars__bar { display: block; height: 100%; min-width: 2px; background: var(--negro); border-radius: 0 var(--r) var(--r) 0; }
+
+/* Gráfico de bala: franjas en gris (bueno, mejorable, deficiente) y marcador negro */
+.rw-bullets { display: grid; gap: var(--s3); }
+.rw-bullet { display: grid; grid-template-columns: 48px minmax(0, 1fr); grid-template-areas: "name track" ". value"; gap: var(--s1) var(--s3); align-items: center; }
+@media (min-width: 640px) { .rw-bullet { grid-template-columns: 48px minmax(0, 1fr) minmax(9rem, auto); grid-template-areas: "name track value"; } }
+.rw-bullet__name { grid-area: name; font-weight: 600; }
+.rw-bullet__value { grid-area: value; font-size: 14px; line-height: 20px; }
+.rw-bullet__track { grid-area: track; position: relative; display: flex; height: 16px; }
+.rw-bullet__band { display: block; height: 100%; }
+.rw-bullet__band--good { background: var(--gris-linea); }
+.rw-bullet__band--mid { background: var(--g1); }
+.rw-bullet__band--poor { background: var(--gris-marca); flex: 1; }
+.rw-bullet__marker { position: absolute; top: -4px; bottom: -4px; width: 3px; margin-left: -1px; background: var(--negro); }
+.rw-bullet-legend { margin: 0; font-size: 14px; line-height: 20px; color: var(--gris); }
+
+/* Matriz páginas × puntos: desplazamiento horizontal, primera columna fija */
+.rw-matrix-wrap { border: 1px solid var(--gris-linea); }
+.rw-matrix { border-collapse: collapse; font-size: 14px; line-height: 20px; background: var(--blanco); }
+.rw-matrix th, .rw-matrix td { padding: var(--s1) var(--s2); border-bottom: 1px solid var(--gris-linea); text-align: center; }
+.rw-matrix thead th { font-weight: 600; white-space: nowrap; }
+.rw-matrix abbr { text-decoration: none; }
+.rw-matrix tbody th {
+  position: sticky; left: 0; z-index: 1; background: var(--blanco);
+  text-align: left; font-weight: 400; max-width: 16rem; overflow-wrap: anywhere; border-right: 1px solid var(--gris-linea);
+}
+.rw-matrix thead th:first-child { position: sticky; left: 0; z-index: 2; background: var(--blanco); text-align: left; }
+
+/* Minigráfico de evolución (eje fijo 0–100) */
+.rw-spark { display: block; overflow: visible; }
+.rw-spark__base { stroke: var(--gris-linea); stroke-width: 1; }
+.rw-spark__line { fill: none; stroke: var(--negro); stroke-width: 2; stroke-linejoin: round; }
+.rw-spark__dot { fill: var(--negro); }
+.rw-spark__label { font: 600 11px var(--fuente); fill: var(--negro); }
+
+@media print {
+  .rw-figure { break-inside: avoid; }
+  .rw-matrix-wrap { overflow: visible; }
+}
