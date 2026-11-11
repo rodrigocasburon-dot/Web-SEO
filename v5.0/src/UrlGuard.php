@@ -55,12 +55,13 @@ class UrlGuard
             }
         }
 
-        // Si cualquiera de las IP es no pública se rechaza todo (evita respuestas DNS mixtas).
+        // Si cualquiera de las IP es no pública se rechaza todo (evita respuestas DNS mixtas). El mensaje no incluye
+        // la IP: revelaría direcciones de la red interna a quien pruebe dominios que apunten a ella.
         foreach ($ips as $ip) {
             if (!$this->isPublicIp($ip)) {
                 throw new UrlGuardException(
                     'PRIVATE_ADDRESS',
-                    'La dirección de destino no es pública y no se analiza (' . $n['host'] . ' → ' . $ip . ').'
+                    'La dirección de destino no es pública y no se analiza («' . $n['host'] . '»).'
                 );
             }
         }

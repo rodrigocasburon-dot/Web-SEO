@@ -76,6 +76,16 @@ test('UrlGuard: dominio que resuelve a IP privada', function () {
     assertGuardCode('PRIVATE_ADDRESS', fn() => $g->validate('https://interno.example.com/'));
 });
 
+test('UrlGuard: el mensaje de IP privada no revela la IP interna (SEG-05)', function () {
+    $g = guardWith(['interno.example.com' => ['10.0.0.5']]);
+    try {
+        $g->validate('https://interno.example.com/');
+        throw new Exception('Debía rechazarse');
+    } catch (UrlGuardException $ex) {
+        assertTrue(strpos($ex->getMessage(), '10.0.0.5') === false, 'El mensaje no debe incluir la IP: ' . $ex->getMessage());
+    }
+});
+
 test('UrlGuard: respuesta DNS mixta (pública + privada) se rechaza', function () {
     $g = guardWith(['mixto.example.com' => ['93.184.216.34', '127.0.0.1']]);
     assertGuardCode('PRIVATE_ADDRESS', fn() => $g->validate('https://mixto.example.com/'));
