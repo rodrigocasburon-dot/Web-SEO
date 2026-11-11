@@ -706,6 +706,12 @@
     run.view.dash = el('div', { class: 'rw-dash', id: 'dashboard' });
     results.appendChild(run.view.dash);
 
+    // Análisis complementario (no puntúa): vista de un bot, vista previa, bots de IA, palabra clave, esquema,
+    // tono del contenido, pistas para la revisión manual y transferencia. Se pinta una vez: no cambia con PageSpeed.
+    var extra = foldSection('sec-complementario', 'Análisis complementario (no puntúa)');
+    renderComplementary(extra.body, data.complementario);
+    results.appendChild(extra.node);
+
     // Identidad corporativa detectada de la web analizada (DESIGN.md §7): informativa, no puntúa
     if (data.complementario && data.complementario.identidad) {
       var ident = foldSection('sec-identidad', 'Identidad corporativa detectada (no puntúa)');
