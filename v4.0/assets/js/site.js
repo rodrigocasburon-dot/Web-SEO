@@ -275,7 +275,7 @@
       ? 'Análisis profundo: buscando todas las páginas del sitio (enlaces y sitemap)…'
       : 'Análisis rápido: eligiendo las ' + 49 + ' páginas principales del sitio…';
 
-    post('api/site.php', { url: url, modo: deep ? 'profundo' : 'rapido' }).then(function (home) {
+    post('api/site.php', { url: url, modo: deep ? 'profundo' : 'rapido', noindex_intentional: !!opts.noindexIntencionado }).then(function (home) {
       if (runId !== currentRun) return;
       if (!home.ok) {
         statusBox.textContent = '';
@@ -307,12 +307,33 @@
       };
       announce(true);
       var launched = [];   // firmas de las páginas lanzadas (el servidor guarda sus resultados para el historial)
-      var shouldStop = function () { return stopRequested || runId !== currentRun; };
+      // v4: el servidor puede detener el análisis (tope alcanzado o el sitio pide frenar con 429/503)
+      var serverStop = null;
+      var shouldStop = function () { return stopRequested || serverStop !== null || runId !== currentRun; };
       var pagesDone = pool(list, home.sitio.paralelas || 6, function (item) {
         launched.push(item.firma);
         var t0 = Date.now();
-        return post('api/site_page.php', { url: item.url, run: home.sitio.run, firma: item.firma, expira: home.sitio.expira, descubrir: deep })
+        var body = { url: item.url, run: home.sitio.run, firma: item.firma, expira: home.sitio.expira, noindex_intentional: !!home.sitio.noindex_intentional };
+        // RETRY: el servidor reparte el ritmo de peticiones al sitio (Crawl-delay); se espera y se repite
+        var attempt = function (tries) {
+          return post('api/site_page.php', body).then(function (r) {
+            if (r && !r.ok && r.error && r.error.code === 'RETRY' && tries < 20 && !shouldStop()) {
+              return new Promise(function (res) { setTimeout(res, Math.min(30, Math.max(1, Number(r.reintentar) || 1)) * 1000); })
+                .then(function () { return attempt(tries + 1); });
+            }
+            return r;
+          });
+        };
+        return attempt(0)
           .then(function (r) {
+            var code = r && !r.ok && r.error ? r.error.code : null;
+            if (code === 'SITE_STOPPED' || code === 'LIMIT_REACHED' || code === 'RETRY' || code === 'RUN_UNKNOWN') {
+              // No se ha analizado: fuera de la lista de guardado y del informe
+              launched.splice(launched.indexOf(item.firma), 1);
+              if (code !== 'RETRY' && serverStop === null) serverStop = r.error.message;
+              return;
+            }
+            if (r && r.parado && serverStop === null) serverStop = r.parado;
             // Páginas nuevas enlazadas desde esta: a la cola, sin repetir y hasta el máximo
             (r.nuevas || []).forEach(function (n) {
               var k = pageKey(n.url);
@@ -335,7 +356,7 @@
         if (runId !== currentRun) return;
         progressWrap.hidden = true;
         var seconds = Math.round((Date.now() - started) / 1000);
-        var info = { encontradas: list.length, descubiertas: discovered, tope: capped ? maxPages : 0, cortado: stopRequested && done < list.length };
+        var info = { encontradas: list.length, descubiertas: discovered, tope: capped ? maxPages : 0, cortado: (stopRequested || serverStop !== null) && pages.length < list.length, parado: serverStop };
         statusBox.textContent = (deep ? 'Análisis profundo' : 'Análisis rápido') + ' del sitio terminado en ' + duration(seconds) + ': ' + (done + 1) + ' páginas.';
         render(home, pages, info, seconds);
         saveHistory(home, launched, opts);
@@ -399,6 +420,7 @@
         el('li', { text: modo + ': ' + agg.analizadas + ' páginas con nota en ' + duration(seconds) + '.' }),
         info.cortado ? el('li', { text: 'Se ha terminado antes de tiempo: quedaron ' + (info.encontradas - pages.length) + ' páginas sin analizar.' }) : null,
         info.tope ? el('li', { text: 'Se ha llegado al máximo de ' + info.tope + ' páginas por análisis: el sitio tiene más.' }) : null,
+        info.parado ? el('li', { text: 'Detenido por el servidor: ' + info.parado }) : null,
         agg.bloqueadas || agg.errores ? el('li', { text: 'Sin nota: ' + [agg.bloqueadas ? agg.bloqueadas + ' con acceso bloqueado' : '', agg.errores ? agg.errores + ' que no se han podido descargar' : ''].filter(Boolean).join(' y ') + ' (están en el CSV).' }) : null
       ])
     ]));
@@ -406,6 +428,7 @@
     var metaLines = [modo + ': ' + agg.analizadas + ' páginas con nota en ' + duration(seconds) + '.'];
     if (info.cortado) metaLines.push('Se ha terminado antes de tiempo: quedaron ' + (info.encontradas - pages.length) + ' páginas sin analizar.');
     if (info.tope) metaLines.push('Se ha llegado al máximo de ' + info.tope + ' páginas por análisis: el sitio tiene más.');
+    if (info.parado) metaLines.push('Detenido por el servidor: ' + info.parado);
 
     if (home.blocked || agg.analizadas === 0) {
       lastModel = { url: home.url, bloqueado: true, meta: metaLines, mensaje: 'No calculable: el sitio ha bloqueado el acceso automático.' };
