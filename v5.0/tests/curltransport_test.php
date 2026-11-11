@@ -46,6 +46,15 @@
         assertSame(2097152, strlen($r['body']));
     });
 
+    test('CurlTransport: cabeceras de respuesta desmesuradas se cortan (SEG-12)', function () use ($available, $target, $opt) {
+        if (!$available) {
+            return;
+        }
+        $r = (new CurlTransport())($target('/cabeceras'), 8000, $opt);
+        assertTrue($r['errno'] !== 0, 'Debe abortar la descarga');
+        assertTrue(strlen(implode('', $r['headers'])) <= 262144, 'No debe acumular más de 256 KB de cabeceras');
+    });
+
     test('CurlTransport: un 404 no es un error de red', function () use ($available, $target, $opt) {
         if (!$available) {
             return;

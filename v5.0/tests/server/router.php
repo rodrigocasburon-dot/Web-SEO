@@ -15,6 +15,13 @@ switch ($path) {
     case '/redir':
         header('Location: /ok', true, 302);
         break;
+    case '/cabeceras':
+        // Servidor hostil: unas 800 KB de cabeceras (SEG-12)
+        for ($i = 0; $i < 4000; $i++) {
+            header('X-Relleno-' . $i . ': ' . str_repeat('a', 200));
+        }
+        echo 'ok';
+        break;
     case '/slow':
         sleep(3);
         echo 'tarde';

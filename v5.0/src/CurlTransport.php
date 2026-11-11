@@ -31,6 +31,7 @@ class CurlTransport
         $headers = [];
         $body = '';
         $truncated = false;
+        $headerBytes = 0;                      // cabeceras recibidas: se cortan a partir de 256 KB (SEG-12)
         $max = (int) $opt['max_bytes'];
         $https = stripos($target['url'], 'https://') === 0;
 
@@ -39,6 +40,7 @@ class CurlTransport
             CURLOPT_FOLLOWLOCATION => false,           // las redirecciones las gestiona el Fetcher
             CURLOPT_MAXREDIRS => 0,
             CURLOPT_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,
+            CURLOPT_REDIR_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,   // por si algún día se siguieran redirecciones
             CURLOPT_USERAGENT => $opt['user_agent'],
             CURLOPT_TIMEOUT_MS => max(1, $timeoutMs),
             CURLOPT_CONNECTTIMEOUT_MS => max(1, min($timeoutMs, 5000)),
@@ -54,8 +56,12 @@ class CurlTransport
                 'Accept: text/html,application/xhtml+xml;q=0.9,*/*;q=0.5',
                 'Accept-Language: es,en;q=0.8',
             ],
-            CURLOPT_HEADERFUNCTION => function ($ch, $line) use (&$headers) {
+            CURLOPT_HEADERFUNCTION => function ($ch, $line) use (&$headers, &$headerBytes) {
                 $len = strlen($line);
+                $headerBytes += $len;
+                if ($headerBytes > 262144) {
+                    return 0;                  // un servidor hostil no puede llenar la memoria con cabeceras
+                }
                 $line = trim($line);
                 if (stripos($line, 'HTTP/') === 0) {
                     $headers = [];            // nueva respuesta (p. ej. tras un 100 Continue)
