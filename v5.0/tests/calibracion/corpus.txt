@@ -1,0 +1,32 @@
+# Corpus de calibración (versión 1, 11/11/2026): portadas públicas de empresas, administraciones y medios en España.
+# Supuesto: representa el tipo de web que se analizará; no es del sector concreto de los clientes. Ver docs/CALIBRACION.md.
+https://www.proconsi.com/
+https://elpais.com/
+https://www.rtve.es/
+https://www.boe.es/
+https://www.ine.es/
+https://www.bbva.es/
+https://www.mercadona.es/
+https://www.unileon.es/
+https://www.aytoleon.es/
+https://www.renfe.com/es/es
+https://www.correos.es/es/es/particulares
+https://www.elcorteingles.es/
+https://www.holded.com/es
+https://www.odoo.com/es_ES
+https://www.cegid.com/es/
+https://www.wolterskluwer.com/es-es
+https://www.pccomponentes.com/
+https://www.decathlon.es/es/
+https://www.paradores.es/es
+https://www.jcyl.es/
+https://www.agenciatributaria.es/
+https://www.infojobs.net/
+https://www.idealista.com/
+https://www.fnac.es/
+https://www.leroymerlin.es/
+https://www.mapfre.es/particulares/
+https://www.iberdrola.es/
+https://www.movistar.es/
+https://www.ikea.com/es/es/
+https://www.seur.com/es/
