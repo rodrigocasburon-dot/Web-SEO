@@ -706,6 +706,13 @@
     run.view.dash = el('div', { class: 'rw-dash', id: 'dashboard' });
     results.appendChild(run.view.dash);
 
+    // Identidad corporativa detectada de la web analizada (DESIGN.md §7): informativa, no puntúa
+    if (data.complementario && data.complementario.identidad) {
+      var ident = foldSection('sec-identidad', 'Identidad corporativa detectada (no puntúa)');
+      renderIdentity(ident.body, data.complementario.identidad);
+      results.appendChild(ident.node);
+    }
+
     // Descargas de la URL, al final de la pantalla
     downloadsUrl.textContent = '';
     downloadsUrl.appendChild(downloadBar(run));
