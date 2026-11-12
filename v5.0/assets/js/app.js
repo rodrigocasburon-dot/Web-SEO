@@ -1745,12 +1745,63 @@
     if (c.bots_ia) host.appendChild(renderBotsTable(c.bots_ia));
     if (!c.sin_contenido) host.appendChild(renderKeyword(c.palabra_clave));
     if (c.esquema) host.appendChild(renderOutline(c.esquema));
-    if (c.tono) host.appendChild(renderTone(c.tono));
+    // Tono y citabilidad para IA (src/ToneForAi.php); el tono por sentimiento solo si el servidor no lo envía
+    if (c.tono_ia) host.appendChild(renderToneAi(c.tono_ia));
+    else if (c.tono) host.appendChild(renderTone(c.tono));
     if (c.pistas_manuales) host.appendChild(renderManualHints(c.pistas_manuales));
     if (c.transferencia) host.appendChild(renderTransfer(c.transferencia));
   }
 
-  // Tono del contenido (análisis de sentimiento por léxico)
+  // Tono y citabilidad para IA: si el texto es concreto, verificable y fácil de citar (src/ToneForAi.php)
+  function renderToneAi(t) {
+    var sec = el('section', { class: 'subsection', 'aria-labelledby': 'tone-ai-title' }, [
+      el('h4', { id: 'tone-ai-title', text: 'Tono y citabilidad para IA' })
+    ]);
+    var help = 'Estimación automática con reglas y léxico en español, en este servidor: no es un modelo de IA y no envía el texto fuera. '
+      + 'No entiende ironía ni contexto y los umbrales son orientativos. No puntúa: revisa a mano las frases señaladas.';
+    if (!t.disponible) {
+      sec.appendChild(el('p', { text: 'No disponible. ' + (t.motivo || '') }));
+      sec.appendChild(el('p', { class: 'help', text: help }));
+      return sec;
+    }
+    sec.appendChild(el('p', {}, [el('strong', { text: t.resumen })]));
+    if (t.poco_texto) {
+      sec.appendChild(el('div', { class: 'notice notice--warn' }, [
+        el('p', { text: 'Poco texto (' + t.frases + ' frases): el resultado es poco fiable. Puede que la página cargue su contenido con JavaScript.' })
+      ]));
+    }
+    var states = { bien: 'Bien', mejorable: 'Mejorable', revisar: 'Revisar' };
+    sec.appendChild(el('div', { class: 'table-wrap' }, [el('table', { class: 'data-table' }, [
+      el('caption', { class: 'visually-hidden', text: 'Indicadores de tono y citabilidad para IA' }),
+      el('thead', {}, [el('tr', {}, [
+        el('th', { scope: 'col', text: 'Indicador' }), el('th', { scope: 'col', text: 'Valor' }),
+        el('th', { scope: 'col', text: 'Estado' }), el('th', { scope: 'col', text: 'Qué mide' })
+      ])]),
+      el('tbody', {}, t.indicadores.map(function (i) {
+        return el('tr', {}, [
+          el('th', { scope: 'row', text: i.nombre }), el('td', { text: i.valor }),
+          el('td', {}, [i.estado === 'bien' ? (states[i.estado]) : el('strong', { text: states[i.estado] || i.estado })]),
+          el('td', { text: i.explicacion })
+        ]);
+      }))
+    ])]));
+    if (t.recomendaciones.length) {
+      sec.appendChild(el('h5', { text: 'Qué cambiaría' }));
+      sec.appendChild(el('ol', {}, t.recomendaciones.map(function (r) { return el('li', { text: r }); })));
+    }
+    [['citables', 'Frases que un asistente de IA podría citar'], ['sin_respaldo', 'Afirmaciones sin respaldo'], ['negativas', 'Frases negativas para revisar']]
+      .forEach(function (k) {
+        var list = (t.ejemplos && t.ejemplos[k[0]]) || [];
+        if (!list.length) return;
+        sec.appendChild(el('h5', { text: k[1] }));
+        sec.appendChild(el('ul', {}, list.map(function (s) { return el('li', { text: '«' + s + '»' }); })));
+      });
+    sec.appendChild(el('p', { class: 'help', text: t.frases + ' frases y ' + fmtNumber(t.palabras, 0) + ' palabras del contenido principal.'
+      + (t.idioma_supuesto ? ' La página no declara idioma (atributo lang): se ha supuesto español.' : '') + ' ' + help }));
+    return sec;
+  }
+
+  // Tono del contenido (análisis de sentimiento por léxico). Se usa si el servidor no envía tono_ia.
   function renderTone(t) {
     var sec = el('section', { class: 'subsection', 'aria-labelledby': 'tone-title' }, [
       el('h4', { id: 'tone-title', text: 'Tono del contenido' })

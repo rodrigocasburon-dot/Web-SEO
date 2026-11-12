@@ -24,6 +24,8 @@ class Insights
             'palabra_clave' => $reason === null ? self::keyword($ctx, (string) ($ctx->options['palabra_clave'] ?? '')) : null,
             'esquema' => $reason === null ? self::outline($ctx) : null,
             'tono' => $reason === null ? self::tone($ctx) : null,
+            // Tono y citabilidad para IA (12/11/2026): es lo que se muestra; src/ToneForAi.php
+            'tono_ia' => $reason === null ? self::toneAi($ctx) : null,
             // v4 · Pistas automáticas para las revisiones manuales RM-01 (alt) y RM-09 (legibilidad). Ver src/ManualHints.php.
             'pistas_manuales' => $reason === null ? [
                 'alt' => ManualHints::altText($ctx->xpath()),
@@ -42,6 +44,13 @@ class Insights
         [, $text] = DomHelper::mainContent($ctx->xpath());
         $lang = (string) $ctx->xpath()->evaluate('string(/html/@lang)');
         return Sentiment::analyze($text, $lang);
+    }
+
+    /** Tono y citabilidad para IA del contenido principal (src/ToneForAi.php). Estimación automática; no puntúa. */
+    public static function toneAi(CheckContext $ctx): array
+    {
+        [$text, $lang] = ToneForAi::textFromXpath($ctx->xpath());
+        return ToneForAi::analyze($text, $lang);
     }
 
     /** Motivo por el que no se puede usar el HTML recibido; null si se puede. */
